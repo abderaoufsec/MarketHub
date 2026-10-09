@@ -20,17 +20,34 @@
 
 ---
 
-## Phase 1 — Repository hygiene & reproducible baseline
+## Phase 1 — Repository hygiene & reproducible baseline ✅
 **Goal:** a clean, trustworthy git history and a project anyone can clone and run.
 
-- [ ] Rewrite `.gitignore` (Python, Node, Django, env, IDE, OS).
-- [ ] `git rm -r --cached` on `__pycache__/`, `frontend/.next/`, `backend/staticfiles/`, `*.pyc`, `.env.local`.
-- [ ] Rotate the leaked `SECRET_KEY` and `DB_PASSWORD=12345`; never re-commit real env files.
-- [ ] Add root `README.md` with architecture diagram, quickstart, tech stack.
-- [ ] Add `LICENSE`, `docs/` index, and delete orphan `frontend/src/styles/globals.css`.
-- [ ] First meaningful commit with a conventional-commit message.
+- [x] Rewrite `.gitignore` (Python, Node, Django, env, IDE, OS).
+- [x] `git rm -r --cached` on `__pycache__/`, `frontend/.next/`, `backend/staticfiles/`, `*.pyc`, `.env.local`.
+- [x] Rotate the leaked `SECRET_KEY` and `DB_PASSWORD=12345`; never re-commit real env files.
+- [x] Add root `README.md` with architecture diagram, quickstart, tech stack.
+- [x] Add `LICENSE`, `docs/` index, and delete orphan `frontend/src/styles/globals.css`.
+- [x] First meaningful commit with a conventional-commit message.
 
 **Done when:** `git ls-files` contains no build output, no `.env.local`; a fresh clone + documented steps boots both apps.
+
+**Completed 2026-10-09** — commit `8b2d267`, pushed to `origin/main`.
+
+| Check | Before | After |
+|---|---|---|
+| Tracked files | 563 (445 artifacts) | **121** (119 source + 2 `.env.example`) |
+| `__pycache__` / `.next` / `staticfiles` / `.pyc` | 443 | **0** |
+| `.env.local` tracked | 2 | **0** (still on disk for local dev) |
+| `.gitignore` | 1 line | 110 lines |
+| Root `README.md` / `LICENSE` / `docs/README.md` | absent | added |
+| Working tree | 564 unstaged entries | clean, matches `origin/main` |
+| Secrets in history | n/a | none — repo had zero commits; scan of tracked files found no keys |
+
+Notes:
+- "Rotate secrets" was a **no-op for history** — with zero prior commits, no secret had ever been persisted. `.env.local` was staged but never committed, so untracking was sufficient; both files remain on disk. Real rotation (env-file loader + fail-fast defaults) is **Phase 2**.
+- `backend/static/` (source CSS + admin template) was deliberately **kept**; only `backend/staticfiles/` (collectstatic output) was dropped.
+- Removed orphan `frontend/src/styles/globals.css` (1.2 KB, zero imports).
 
 ---
 
