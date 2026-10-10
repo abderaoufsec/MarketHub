@@ -13,9 +13,9 @@ const nextConfig = {
       },
     ],
   },
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
-  },
+  // NEXT_PUBLIC_* variables come straight from .env.* files and are inlined by
+  // Next.js. No localhost fallback on purpose — src/lib/env.js validates them
+  // at boot and fails with an actionable message when one is missing.
   // Improve build stability
   reactStrictMode: true,
   swcMinify: true,

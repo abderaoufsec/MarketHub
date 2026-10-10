@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -6,6 +8,8 @@ from .models import Transaction, PlatformCommissionLedger
 from .serializers import TransactionSerializer, PlatformCommissionLedgerSerializer
 from .services import process_simulated_payment, process_refund
 from apps.orders.models import Order
+
+logger = logging.getLogger(__name__)
 
 
 class TransactionListView(generics.ListAPIView):
@@ -111,9 +115,11 @@ def simulate_payment(request):
             {'error': 'Order not found'},
             status=status.HTTP_404_NOT_FOUND
         )
-    except Exception as e:
+    except Exception:
+        # Never expose internal error details to the client; log them instead.
+        logger.exception('Unexpected error while handling payment request for order %s', order_id)
         return Response(
-            {'error': f'An error occurred: {str(e)}'},
+            {'error': 'An unexpected error occurred while processing the payment.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -177,9 +183,11 @@ def process_payment_refund(request, order_id):
             {'error': 'Order not found'},
             status=status.HTTP_404_NOT_FOUND
         )
-    except Exception as e:
+    except Exception:
+        # Never expose internal error details to the client; log them instead.
+        logger.exception('Unexpected error while handling payment request for order %s', order_id)
         return Response(
-            {'error': f'An error occurred: {str(e)}'},
+            {'error': 'An unexpected error occurred while processing the payment.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 

@@ -100,20 +100,20 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 
 ---
 
-## Phase 2 — Environment, configuration & locale defaults
+## Phase 2 — Environment, configuration & locale defaults ✅
 **Goal:** env files drive configuration; defaults are safe; the project is Algeria-ready at config level.
 
-- [ ] Load env files at startup (`django-environ` or `python-decouple`). README currently admits this is missing.
-- [ ] Production fail-fast: require `SECRET_KEY`, DB credentials; `DEBUG` defaults to `False`; **remove** the `'12345'` and `django-insecure-…` defaults.
-- [ ] Env-driven `EMAIL_BACKEND` (currently hardcoded to console).
-- [ ] Remove duplicate `AUTH_USER_MODEL`.
-- [ ] Remove the non-functional `AUTH_COOKIE*` keys from `SIMPLE_JWT` (or implement cookie auth in Phase 7).
-- [ ] `TIME_ZONE='Africa/Algiers'`, `LANGUAGE_CODE='fr'`, `LANGUAGES=[ar, fr, en]`, `LOCALE_PATHS`, `USE_L10N`.
-- [ ] Add `LOGGING` config; stop leaking `str(e)` in `payments/views.py`.
-- [ ] Add a `MAX_PRODUCTS_PER_SELLER` replacement: plan-based quotas (stub now, real in Phase 21).
-- [ ] Frontend: validate `NEXT_PUBLIC_*` at boot; drop the localhost fallback in `next.config.js`.
+- [x] Load env files at startup (`django-environ` or `python-decouple`). README currently admits this is missing. — *`python-decouple` (already a dependency): process env → `.env.local` → `.env`*
+- [x] Production fail-fast: require `SECRET_KEY`, DB credentials; `DEBUG` defaults to `False`; **remove** the `'12345'` and `django-insecure-…` defaults. — *raises `ImproperlyConfigured` with an actionable message*
+- [x] Env-driven `EMAIL_BACKEND` (currently hardcoded to console).
+- [x] Remove duplicate `AUTH_USER_MODEL`.
+- [x] Remove the non-functional `AUTH_COOKIE*` keys from `SIMPLE_JWT` (or implement cookie auth in Phase 7).
+- [x] `TIME_ZONE='Africa/Algiers'`, `LANGUAGE_CODE='fr'`, `LANGUAGES=[ar, fr, en]`, `LOCALE_PATHS`, `USE_L10N`. — *`USE_L10N` was removed in Django 5.0; localized formatting is always on, so it is intentionally not set*
+- [x] Add `LOGGING` config; stop leaking `str(e)` in `payments/views.py`.
+- [x] Add a `MAX_PRODUCTS_PER_SELLER` replacement: plan-based quotas (stub now, real in Phase 21). — *`apps/users/plans.py` (`get_plan` / `get_product_quota` / `can_create_product`)*
+- [x] Frontend: validate `NEXT_PUBLIC_*` at boot; drop the localhost fallback in `next.config.js`. — *`src/lib/env.js`, imported by `app/layout.js` and `lib/api.js`*
 
-**Done when:** `.env.example` is complete and documented; the app refuses to start in production with missing secrets.
+**Done when:** `.env.example` is complete and documented; the app refuses to start in production with missing secrets. ✅ **Completed 2026-10-10** — `backend/.env.example` documents every variable; fail-fast verified for a missing/placeholder `DJANGO_SECRET_KEY` and an empty `DB_PASSWORD`.
 
 ---
 
@@ -567,4 +567,4 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 
 **Parallelizable once Phase 5 is done:** (6, 7), (11, 12), (14, 15), (17, 22), (23, 24).
 **Do not start before Phase 6:** anything touching orders/payments/inventory (19, 20, 21).
-**Current status:** Phase 0 ✅ · Phase 1 ✅ · everything else open · backend `0 tests`, frontend `no test runner`. Phases 3–5 remain the highest-leverage starting point.
+**Current status:** Phases 0–2 ✅ · everything else open · backend `0 tests`, frontend `no test runner`. Phases 3–5 remain the highest-leverage starting point.

@@ -115,7 +115,7 @@ API is now at <http://localhost:8000> — root routes:
 | `/api/orders/` | orders — cart, checkout, order history |
 | `/api/payments/` | payments — transactions, refunds, commissions |
 
-> **Environment variables:** `backend/core/settings.py` currently reads configuration from **process environment variables** (`os.environ`), *not* from `.env` files. Export the variables yourself, or run them inline, until the env-file loader lands in Phase 2.
+> **Environment variables:** `backend/core/settings.py` reads configuration with **python-decouple**, in this order: real process environment variables → `backend/.env.local` → `backend/.env`. Copy `.env.example` to `.env.local` (see the table in `.env.example` for every variable). With `DEBUG=False` the app refuses to start until `DJANGO_SECRET_KEY` and `DB_PASSWORD` hold real values.
 
 ### 3. Frontend
 

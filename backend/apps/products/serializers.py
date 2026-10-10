@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Product, ProductAttribute, ProductImage, ProductReview, Wishlist
 from apps.stores.serializers import StoreSerializer
+from apps.users.plans import get_product_quota
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -180,11 +181,11 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         if not hasattr(user, 'store'):
             raise serializers.ValidationError("You must have a store to create products")
         
-        # Check product limit
-        from django.conf import settings
-        if user.store.products.count() >= settings.MAX_PRODUCTS_PER_SELLER:
+        # Plan-based listing quota (free plan now; real plans in Phase 21)
+        quota = get_product_quota(user)
+        if quota is not None and user.store.products.count() >= quota:
             raise serializers.ValidationError(
-                f"You have reached the maximum limit of {settings.MAX_PRODUCTS_PER_SELLER} products"
+                f"You have reached the maximum limit of {quota} products for your plan"
             )
         
         validated_data['store'] = user.store

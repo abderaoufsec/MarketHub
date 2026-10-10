@@ -4,11 +4,13 @@ import { AuthProvider } from "../context/AuthContext";
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import ToastProvider from "../components/common/Toaster";
+// Validates NEXT_PUBLIC_* configuration at boot (fails fast if it is missing).
+import { SITE_NAME } from "../lib/env";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "MarketHub - Your Online Marketplace",
+  title: `${SITE_NAME} - Your Online Marketplace`,
   description:
     "Connect sellers and buyers through a simple, secure online marketplace",
 };

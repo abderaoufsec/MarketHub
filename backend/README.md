@@ -19,16 +19,28 @@ pip install -r requirements.txt
 ```
 
 ### 3. Environment Configuration
-Copy `.env.example` to `.env` and configure your settings:
+
+Copy the example file and edit the values:
+
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Update the following in your `.env` file:
-- `SECRET_KEY`: Generate a new secret key
-- Database credentials (DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
+Update the following in `.env.local`:
+- `DJANGO_SECRET_KEY`: generate one —
+  `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
+- Database credentials (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`)
 - Email settings for verification emails
-- CORS_ALLOWED_ORIGINS (your frontend URL)
+- `CORS_ALLOWED_ORIGINS` (your frontend URL)
+
+Configuration is read by `core/settings.py` with **python-decouple**, in this order:
+
+1. real process environment variables (highest priority)
+2. `backend/.env.local` (personal overrides, git-ignored)
+3. `backend/.env` (shared defaults, git-ignored)
+
+With `DEBUG=False` the project **refuses to start** until `DJANGO_SECRET_KEY` (≥ 32 chars,
+not a placeholder) and `DB_PASSWORD` are set.
 
 ### 4. Database Setup
 
