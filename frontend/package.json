@@ -15,7 +15,7 @@
     "format:check": "prettier --check \"src/**/*.{js,jsx,css,json}\""
   },
   "dependencies": {
-    "axios": "^1.7.0",
+    "axios": "^1.20.0",
     "framer-motion": "^12.25.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.395.0",
