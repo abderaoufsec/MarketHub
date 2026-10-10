@@ -102,11 +102,9 @@ def simulate_payment(request):
                 status=status.HTTP_200_OK
             )
         else:
+            logger.error('Simulated payment failed for order %s: %s', order_id, result.get('error'))
             return Response(
-                {
-                    'error': 'Payment processing failed',
-                    'details': result.get('error')
-                },
+                {'error': 'Payment processing failed. Please try again.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
     
@@ -170,11 +168,9 @@ def process_payment_refund(request, order_id):
                 status=status.HTTP_200_OK
             )
         else:
+            logger.error('Refund failed for order %s: %s', order_id, result.get('error'))
             return Response(
-                {
-                    'error': 'Refund processing failed',
-                    'details': result.get('error')
-                },
+                {'error': 'Refund processing failed. Please contact support.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
     

@@ -14,11 +14,11 @@ MarketHub is **under active development**. The core commerce flows work end-to-e
 |---|---|
 | Backend | 6 apps · 51 API routes · migrations in sync |
 | Frontend | 19 pages (Next.js App Router) |
-| Tests | ⚠️ None yet — see [docs/todo.md](docs/todo.md) Phases 3–4 |
+| Tests | Backend: **158 passing** (11 strict xfails pinning known defects) · Frontend: ⚠️ none yet — Phase 4 |
 | CI | ⚠️ Not yet configured — Phase 5 |
 | API docs | ⚠️ Not yet generated — Phase 9 |
 
-The full 20-phase plan to close these gaps lives in **[docs/todo.md](docs/todo.md)**.
+The full 29-phase plan to close these gaps lives in **[docs/todo.md](docs/todo.md)**.
 
 ---
 
@@ -139,12 +139,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api
 # Backend — system checks
 cd backend && python manage.py check
 
-# Backend — tests (none exist yet; expect "NO TESTS RAN")
-python manage.py test
+# Backend — tests (pytest-django; creates a test_<DB_NAME> Postgres database)
+python -m pytest
 
 # Frontend
 cd ../frontend && npm run lint   # not yet configured; see Phase 4
 ```
+
+> The backend suite pins 11 known defects as `xfail(strict=True)` (see [docs/todo.md](docs/todo.md) §0.3): they are expected to fail until Phase 6 fixes them, and the suite turns red the moment a fix lands so the marker gets removed.
 
 ---
 
@@ -172,27 +174,29 @@ Payments are **simulated** — there is no live payment gateway. `POST /api/paym
 
 Tracked with concrete file references in [docs/todo.md](docs/todo.md):
 
-- **No automated tests** for either backend or frontend.
+- **11 known defects pinned by strict xfails** in the backend suite — fixed in Phases 6–8, 17 (see [docs/todo.md](docs/todo.md) §0.3).
 - **Transactional bugs in checkout** — `return` inside `transaction.atomic()` can commit partial state (Phase 6).
 - **Inventory oversell race** — no `select_for_update()` / `F()` expressions (Phase 6).
 - **`is_seller` is writable** via profile `PUT`, allowing privilege escalation (Phase 7).
 - **Duplicate email-verification flows**, and no frontend verification page (Phase 8).
 - **Product card images don't render** — serializer/field mismatch (Phase 12).
-- **No Docker, CI, or deploy configuration** (Phases 5 and 19–20).
+- **No frontend tests, Docker, CI, or deploy configuration** (Phases 4, 5, 19–20).
 
 ---
 
-## Contribing to the roadmap
+## Contributing to the roadmap
 
 Phases in [docs/todo.md](docs/todo.md) are ordered by dependency:
 
 | Wave | Phases |
 |---|---|
+| Strategy | 0 |
 | Foundation | 1–5 |
 | Correctness | 6–10 |
-| Capability | 11–15 |
-| Polish | 16–18 |
-| Ship | 19–20 |
+| Marketplace core | 11–16 |
+| Differentiate | 17–22 |
+| Polish & grow | 23–26 |
+| Ship | 27–29 |
 
 ---
 

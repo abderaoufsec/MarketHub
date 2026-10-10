@@ -26,10 +26,10 @@ PLAN_CHOICES = (
     (BUSINESS, 'Business'),
 )
 
-# Product/listing quota per plan. The free value is env-tunable so operators
-# can change it without a deploy (MAX_PRODUCTS_PER_SELLER).
+# Listing quota per plan. ``None`` means unlimited. The free value comes from
+# settings (env-tunable) and is read on every call, so operators can change it
+# without a deploy.
 PLAN_PRODUCT_QUOTAS = {
-    FREE: settings.MAX_PRODUCTS_PER_SELLER,
     PRO: 500,
     BUSINESS: None,  # unlimited
 }
@@ -49,9 +49,10 @@ def get_plan(user) -> str:
 
 def get_product_quota(user) -> Optional[int]:
     """Max number of products the user may create, or ``None`` for unlimited."""
-    if get_plan(user) not in PLAN_PRODUCT_QUOTAS:
+    plan = get_plan(user)
+    if plan == FREE:
         return settings.MAX_PRODUCTS_PER_SELLER
-    return PLAN_PRODUCT_QUOTAS[get_plan(user)]
+    return PLAN_PRODUCT_QUOTAS.get(plan, settings.MAX_PRODUCTS_PER_SELLER)
 
 
 def can_create_product(user, current_count: int) -> bool:

@@ -53,6 +53,8 @@
 5. `settings.py` declares `AUTH_COOKIE*` keys under `SIMPLE_JWT`. These are **not SimpleJWT options** (no cookie auth is built in), so they do nothing and give a false sense of HttpOnly security.
 6. `settings.py` ends with a duplicate `AUTH_USER_MODEL` (already tracked), plus `DB_PASSWORD` defaults to `'12345'` and `DEBUG` defaults to `True`.
 7. `User` has no unique/validated `phone_number`, which is the *primary identity* in the Algerian market.
+8. `products/views.py` `SellerProductCreateView.perform_create()` raises `permissions.PermissionDenied`, but `rest_framework.permissions` has no such attribute (it lives in `rest_framework.exceptions`) → **AttributeError → HTTP 500** instead of 403 for both "not a seller" and "seller without a store" (found while writing the Phase 3 suite; `strict` xfail tests in `apps/products/tests/test_products.py`).
+9. `ProductReviewCreateSerializer.validate()` rejects *any* review from a user who already reviewed the product, so an author can **never edit their own review** (found while writing the Phase 3 suite; strict xfail test `test_owner_can_update_own_review`, fix scheduled with the reviews work in Phase 17).
 
 ### 0.4 North-star metrics (instrument these early; see Phase 25)
 | Metric | Why |
@@ -117,17 +119,17 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 
 ---
 
-## Phase 3 — Test infrastructure (backend)
+## Phase 3 — Test infrastructure (backend) ✅
 **Goal:** a real test suite that gates changes.
 
-- [ ] `pytest`, `pytest-django`, `factory_boy`, `coverage`, `pytest-xdist`.
-- [ ] `pytest.ini` + `conftest.py` (DB, API client, auth, seller/buyer/store factories).
-- [ ] Tests run against a dedicated Postgres test DB (**not SQLite**: you will rely on Postgres FTS, `select_for_update`, and trigram in later phases).
-- [ ] Per-app `tests/` packages.
-- [ ] Failing-first tests for every defect in the original list **and** §0.3 (rollback, oversell, double-pay, privilege escalation, 500s on bad input).
-- [ ] Coverage floor 60%, ratchet to 80% on `orders`, `payments`, `inventory`.
+- [x] `pytest`, `pytest-django`, `factory_boy`, `coverage`, `pytest-xdist`. — *pytest 9.1.1, pytest-django 4.14, factory-boy 3.3.3, coverage 7.16*
+- [x] `pytest.ini` + `conftest.py` (DB, API client, auth, seller/buyer/store factories). — *independent `buyer_client`/`seller_client` instances (sharing one `APIClient` made the last `force_authenticate` win); 16 factories in `tests/factories.py`*
+- [x] Tests run against a dedicated Postgres test DB (**not SQLite**: you will rely on Postgres FTS, `select_for_update`, and trigram in later phases). — *pytest-django creates `test_markethub`*
+- [x] Per-app `tests/` packages. — *users, stores, products, inventory, orders, payments*
+- [x] Failing-first tests for every defect in the original list **and** §0.3 (rollback, oversell, double-pay, privilege escalation, 500s on bad input). — *11 `xfail(strict=True)` markers; XPASS turns the suite red the moment a fix lands, so the markers get deleted with the fix in Phase 6*
+- [x] Coverage floor 60%, ratchet to 80% on `orders`, `payments`, `inventory`. — *`--cov-fail-under=60` in `pytest.ini`; the 80% ratchet is a separate `coverage report --include=...` step in CI (Phase 5). Actual: 87.8% overall, 96.6% on the three target apps*
 
-**Done when:** `pytest` is green with real assertions; coverage report is generated.
+**Done when:** `pytest` is green with real assertions; coverage report is generated. ✅ **Completed 2026-10-10** — 158 passed, 11 xfailed (all intended), ~3 min.
 
 ---
 
@@ -567,4 +569,4 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 
 **Parallelizable once Phase 5 is done:** (6, 7), (11, 12), (14, 15), (17, 22), (23, 24).
 **Do not start before Phase 6:** anything touching orders/payments/inventory (19, 20, 21).
-**Current status:** Phases 0–2 ✅ · everything else open · backend `0 tests`, frontend `no test runner`. Phases 3–5 remain the highest-leverage starting point.
+**Current status:** Phases 0–3 ✅ · everything else open · backend `158 tests green (11 strict xfails)`, frontend `no test runner`. Phases 4–5 remain the highest-leverage starting point.

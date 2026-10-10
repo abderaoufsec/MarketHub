@@ -1,0 +1,20 @@
+# Coverage configuration for the backend test suite (Phase 3).
+[run]
+branch = False
+parallel = False
+omit =
+    */migrations/*
+    */tests/*
+    */test_*.py
+    */conftest.py
+
+[report]
+precision = 1
+skip_covered = False
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    pragma: no branch
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    if __name__ == .__main__.:
