@@ -1,61 +1,63 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useAuth } from "../../context/AuthContext";
-import { Mail, Lock, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import toast from "react-hot-toast";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useAuth } from '../../context/AuthContext'
+import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import toast from 'react-hot-toast'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
+  const router = useRouter()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+    email: '',
+    password: '',
+  })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password)
 
       if (result.success) {
-        toast.success(`Welcome back, ${result.user.first_name || result.user.email}!`);
+        toast.success(
+          `Welcome back, ${result.user.first_name || result.user.email}!`
+        )
         // Redirect based on user type
         setTimeout(() => {
           if (result.user.is_seller) {
-            router.push("/seller/dashboard");
+            router.push('/seller/dashboard')
           } else {
-            router.push("/products");
+            router.push('/products')
           }
-        }, 500);
+        }, 500)
       } else {
-        setError(result.error);
-        toast.error(result.error || "Login failed");
+        setError(result.error)
+        toast.error(result.error || 'Login failed')
       }
     } catch (err) {
-      const errorMessage = "An unexpected error occurred";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const errorMessage = 'An unexpected error occurred'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
-    });
-  };
+    })
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -74,7 +76,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
+            Or{' '}
             <Link
               href="/register"
               className="font-medium text-primary hover:text-secondary transition-colors"
@@ -209,12 +211,12 @@ export default function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                "Sign in"
+                'Sign in'
               )}
             </motion.button>
           </motion.div>
         </motion.form>
       </motion.div>
     </div>
-  );
+  )
 }

@@ -47,4 +47,3 @@ export default function SkeletonLoader({ variant = 'default', count = 1 }) {
     </div>
   )
 }
-

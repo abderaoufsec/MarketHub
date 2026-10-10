@@ -1,104 +1,106 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { wishlistAPI, cartAPI } from "../../lib/api";
-import { useAuth } from "../../context/AuthContext";
-import { Heart, ShoppingCart, Trash2, Package } from "lucide-react";
-import toast from "react-hot-toast";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { wishlistAPI, cartAPI } from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
+import { Heart, ShoppingCart, Trash2, Package } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function WishlistPage() {
-  const router = useRouter();
-  const { isAuthenticated } = useAuth();
-  const [wishlist, setWishlist] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [removingIds, setRemovingIds] = useState(new Set());
-  const [addingToCartIds, setAddingToCartIds] = useState(new Set());
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
+  const [wishlist, setWishlist] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [removingIds, setRemovingIds] = useState(new Set())
+  const [addingToCartIds, setAddingToCartIds] = useState(new Set())
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/login");
-      return;
+      router.push('/login')
+      return
     }
-    fetchWishlist();
-  }, [isAuthenticated]);
+    fetchWishlist()
+  }, [isAuthenticated])
 
   const fetchWishlist = async () => {
     try {
-      const response = await wishlistAPI.list();
+      const response = await wishlistAPI.list()
       // Handle both array response and object with results property
-      const wishlistData = Array.isArray(response.data) 
-        ? response.data 
-        : (response.data?.results || response.data?.items || []);
-      setWishlist(wishlistData);
+      const wishlistData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.results || response.data?.items || []
+      setWishlist(wishlistData)
     } catch (error) {
-      console.error("Error fetching wishlist:", error);
-      toast.error("Failed to load wishlist");
-      setWishlist([]); // Set empty array on error
+      console.error('Error fetching wishlist:', error)
+      toast.error('Failed to load wishlist')
+      setWishlist([]) // Set empty array on error
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleRemove = async (item) => {
-    setRemovingIds(prev => new Set([...prev, item.id]));
+    setRemovingIds((prev) => new Set([...prev, item.id]))
     try {
-      await wishlistAPI.remove(item.product);
-      setWishlist(wishlist.filter((i) => i.id !== item.id));
-      toast.success("Removed from wishlist");
+      await wishlistAPI.remove(item.product)
+      setWishlist(wishlist.filter((i) => i.id !== item.id))
+      toast.success('Removed from wishlist')
     } catch (error) {
-      console.error("Error removing from wishlist:", error);
-      toast.error("Failed to remove item");
+      console.error('Error removing from wishlist:', error)
+      toast.error('Failed to remove item')
     } finally {
-      setRemovingIds(prev => {
-        const next = new Set(prev);
-        next.delete(item.id);
-        return next;
-      });
+      setRemovingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
     }
-  };
+  }
 
   const handleAddToCart = async (item) => {
     if (!item.product_available) {
-      toast.error("This product is currently unavailable");
-      return;
+      toast.error('This product is currently unavailable')
+      return
     }
 
-    setAddingToCartIds(prev => new Set([...prev, item.id]));
+    setAddingToCartIds((prev) => new Set([...prev, item.id]))
     try {
       await cartAPI.add({
         product_id: item.product,
         quantity: 1,
         selected_attributes: {},
-      });
-      toast.success("Added to cart!");
+      })
+      toast.success('Added to cart!')
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      const errorMsg = error.response?.data?.error || "Failed to add to cart";
-      toast.error(errorMsg);
+      console.error('Error adding to cart:', error)
+      const errorMsg = error.response?.data?.error || 'Failed to add to cart'
+      toast.error(errorMsg)
     } finally {
-      setAddingToCartIds(prev => {
-        const next = new Set(prev);
-        next.delete(item.id);
-        return next;
-      });
+      setAddingToCartIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
     }
-  };
+  }
 
   const handleClearWishlist = async () => {
-    if (!window.confirm("Are you sure you want to clear your entire wishlist?")) {
-      return;
+    if (
+      !window.confirm('Are you sure you want to clear your entire wishlist?')
+    ) {
+      return
     }
 
     try {
-      await wishlistAPI.clear();
-      setWishlist([]);
-      toast.success("Wishlist cleared");
+      await wishlistAPI.clear()
+      setWishlist([])
+      toast.success('Wishlist cleared')
     } catch (error) {
-      console.error("Error clearing wishlist:", error);
-      toast.error("Failed to clear wishlist");
+      console.error('Error clearing wishlist:', error)
+      toast.error('Failed to clear wishlist')
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -112,7 +114,7 @@ export default function WishlistPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -124,7 +126,7 @@ export default function WishlistPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Wishlist</h1>
             <p className="text-gray-600">
-              {wishlist.length} {wishlist.length === 1 ? "item" : "items"}
+              {wishlist.length} {wishlist.length === 1 ? 'item' : 'items'}
             </p>
           </div>
         </div>
@@ -147,10 +149,11 @@ export default function WishlistPage() {
             Your wishlist is empty
           </h2>
           <p className="text-gray-600 mb-6">
-            Add items you love to your wishlist. Review them anytime and easily move them to your cart.
+            Add items you love to your wishlist. Review them anytime and easily
+            move them to your cart.
           </p>
           <button
-            onClick={() => router.push("/products")}
+            onClick={() => router.push('/products')}
             className="btn-primary"
           >
             Start Shopping
@@ -166,7 +169,7 @@ export default function WishlistPage() {
               {/* Product Image */}
               <div className="relative group">
                 <img
-                  src={item.product_image || "/placeholder-product.jpg"}
+                  src={item.product_image || '/placeholder-product.jpg'}
                   alt={item.product_name}
                   className="w-full h-64 object-cover cursor-pointer"
                   onClick={() => router.push(`/products/${item.product}`)}
@@ -237,5 +240,5 @@ export default function WishlistPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

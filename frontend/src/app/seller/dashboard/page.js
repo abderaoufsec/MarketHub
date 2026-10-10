@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../context/AuthContext";
-import { storesAPI, productsAPI, ordersAPI } from "../../../lib/api";
-import Link from "next/link";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../../context/AuthContext'
+import { storesAPI, productsAPI, ordersAPI } from '../../../lib/api'
+import Link from 'next/link'
 import {
   Package,
   ShoppingBag,
@@ -27,95 +27,104 @@ import {
   Search,
   Filter,
   BarChart3,
-} from "lucide-react";
+} from 'lucide-react'
 
 export default function SellerDashboard() {
-  const router = useRouter();
-  const { isAuthenticated, user, isSeller, loading: authLoading } = useAuth();
-  const [store, setStore] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [dateRange, setDateRange] = useState('7d');
+  const router = useRouter()
+  const { isAuthenticated, user, isSeller, loading: authLoading } = useAuth()
+  const [store, setStore] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [products, setProducts] = useState([])
+  const [recentOrders, setRecentOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [dateRange, setDateRange] = useState('7d')
 
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
-        router.push("/login");
+        router.push('/login')
       } else if (!isSeller) {
-        router.push("/");
+        router.push('/')
       }
     }
-  }, [authLoading, isAuthenticated, isSeller, router]);
+  }, [authLoading, isAuthenticated, isSeller, router])
 
   useEffect(() => {
     if (isAuthenticated && isSeller) {
-      fetchDashboardData();
+      fetchDashboardData()
     }
-  }, [isAuthenticated, isSeller]);
+  }, [isAuthenticated, isSeller])
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
       // Fetch store info
       try {
-        const storeResponse = await storesAPI.getMyStore();
-        setStore(storeResponse.data);
+        const storeResponse = await storesAPI.getMyStore()
+        setStore(storeResponse.data)
 
         // Fetch store stats
-        const statsResponse = await storesAPI.getStats();
-        setStats(statsResponse.data);
+        const statsResponse = await storesAPI.getStats()
+        setStats(statsResponse.data)
       } catch (error) {
         if (error.response?.status === 404) {
-          setStore(null);
+          setStore(null)
         }
       }
 
       // Fetch products (seller's own products)
       try {
-        const productsResponse = await productsAPI.sellerList();
-        const allProducts = productsResponse.data.results || productsResponse.data || [];
-        setProducts(allProducts.slice(0, 5));
+        const productsResponse = await productsAPI.sellerList()
+        const allProducts =
+          productsResponse.data.results || productsResponse.data || []
+        setProducts(allProducts.slice(0, 5))
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error('Error fetching products:', error)
       }
 
       // Fetch recent orders (seller orders)
       try {
-        const ordersResponse = await ordersAPI.sellerList();
-        const orders = ordersResponse.data.results || ordersResponse.data || [];
-        setRecentOrders(orders.slice(0, 5));
+        const ordersResponse = await ordersAPI.sellerList()
+        const orders = ordersResponse.data.results || ordersResponse.data || []
+        setRecentOrders(orders.slice(0, 5))
       } catch (error) {
-        console.error("Error fetching orders:", error);
+        console.error('Error fetching orders:', error)
       }
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error('Error fetching dashboard data:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const StatCard = ({ icon: Icon, title, value, change, color = "blue" }) => {
-    const isPositive = change >= 0;
+  const StatCard = ({ icon: Icon, title, value, change, color = 'blue' }) => {
+    const isPositive = change >= 0
     const colorClasses = {
-      blue: "from-blue-500 to-blue-600",
-      green: "from-green-500 to-green-600",
-      purple: "from-purple-500 to-purple-600",
-      orange: "from-orange-500 to-orange-600"
-    };
+      blue: 'from-blue-500 to-blue-600',
+      green: 'from-green-500 to-green-600',
+      purple: 'from-purple-500 to-purple-600',
+      orange: 'from-orange-500 to-orange-600',
+    }
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[color]} text-white`}>
+          <div
+            className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[color]} text-white`}
+          >
             <Icon className="h-6 w-6" />
           </div>
           {change !== undefined && (
-            <div className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-              {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+            <div
+              className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}
+            >
+              {isPositive ? (
+                <ArrowUpRight className="h-4 w-4" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4" />
+              )}
               {Math.abs(change).toFixed(1)}%
             </div>
           )}
@@ -124,8 +133,8 @@ export default function SellerDashboard() {
         <p className="text-2xl font-bold text-gray-900">{value}</p>
         <p className="text-xs text-gray-500 mt-1">vs previous period</p>
       </div>
-    );
-  };
+    )
+  }
 
   const StatusBadge = ({ status }) => {
     const styles = {
@@ -134,21 +143,23 @@ export default function SellerDashboard() {
       COMPLETED: 'bg-green-100 text-green-800 border-green-200',
       SHIPPED: 'bg-purple-100 text-purple-800 border-purple-200',
       CANCELLED: 'bg-red-100 text-red-800 border-red-200',
-    };
-    
+    }
+
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[status] || styles.PENDING}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[status] || styles.PENDING}`}
+      >
         {status}
       </span>
-    );
-  };
+    )
+  }
 
   if (authLoading || !isAuthenticated || !isSeller) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   // If seller doesn't have a store yet
@@ -170,31 +181,31 @@ export default function SellerDashboard() {
           </Link>
         </div>
       </div>
-    );
+    )
   }
 
   // Calculate some dynamic stats
-  const lowStockCount = stats?.low_stock_products || 0;
-  const pendingOrdersCount = stats?.pending_orders || 0;
-  const totalRevenue = stats?.total_revenue || 0;
-  const avgOrderValue = stats?.average_order_value || 0;
+  const lowStockCount = stats?.low_stock_products || 0
+  const pendingOrdersCount = stats?.pending_orders || 0
+  const totalRevenue = stats?.total_revenue || 0
+  const avgOrderValue = stats?.average_order_value || 0
 
-  const alerts = [];
+  const alerts = []
   if (lowStockCount > 0) {
-    alerts.push({ 
-      type: 'warning', 
-      message: `${lowStockCount} product${lowStockCount > 1 ? 's are' : ' is'} running low on stock`, 
+    alerts.push({
+      type: 'warning',
+      message: `${lowStockCount} product${lowStockCount > 1 ? 's are' : ' is'} running low on stock`,
       action: 'View Items',
-      link: '/seller/products'
-    });
+      link: '/seller/products',
+    })
   }
   if (pendingOrdersCount > 0) {
-    alerts.push({ 
-      type: 'info', 
-      message: `${pendingOrdersCount} order${pendingOrdersCount > 1 ? 's' : ''} pending fulfillment`, 
+    alerts.push({
+      type: 'info',
+      message: `${pendingOrdersCount} order${pendingOrdersCount > 1 ? 's' : ''} pending fulfillment`,
       action: 'Process Orders',
-      link: '/seller/orders'
-    });
+      link: '/seller/orders',
+    })
   }
 
   return (
@@ -217,12 +228,14 @@ export default function SellerDashboard() {
                   </div>
                 )}
                 <div>
-                  <h1 className="text-lg font-semibold text-gray-900">{store?.store_name}</h1>
+                  <h1 className="text-lg font-semibold text-gray-900">
+                    {store?.store_name}
+                  </h1>
                   <p className="text-xs text-gray-500">Seller Dashboard</p>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button className="p-2 hover:bg-gray-100 rounded-lg relative">
                 <Bell className="h-5 w-5 text-gray-600" />
@@ -230,7 +243,10 @@ export default function SellerDashboard() {
                   <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
                 )}
               </button>
-              <Link href="/seller/store/setup" className="p-2 hover:bg-gray-100 rounded-lg">
+              <Link
+                href="/seller/store/setup"
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
                 <Settings className="h-5 w-5 text-gray-600" />
               </Link>
               <Link
@@ -303,19 +319,23 @@ export default function SellerDashboard() {
                   alert.type === 'warning'
                     ? 'bg-yellow-50 border-yellow-200'
                     : alert.type === 'info'
-                    ? 'bg-blue-50 border-blue-200'
-                    : 'bg-green-50 border-green-200'
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'bg-green-50 border-green-200'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <AlertCircle className={`h-5 w-5 ${
-                    alert.type === 'warning'
-                      ? 'text-yellow-600'
-                      : alert.type === 'info'
-                      ? 'text-blue-600'
-                      : 'text-green-600'
-                  }`} />
-                  <span className="text-sm font-medium text-gray-900">{alert.message}</span>
+                  <AlertCircle
+                    className={`h-5 w-5 ${
+                      alert.type === 'warning'
+                        ? 'text-yellow-600'
+                        : alert.type === 'info'
+                          ? 'text-blue-600'
+                          : 'text-green-600'
+                    }`}
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    {alert.message}
+                  </span>
                 </div>
                 <Link
                   href={alert.link}
@@ -381,8 +401,12 @@ export default function SellerDashboard() {
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
-                      <p className="text-sm text-gray-500 mt-1">{pendingOrdersCount} pending fulfillment</p>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        Recent Orders
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {pendingOrdersCount} pending fulfillment
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button className="p-2 hover:bg-gray-100 rounded-lg">
@@ -400,12 +424,15 @@ export default function SellerDashboard() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-6">
                   {recentOrders.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                       <ShoppingBag className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                      <p>No orders yet. Orders will appear here when customers purchase your products.</p>
+                      <p>
+                        No orders yet. Orders will appear here when customers
+                        purchase your products.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -420,19 +447,25 @@ export default function SellerDashboard() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <p className="font-medium text-gray-900">#{order.id}</p>
+                                <p className="font-medium text-gray-900">
+                                  #{order.id}
+                                </p>
                                 <StatusBadge status={order.order_status} />
                               </div>
                               <div className="flex items-center gap-3 text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  {new Date(order.order_date).toLocaleDateString()}
+                                  {new Date(
+                                    order.order_date
+                                  ).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-gray-900">${parseFloat(order.total_amount).toFixed(2)}</p>
+                            <p className="font-semibold text-gray-900">
+                              ${parseFloat(order.total_amount).toFixed(2)}
+                            </p>
                             <Link
                               href={`/seller/orders/${order.id}`}
                               className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-1"
@@ -450,10 +483,14 @@ export default function SellerDashboard() {
               {/* Recent Products */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Products</h2>
-                  <p className="text-sm text-gray-500 mt-1">Your latest listings</p>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Recent Products
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Your latest listings
+                  </p>
                 </div>
-                
+
                 <div className="p-6">
                   {products.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
@@ -470,20 +507,31 @@ export default function SellerDashboard() {
                   ) : (
                     <div className="space-y-4">
                       {products.map((product, index) => (
-                        <div key={product.id} className="flex items-start gap-3">
+                        <div
+                          key={product.id}
+                          className="flex items-start gap-3"
+                        >
                           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-sm flex-shrink-0">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {product.name}
+                            </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs font-semibold text-gray-900">${parseFloat(product.base_price).toFixed(2)}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                product.is_available
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-red-100 text-red-700'
-                              }`}>
-                                {product.is_available ? 'Available' : 'Unavailable'}
+                              <span className="text-xs font-semibold text-gray-900">
+                                ${parseFloat(product.base_price).toFixed(2)}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  product.is_available
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}
+                              >
+                                {product.is_available
+                                  ? 'Available'
+                                  : 'Unavailable'}
                               </span>
                             </div>
                             <Link
@@ -512,27 +560,35 @@ export default function SellerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-gray-600">Store Performance</h3>
+                  <h3 className="text-sm font-medium text-gray-600">
+                    Store Performance
+                  </h3>
                   <BarChart3 className="h-5 w-5 text-gray-400" />
                 </div>
                 <p className="text-3xl font-bold text-gray-900 mb-2">
-                  {((stats?.active_products || 0) / 20 * 100).toFixed(0)}%
+                  {(((stats?.active_products || 0) / 20) * 100).toFixed(0)}%
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" 
-                      style={{ width: `${(stats?.active_products || 0) / 20 * 100}%` }}
+                    <div
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full"
+                      style={{
+                        width: `${((stats?.active_products || 0) / 20) * 100}%`,
+                      }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-600">{stats?.active_products || 0}/20</span>
+                  <span className="text-sm text-gray-600">
+                    {stats?.active_products || 0}/20
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Active products</p>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-gray-600">Store Views</h3>
+                  <h3 className="text-sm font-medium text-gray-600">
+                    Store Views
+                  </h3>
                   <Eye className="h-5 w-5 text-gray-400" />
                 </div>
                 <p className="text-3xl font-bold text-gray-900 mb-2">
@@ -540,7 +596,10 @@ export default function SellerDashboard() {
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{ width: '78%' }}></div>
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full"
+                      style={{ width: '78%' }}
+                    ></div>
                   </div>
                   <span className="text-sm text-gray-600">78%</span>
                 </div>
@@ -549,10 +608,14 @@ export default function SellerDashboard() {
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-gray-600">Stock Alerts</h3>
+                  <h3 className="text-sm font-medium text-gray-600">
+                    Stock Alerts
+                  </h3>
                   <AlertCircle className="h-5 w-5 text-yellow-500" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">{lowStockCount}</p>
+                <p className="text-3xl font-bold text-gray-900 mb-2">
+                  {lowStockCount}
+                </p>
                 <Link
                   href="/seller/products"
                   className="text-sm font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
@@ -565,5 +628,5 @@ export default function SellerDashboard() {
         )}
       </div>
     </div>
-  );
+  )
 }

@@ -1,60 +1,60 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../context/AuthContext";
-import { ordersAPI } from "../../../lib/api";
-import { ShoppingBag, Calendar, Package, DollarSign } from "lucide-react";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../../context/AuthContext'
+import { ordersAPI } from '../../../lib/api'
+import { ShoppingBag, Calendar, Package, DollarSign } from 'lucide-react'
 
 const ORDER_STATUS_OPTIONS = [
-  "PENDING",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-];
+  'PENDING',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELLED',
+]
 
 export default function SellerOrdersPage() {
-  const router = useRouter();
-  const { isAuthenticated, isSeller, loading: authLoading } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const router = useRouter()
+  const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isSeller)) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, isSeller, router]);
+  }, [authLoading, isAuthenticated, isSeller, router])
 
   useEffect(() => {
     if (isAuthenticated && isSeller) {
-      fetchOrders();
+      fetchOrders()
     }
-  }, [isAuthenticated, isSeller]);
+  }, [isAuthenticated, isSeller])
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
-      const response = await ordersAPI.sellerList();
-      setOrders(response.data.results || response.data || []);
+      setLoading(true)
+      const response = await ordersAPI.sellerList()
+      setOrders(response.data.results || response.data || [])
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error('Error fetching orders:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const filteredOrders = orders.filter(
-    (order) => filter === "all" || order.order_status === filter
-  );
+    (order) => filter === 'all' || order.order_status === filter
+  )
 
   if (authLoading || !isAuthenticated || !isSeller) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -135,15 +135,15 @@ export default function SellerOrdersPage() {
                 <div>
                   <span
                     className={`px-4 py-2 rounded-full text-sm font-medium ${
-                      order.order_status === "DELIVERED"
-                        ? "bg-green-100 text-green-800"
-                        : order.order_status === "CANCELLED"
-                        ? "bg-red-100 text-red-800"
-                        : order.order_status === "SHIPPED"
-                        ? "bg-purple-100 text-purple-800"
-                        : order.order_status === "PROCESSING"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-yellow-100 text-yellow-800"
+                      order.order_status === 'DELIVERED'
+                        ? 'bg-green-100 text-green-800'
+                        : order.order_status === 'CANCELLED'
+                          ? 'bg-red-100 text-red-800'
+                          : order.order_status === 'SHIPPED'
+                            ? 'bg-purple-100 text-purple-800'
+                            : order.order_status === 'PROCESSING'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-yellow-100 text-yellow-800'
                     }`}
                   >
                     {order.order_status}
@@ -160,7 +160,7 @@ export default function SellerOrdersPage() {
                     {order.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-gray-700">
-                          {item.product?.name || "Product"} × {item.quantity}
+                          {item.product?.name || 'Product'} × {item.quantity}
                         </span>
                         <span className="font-medium">
                           ${parseFloat(item.unit_price_at_purchase).toFixed(2)}
@@ -177,9 +177,9 @@ export default function SellerOrdersPage() {
                     Shipping Address:
                   </h4>
                   <p className="text-sm text-gray-600">
-                    {order.shipping_address.address_line1},{" "}
-                    {order.shipping_address.city},{" "}
-                    {order.shipping_address.state_province}{" "}
+                    {order.shipping_address.address_line1},{' '}
+                    {order.shipping_address.city},{' '}
+                    {order.shipping_address.state_province}{' '}
                     {order.shipping_address.postal_code}
                   </p>
                 </div>
@@ -189,5 +189,5 @@ export default function SellerOrdersPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

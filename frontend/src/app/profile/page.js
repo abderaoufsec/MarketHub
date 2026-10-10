@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../context/AuthContext";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../context/AuthContext'
 import {
   User,
   Mail,
@@ -11,74 +11,82 @@ import {
   AlertCircle,
   CheckCircle,
   Lock,
-} from "lucide-react";
+} from 'lucide-react'
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, isAuthenticated, loading: authLoading, updateProfile } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const router = useRouter()
+  const {
+    user,
+    isAuthenticated,
+    loading: authLoading,
+    updateProfile,
+  } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState(null)
   const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    phone_number: "",
-    email: "",
-  });
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    email: '',
+  })
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
     if (user) {
       setFormData({
-        first_name: user.first_name || "",
-        last_name: user.last_name || "",
-        phone_number: user.phone_number || "",
-        email: user.email || "",
-      });
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        phone_number: user.phone_number || '',
+        email: user.email || '',
+      })
     }
-  }, [user]);
+  }, [user])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     try {
-      setLoading(true);
-      setMessage(null);
-      const result = await updateProfile(formData);
+      setLoading(true)
+      setMessage(null)
+      const result = await updateProfile(formData)
       if (result.success) {
-        setMessage({ type: "success", text: "Profile updated successfully!" });
+        setMessage({ type: 'success', text: 'Profile updated successfully!' })
       } else {
         setMessage({
-          type: "error",
-          text: typeof result.error === 'string' ? result.error : result.error?.detail || "Failed to update profile",
-        });
+          type: 'error',
+          text:
+            typeof result.error === 'string'
+              ? result.error
+              : result.error?.detail || 'Failed to update profile',
+        })
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error('Error updating profile:', error)
       setMessage({
-        type: "error",
-        text: error.response?.data?.detail || "Failed to update profile",
-      });
+        type: 'error',
+        text: error.response?.data?.detail || 'Failed to update profile',
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -96,7 +104,7 @@ export default function ProfilePage() {
               <div className="bg-primary text-white rounded-full h-24 w-24 mx-auto mb-4 flex items-center justify-center text-3xl font-bold">
                 {user?.first_name?.charAt(0)?.toUpperCase() ||
                   user?.email?.charAt(0)?.toUpperCase() ||
-                  "U"}
+                  'U'}
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
                 {user?.first_name && user?.last_name
@@ -137,12 +145,12 @@ export default function ProfilePage() {
             {message && (
               <div
                 className={`mb-6 p-4 rounded-lg flex items-center ${
-                  message.type === "success"
-                    ? "bg-green-50 border border-green-200 text-green-700"
-                    : "bg-red-50 border border-red-200 text-red-700"
+                  message.type === 'success'
+                    ? 'bg-green-50 border border-green-200 text-green-700'
+                    : 'bg-red-50 border border-red-200 text-red-700'
                 }`}
               >
-                {message.type === "success" ? (
+                {message.type === 'success' ? (
                   <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
                 ) : (
                   <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -236,7 +244,7 @@ export default function ProfilePage() {
                   className="btn-primary flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save className="h-5 w-5" />
-                  {loading ? "Saving..." : "Save Changes"}
+                  {loading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -275,7 +283,7 @@ export default function ProfilePage() {
             <div className="space-y-3">
               {user?.is_seller && (
                 <button
-                  onClick={() => router.push("/seller/dashboard")}
+                  onClick={() => router.push('/seller/dashboard')}
                   className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <span className="font-medium text-gray-900">
@@ -287,7 +295,7 @@ export default function ProfilePage() {
                 </button>
               )}
               <button
-                onClick={() => router.push("/orders")}
+                onClick={() => router.push('/orders')}
                 className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <span className="font-medium text-gray-900">
@@ -302,5 +310,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

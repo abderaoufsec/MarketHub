@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "../../../context/AuthContext";
-import { ordersAPI } from "../../../lib/api";
-import Link from "next/link";
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useAuth } from '../../../context/AuthContext'
+import { ordersAPI } from '../../../lib/api'
+import Link from 'next/link'
 import {
   Package,
   Calendar,
@@ -13,79 +13,79 @@ import {
   Store,
   ArrowLeft,
   CheckCircle,
-} from "lucide-react";
+} from 'lucide-react'
 
 const ORDER_STATUS = {
   PENDING: {
-    label: "Pending",
-    color: "bg-yellow-100 text-yellow-800",
-    icon: "⏳",
+    label: 'Pending',
+    color: 'bg-yellow-100 text-yellow-800',
+    icon: '⏳',
   },
   PROCESSING: {
-    label: "Processing",
-    color: "bg-blue-100 text-blue-800",
-    icon: "⚙️",
+    label: 'Processing',
+    color: 'bg-blue-100 text-blue-800',
+    icon: '⚙️',
   },
   SHIPPED: {
-    label: "Shipped",
-    color: "bg-purple-100 text-purple-800",
-    icon: "🚚",
+    label: 'Shipped',
+    color: 'bg-purple-100 text-purple-800',
+    icon: '🚚',
   },
   DELIVERED: {
-    label: "Delivered",
-    color: "bg-green-100 text-green-800",
-    icon: "✅",
+    label: 'Delivered',
+    color: 'bg-green-100 text-green-800',
+    icon: '✅',
   },
   CANCELLED: {
-    label: "Cancelled",
-    color: "bg-red-100 text-red-800",
-    icon: "❌",
+    label: 'Cancelled',
+    color: 'bg-red-100 text-red-800',
+    icon: '❌',
   },
-};
+}
 
 const PAYMENT_STATUS = {
-  PENDING: { label: "Pending", color: "text-yellow-600" },
-  SUCCESSFUL: { label: "Successful", color: "text-green-600" },
-  FAILED: { label: "Failed", color: "text-red-600" },
-};
+  PENDING: { label: 'Pending', color: 'text-yellow-600' },
+  SUCCESSFUL: { label: 'Successful', color: 'text-green-600' },
+  FAILED: { label: 'Failed', color: 'text-red-600' },
+}
 
 export default function OrderDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { isAuthenticated, loading: authLoading } = useAuth();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const params = useParams()
+  const router = useRouter()
+  const { isAuthenticated, loading: authLoading } = useAuth()
+  const [order, setOrder] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
     if (params.id && isAuthenticated) {
-      fetchOrderDetails();
+      fetchOrderDetails()
     }
-  }, [params.id, isAuthenticated]);
+  }, [params.id, isAuthenticated])
 
   const fetchOrderDetails = async () => {
     try {
-      setLoading(true);
-      const response = await ordersAPI.get(params.id);
-      setOrder(response.data);
+      setLoading(true)
+      const response = await ordersAPI.get(params.id)
+      setOrder(response.data)
     } catch (error) {
-      console.error("Error fetching order:", error);
+      console.error('Error fetching order:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (authLoading || !isAuthenticated || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   if (!order) {
@@ -99,12 +99,12 @@ export default function OrderDetailPage() {
           Back to Orders
         </Link>
       </div>
-    );
+    )
   }
 
-  const statusInfo = ORDER_STATUS[order.order_status] || ORDER_STATUS.PENDING;
+  const statusInfo = ORDER_STATUS[order.order_status] || ORDER_STATUS.PENDING
   const paymentInfo =
-    PAYMENT_STATUS[order.payment_status] || PAYMENT_STATUS.PENDING;
+    PAYMENT_STATUS[order.payment_status] || PAYMENT_STATUS.PENDING
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -127,11 +127,11 @@ export default function OrderDetailPage() {
             <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
               <Calendar className="h-4 w-4" />
               <span>
-                Placed on{" "}
-                {new Date(order.order_date).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
+                Placed on{' '}
+                {new Date(order.order_date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
                 })}
               </span>
             </div>
@@ -186,7 +186,7 @@ export default function OrderDetailPage() {
                           alt={item.product.name}
                           className="h-full w-full object-cover rounded-lg"
                           onError={(e) => {
-                            e.target.src = "/placeholder-product.jpg";
+                            e.target.src = '/placeholder-product.jpg'
                           }}
                         />
                       )}
@@ -196,7 +196,7 @@ export default function OrderDetailPage() {
                         href={`/products/${item.product?.id}`}
                         className="font-medium text-gray-900 hover:text-primary"
                       >
-                        {item.product?.name || "Product"}
+                        {item.product?.name || 'Product'}
                       </Link>
                       {item.selected_attributes &&
                         Object.keys(item.selected_attributes).length > 0 && (
@@ -240,8 +240,8 @@ export default function OrderDetailPage() {
                   <p>{order.shipping_address.address_line2}</p>
                 )}
                 <p>
-                  {order.shipping_address.city},{" "}
-                  {order.shipping_address.state_province}{" "}
+                  {order.shipping_address.city},{' '}
+                  {order.shipping_address.state_province}{' '}
                   {order.shipping_address.postal_code}
                 </p>
                 <p>{order.shipping_address.country}</p>
@@ -269,7 +269,7 @@ export default function OrderDetailPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Shipping</span>
                 <span className="text-gray-900 font-medium">
-                  {order.shipping_method || "Standard"}
+                  {order.shipping_method || 'Standard'}
                 </span>
               </div>
               <div className="pt-3 border-t border-gray-200">
@@ -292,7 +292,7 @@ export default function OrderDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900">Payment</h2>
             </div>
             <div className="flex items-center gap-2">
-              {order.payment_status === "SUCCESSFUL" && (
+              {order.payment_status === 'SUCCESSFUL' && (
                 <CheckCircle className="h-5 w-5 text-green-600" />
               )}
               <span className={`font-medium ${paymentInfo.color}`}>
@@ -307,21 +307,21 @@ export default function OrderDetailPage() {
               Order Status
             </h2>
             <div className="space-y-4">
-              {["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"].map(
+              {['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'].map(
                 (status, index) => {
                   const isCompleted =
-                    ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"].indexOf(
+                    ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'].indexOf(
                       order.order_status
-                    ) >= index;
-                  const isCurrent = order.order_status === status;
+                    ) >= index
+                  const isCurrent = order.order_status === status
 
                   return (
                     <div key={status} className="flex items-start gap-3">
                       <div
                         className={`mt-1 h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isCompleted
-                            ? "bg-primary text-white"
-                            : "bg-gray-200 text-gray-500"
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-200 text-gray-500'
                         }`}
                       >
                         {isCompleted && <CheckCircle className="h-4 w-4" />}
@@ -330,17 +330,17 @@ export default function OrderDetailPage() {
                         <p
                           className={`text-sm font-medium ${
                             isCurrent
-                              ? "text-primary"
+                              ? 'text-primary'
                               : isCompleted
-                              ? "text-gray-900"
-                              : "text-gray-500"
+                                ? 'text-gray-900'
+                                : 'text-gray-500'
                           }`}
                         >
                           {ORDER_STATUS[status].label}
                         </p>
                       </div>
                     </div>
-                  );
+                  )
                 }
               )}
             </div>
@@ -348,5 +348,5 @@ export default function OrderDetailPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

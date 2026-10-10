@@ -1,73 +1,73 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../context/AuthContext";
-import { productsAPI } from "../../../lib/api";
-import Link from "next/link";
-import { Package, Plus, Edit, Trash2, Search } from "lucide-react";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../../context/AuthContext'
+import { productsAPI } from '../../../lib/api'
+import Link from 'next/link'
+import { Package, Plus, Edit, Trash2, Search } from 'lucide-react'
 
 export default function SellerProductsPage() {
-  const router = useRouter();
-  const { isAuthenticated, isSeller, loading: authLoading } = useAuth();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState("all");
+  const router = useRouter()
+  const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filter, setFilter] = useState('all')
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isSeller)) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, isSeller, router]);
+  }, [authLoading, isAuthenticated, isSeller, router])
 
   useEffect(() => {
     if (isAuthenticated && isSeller) {
-      fetchProducts();
+      fetchProducts()
     }
-  }, [isAuthenticated, isSeller]);
+  }, [isAuthenticated, isSeller])
 
   const fetchProducts = async () => {
     try {
-      setLoading(true);
-      const response = await productsAPI.sellerList();
-      setProducts(response.data.results || response.data || []);
+      setLoading(true)
+      const response = await productsAPI.sellerList()
+      setProducts(response.data.results || response.data || [])
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error('Error fetching products:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this product?")) {
+    if (confirm('Are you sure you want to delete this product?')) {
       try {
-        await productsAPI.delete(id);
-        setProducts(products.filter((p) => p.id !== id));
+        await productsAPI.delete(id)
+        setProducts(products.filter((p) => p.id !== id))
       } catch (error) {
-        console.error("Error deleting product:", error);
-        alert("Failed to delete product");
+        console.error('Error deleting product:', error)
+        alert('Failed to delete product')
       }
     }
-  };
+  }
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name
       .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      .includes(searchTerm.toLowerCase())
     const matchesFilter =
-      filter === "all" ||
-      (filter === "available" && product.is_available) ||
-      (filter === "unavailable" && !product.is_available);
-    return matchesSearch && matchesFilter;
-  });
+      filter === 'all' ||
+      (filter === 'available' && product.is_available) ||
+      (filter === 'unavailable' && !product.is_available)
+    return matchesSearch && matchesFilter
+  })
 
   if (authLoading || !isAuthenticated || !isSeller) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -126,12 +126,12 @@ export default function SellerProductsPage() {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? "No products found" : "No products yet"}
+            {searchTerm ? 'No products found' : 'No products yet'}
           </h3>
           <p className="text-gray-600 mb-6">
             {searchTerm
-              ? "Try adjusting your search terms"
-              : "Start by adding your first product"}
+              ? 'Try adjusting your search terms'
+              : 'Start by adding your first product'}
           </p>
           {!searchTerm && (
             <Link
@@ -157,7 +157,7 @@ export default function SellerProductsPage() {
                       alt={product.name}
                       className="h-full w-full object-cover"
                       onError={(e) => {
-                        e.target.src = "/placeholder-product.jpg";
+                        e.target.src = '/placeholder-product.jpg'
                       }}
                     />
                   )}
@@ -175,23 +175,23 @@ export default function SellerProductsPage() {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                         product.is_available
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {product.is_available ? "Available" : "Out of Stock"}
+                      {product.is_available ? 'Available' : 'Out of Stock'}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                     <span>
-                      Price:{" "}
+                      Price:{' '}
                       <strong className="text-gray-900">
                         ${parseFloat(product.base_price).toFixed(2)}
                       </strong>
                     </span>
                     {product.category && (
                       <span>
-                        Category:{" "}
+                        Category:{' '}
                         <strong className="text-gray-900">
                           {product.category}
                         </strong>
@@ -229,5 +229,5 @@ export default function SellerProductsPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

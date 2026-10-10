@@ -83,6 +83,8 @@ pnpm-debug.log*
 
 # Test / coverage
 coverage/
+test-results/
+playwright-report/
 *.lcov
 .nyc_output/
 

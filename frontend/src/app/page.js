@@ -1,13 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { Store, ShoppingBag, TrendingUp, Shield, ArrowRight, Sparkles } from 'lucide-react'
+import {
+  Store,
+  ShoppingBag,
+  TrendingUp,
+  Shield,
+  ArrowRight,
+  Sparkles,
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
 
 export default function Home() {
   const [heroRef, heroInView] = useInView({ threshold: 0.2, triggerOnce: true })
-  const [featuresRef, featuresInView] = useInView({ threshold: 0.2, triggerOnce: true })
+  const [featuresRef, featuresInView] = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  })
   const [ctaRef, ctaInView] = useInView({ threshold: 0.2, triggerOnce: true })
 
   const containerVariants = {
@@ -88,7 +98,7 @@ export default function Home() {
             variants={itemVariants}
             className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto opacity-90"
           >
-            Your trusted online marketplace connecting buyers and sellers. 
+            Your trusted online marketplace connecting buyers and sellers.
             Discover unique products or start selling today.
           </motion.p>
           <motion.div
@@ -118,10 +128,15 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section ref={featuresRef} className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section
+        ref={featuresRef}
+        className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={featuresInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          animate={
+            featuresInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+          }
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
@@ -154,7 +169,8 @@ export default function Home() {
               Wide Selection
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Browse thousands of products from verified sellers across multiple categories.
+              Browse thousands of products from verified sellers across multiple
+              categories.
             </p>
           </motion.div>
           <motion.div
@@ -173,7 +189,8 @@ export default function Home() {
               Secure Shopping
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Shop with confidence knowing your transactions are protected and secure.
+              Shop with confidence knowing your transactions are protected and
+              secure.
             </p>
           </motion.div>
           <motion.div
@@ -192,14 +209,18 @@ export default function Home() {
               Easy Selling
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Start your online store quickly and manage your products with ease.
+              Start your online store quickly and manage your products with
+              ease.
             </p>
           </motion.div>
         </motion.div>
       </section>
 
       {/* CTA Section */}
-      <section ref={ctaRef} className="relative bg-gradient-to-r from-gray-50 to-gray-100 py-20 overflow-hidden">
+      <section
+        ref={ctaRef}
+        className="relative bg-gradient-to-r from-gray-50 to-gray-100 py-20 overflow-hidden"
+      >
         <div className="absolute inset-0">
           <motion.div
             animate={{
@@ -235,10 +256,7 @@ export default function Home() {
           >
             Join thousands of buyers and sellers on MarketHub today.
           </motion.p>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link
               href="/register"
               className="inline-flex items-center gap-2 btn-primary text-lg py-4 px-10 text-lg font-bold shadow-xl"

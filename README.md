@@ -14,7 +14,7 @@ MarketHub is **under active development**. The core commerce flows work end-to-e
 |---|---|
 | Backend | 6 apps · 51 API routes · migrations in sync |
 | Frontend | 19 pages (Next.js App Router) |
-| Tests | Backend: **158 passing** (11 strict xfails pinning known defects) · Frontend: ⚠️ none yet — Phase 4 |
+| Tests | Backend: **158 passing** (11 strict xfails pinning known defects) · Frontend: **45 unit + 5 e2e passing** |
 | CI | ⚠️ Not yet configured — Phase 5 |
 | API docs | ⚠️ Not yet generated — Phase 9 |
 
@@ -142,8 +142,18 @@ cd backend && python manage.py check
 # Backend — tests (pytest-django; creates a test_<DB_NAME> Postgres database)
 python -m pytest
 
-# Frontend
-cd ../frontend && npm run lint   # not yet configured; see Phase 4
+# Frontend — lint, format check, unit tests
+cd ../frontend
+npm run lint
+npm run format:check
+npm test            # Vitest + Testing Library (jsdom)
+npm run test:coverage
+
+# Frontend — Playwright smoke journeys (register → login, post a listing,
+# search → open listing). Starts Django + `next dev` itself and seeds the
+# e2e fixtures via `python manage.py seed_e2e`; needs a migrated Postgres DB.
+npx playwright install chromium   # once
+npm run e2e
 ```
 
 > The backend suite pins 11 known defects as `xfail(strict=True)` (see [docs/todo.md](docs/todo.md) §0.3): they are expected to fail until Phase 6 fixes them, and the suite turns red the moment a fix lands so the marker gets removed.
@@ -180,7 +190,7 @@ Tracked with concrete file references in [docs/todo.md](docs/todo.md):
 - **`is_seller` is writable** via profile `PUT`, allowing privilege escalation (Phase 7).
 - **Duplicate email-verification flows**, and no frontend verification page (Phase 8).
 - **Product card images don't render** — serializer/field mismatch (Phase 12).
-- **No frontend tests, Docker, CI, or deploy configuration** (Phases 4, 5, 19–20).
+- **No Docker, CI, or deploy configuration** (Phases 5, 19–20).
 
 ---
 

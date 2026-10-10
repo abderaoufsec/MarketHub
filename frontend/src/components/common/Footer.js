@@ -34,7 +34,7 @@ export default function Footer() {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: '-100px' }}
           variants={containerVariants}
           className="grid grid-cols-1 md:grid-cols-4 gap-8"
         >
@@ -60,7 +60,9 @@ export default function Footer() {
 
           {/* Quick Links */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-white font-semibold mb-4 text-lg">Quick Links</h3>
+            <h3 className="text-white font-semibold mb-4 text-lg">
+              Quick Links
+            </h3>
             <ul className="space-y-3 text-sm">
               {[
                 { href: '/products', label: 'Products' },
@@ -79,7 +81,9 @@ export default function Footer() {
                     href={link.href}
                     className="hover:text-white transition-colors flex items-center group"
                   >
-                    <span className="group-hover:text-primary transition-colors">{link.label}</span>
+                    <span className="group-hover:text-primary transition-colors">
+                      {link.label}
+                    </span>
                   </Link>
                 </motion.li>
               ))}
@@ -88,7 +92,9 @@ export default function Footer() {
 
           {/* For Sellers */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-white font-semibold mb-4 text-lg">For Sellers</h3>
+            <h3 className="text-white font-semibold mb-4 text-lg">
+              For Sellers
+            </h3>
             <ul className="space-y-3 text-sm">
               {[
                 { href: '/register?seller=true', label: 'Become a Seller' },
@@ -107,7 +113,9 @@ export default function Footer() {
                     href={link.href}
                     className="hover:text-white transition-colors flex items-center group"
                   >
-                    <span className="group-hover:text-primary transition-colors">{link.label}</span>
+                    <span className="group-hover:text-primary transition-colors">
+                      {link.label}
+                    </span>
                   </Link>
                 </motion.li>
               ))}
@@ -160,13 +168,19 @@ export default function Footer() {
           transition={{ delay: 0.3 }}
           className="border-t border-gray-800 mt-8 pt-8 text-sm text-center"
         >
-          <p className="mb-4 opacity-80">&copy; {currentYear} MarketHub. All rights reserved.</p>
+          <p className="mb-4 opacity-80">
+            &copy; {currentYear} MarketHub. All rights reserved.
+          </p>
           <div className="flex justify-center space-x-6">
             {[
               { href: '/privacy', label: 'Privacy Policy' },
               { href: '/terms', label: 'Terms of Service' },
             ].map((link) => (
-              <motion.div key={link.href} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div
+                key={link.href}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Link
                   href={link.href}
                   className="hover:text-white transition-colors hover:text-primary font-medium"

@@ -83,10 +83,7 @@ export default function ProductsPage() {
         className="mb-6"
       >
         <div className="flex gap-2">
-          <motion.div
-            whileFocus={{ scale: 1.01 }}
-            className="flex-1 relative"
-          >
+          <motion.div whileFocus={{ scale: 1.01 }} className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
@@ -125,62 +122,70 @@ export default function ProductsPage() {
             transition={{ duration: 0.3 }}
             className="bg-white p-6 rounded-lg shadow-lg mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 overflow-hidden border border-gray-100"
           >
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-            >
-              <option value="">All Categories</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Clothing">Clothing</option>
-              <option value="Home">Home & Garden</option>
-              <option value="Sports">Sports & Outdoors</option>
-              <option value="Books">Books</option>
-              <option value="Toys">Toys & Games</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                value={filters.category}
+                onChange={(e) => handleFilterChange('category', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="">All Categories</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Home">Home & Garden</option>
+                <option value="Sports">Sports & Outdoors</option>
+                <option value="Books">Books</option>
+                <option value="Toys">Toys & Games</option>
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Min Price
-            </label>
-            <input
-              type="number"
-              placeholder="0"
-              value={filters.min_price}
-              onChange={(e) => handleFilterChange('min_price', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Price
-            </label>
-            <input
-              type="number"
-              placeholder="1000"
-              value={filters.max_price}
-              onChange={(e) => handleFilterChange('max_price', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-            />
-          </div>
-
-          <div className="flex items-end">
-            <label className="flex items-center">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Min Price
+              </label>
               <input
-                type="checkbox"
-                checked={filters.in_stock}
-                onChange={(e) => handleFilterChange('in_stock', e.target.checked)}
-                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                type="number"
+                placeholder="0"
+                value={filters.min_price}
+                onChange={(e) =>
+                  handleFilterChange('min_price', e.target.value)
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
               />
-              <span className="ml-2 text-sm text-gray-700">In Stock Only</span>
-            </label>
-          </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Max Price
+              </label>
+              <input
+                type="number"
+                placeholder="1000"
+                value={filters.max_price}
+                onChange={(e) =>
+                  handleFilterChange('max_price', e.target.value)
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+              />
+            </div>
+
+            <div className="flex items-end">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={filters.in_stock}
+                  onChange={(e) =>
+                    handleFilterChange('in_stock', e.target.checked)
+                  }
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">
+                  In Stock Only
+                </span>
+              </label>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -214,7 +219,9 @@ export default function ProductsPage() {
           <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
             <Search className="h-12 w-12 text-gray-400" />
           </div>
-          <p className="text-gray-500 text-lg mb-4 font-medium">No products found</p>
+          <p className="text-gray-500 text-lg mb-4 font-medium">
+            No products found
+          </p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link
               href="/products"

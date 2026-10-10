@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { productsAPI, cartAPI, reviewsAPI, wishlistAPI } from "../../../lib/api";
-import { useAuth } from "../../../context/AuthContext";
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { productsAPI, cartAPI, reviewsAPI, wishlistAPI } from '../../../lib/api'
+import { useAuth } from '../../../context/AuthContext'
 import {
   ShoppingCart,
   Store,
@@ -13,133 +13,133 @@ import {
   Heart,
   Star,
   MessageSquare,
-} from "lucide-react";
-import Link from "next/link";
-import ReviewModal from "../../../components/product/ReviewModal";
-import toast from "react-hot-toast";
+} from 'lucide-react'
+import Link from 'next/link'
+import ReviewModal from '../../../components/product/ReviewModal'
+import toast from 'react-hot-toast'
 
 export default function ProductDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { isAuthenticated, isSeller } = useAuth();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedAttributes, setSelectedAttributes] = useState({});
-  const [addingToCart, setAddingToCart] = useState(false);
-  const [cartMessage, setCartMessage] = useState(null);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [userReview, setUserReview] = useState(null);
+  const params = useParams()
+  const router = useRouter()
+  const { isAuthenticated, isSeller } = useAuth()
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [quantity, setQuantity] = useState(1)
+  const [selectedAttributes, setSelectedAttributes] = useState({})
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [cartMessage, setCartMessage] = useState(null)
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [userReview, setUserReview] = useState(null)
 
   useEffect(() => {
     if (params.id) {
-      fetchProduct();
+      fetchProduct()
       if (isAuthenticated) {
-        checkWishlistStatus();
-        checkUserReview();
+        checkWishlistStatus()
+        checkUserReview()
       }
     }
-  }, [params.id, isAuthenticated]);
+  }, [params.id, isAuthenticated])
 
   const fetchProduct = async () => {
     try {
-      setLoading(true);
-      const response = await productsAPI.get(params.id);
-      setProduct(response.data);
+      setLoading(true)
+      const response = await productsAPI.get(params.id)
+      setProduct(response.data)
     } catch (error) {
-      console.error("Error fetching product:", error);
+      console.error('Error fetching product:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const checkWishlistStatus = async () => {
     try {
-      const response = await wishlistAPI.check(params.id);
-      setIsWishlisted(response.data.is_wishlisted);
+      const response = await wishlistAPI.check(params.id)
+      setIsWishlisted(response.data.is_wishlisted)
     } catch (error) {
-      console.error("Error checking wishlist:", error);
+      console.error('Error checking wishlist:', error)
     }
-  };
+  }
 
   const checkUserReview = async () => {
     try {
-      const response = await reviewsAPI.checkUserReview(params.id);
+      const response = await reviewsAPI.checkUserReview(params.id)
       if (response.data.has_reviewed) {
-        setUserReview(response.data.review);
+        setUserReview(response.data.review)
       }
     } catch (error) {
-      console.error("Error checking review:", error);
+      console.error('Error checking review:', error)
     }
-  };
+  }
 
   const toggleWishlist = async () => {
     if (!isAuthenticated) {
-      router.push("/login");
-      return;
+      router.push('/login')
+      return
     }
 
-    setWishlistLoading(true);
+    setWishlistLoading(true)
     try {
       if (isWishlisted) {
-        await wishlistAPI.remove(params.id);
-        setIsWishlisted(false);
-        toast.success("Removed from wishlist");
+        await wishlistAPI.remove(params.id)
+        setIsWishlisted(false)
+        toast.success('Removed from wishlist')
       } else {
-        await wishlistAPI.add(params.id);
-        setIsWishlisted(true);
-        toast.success("Added to wishlist");
+        await wishlistAPI.add(params.id)
+        setIsWishlisted(true)
+        toast.success('Added to wishlist')
       }
     } catch (error) {
-      console.error("Error toggling wishlist:", error);
-      toast.error("Failed to update wishlist");
+      console.error('Error toggling wishlist:', error)
+      toast.error('Failed to update wishlist')
     } finally {
-      setWishlistLoading(false);
+      setWishlistLoading(false)
     }
-  };
+  }
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      router.push("/login");
-      return;
+      router.push('/login')
+      return
     }
 
     if (isSeller) {
       setCartMessage({
-        type: "error",
-        text: "Sellers cannot add products to cart",
-      });
-      setTimeout(() => setCartMessage(null), 3000);
-      return;
+        type: 'error',
+        text: 'Sellers cannot add products to cart',
+      })
+      setTimeout(() => setCartMessage(null), 3000)
+      return
     }
 
     try {
-      setAddingToCart(true);
+      setAddingToCart(true)
       await cartAPI.add({
         product_id: product.id,
         quantity,
         selected_attributes: selectedAttributes,
-      });
-      setCartMessage({ type: "success", text: "Product added to cart!" });
-      setTimeout(() => setCartMessage(null), 3000);
+      })
+      setCartMessage({ type: 'success', text: 'Product added to cart!' })
+      setTimeout(() => setCartMessage(null), 3000)
     } catch (error) {
       setCartMessage({
-        type: "error",
-        text: error.response?.data?.error || "Failed to add to cart",
-      });
-      setTimeout(() => setCartMessage(null), 3000);
+        type: 'error',
+        text: error.response?.data?.error || 'Failed to add to cart',
+      })
+      setTimeout(() => setCartMessage(null), 3000)
     } finally {
-      setAddingToCart(false);
+      setAddingToCart(false)
     }
-  };
+  }
 
   const handleReviewSubmitted = () => {
-    fetchProduct();
-    checkUserReview();
-  };
+    fetchProduct()
+    checkUserReview()
+  }
 
   if (loading) {
     return (
@@ -155,7 +155,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (!product) {
@@ -169,12 +169,12 @@ export default function ProductDetailPage() {
           Back to Products
         </Link>
       </div>
-    );
+    )
   }
 
-  const images = product.images || [];
+  const images = product.images || []
   const mainImage =
-    images[selectedImage]?.image_url || "/placeholder-product.jpg";
+    images[selectedImage]?.image_url || '/placeholder-product.jpg'
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -194,12 +194,12 @@ export default function ProductDetailPage() {
       {cartMessage && (
         <div
           className={`mb-4 p-4 rounded-lg flex items-center ${
-            cartMessage.type === "success"
-              ? "bg-green-50 border border-green-200 text-green-700"
-              : "bg-red-50 border border-red-200 text-red-700"
+            cartMessage.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
           }`}
         >
-          {cartMessage.type === "success" ? (
+          {cartMessage.type === 'success' ? (
             <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           ) : (
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -217,7 +217,7 @@ export default function ProductDetailPage() {
               alt={product.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = "/placeholder-product.jpg";
+                e.target.src = '/placeholder-product.jpg'
               }}
             />
           </div>
@@ -229,8 +229,8 @@ export default function ProductDetailPage() {
                   onClick={() => setSelectedImage(index)}
                   className={`border-2 rounded-lg overflow-hidden transition-all ${
                     selectedImage === index
-                      ? "border-primary ring-2 ring-primary"
-                      : "border-gray-300"
+                      ? 'border-primary ring-2 ring-primary'
+                      : 'border-gray-300'
                   }`}
                 >
                   <img
@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
                     alt={`${product.name} ${index + 1}`}
                     className="w-full h-20 object-cover"
                     onError={(e) => {
-                      e.target.src = "/placeholder-product.jpg";
+                      e.target.src = '/placeholder-product.jpg'
                     }}
                   />
                 </button>
@@ -269,14 +269,17 @@ export default function ProductDetailPage() {
                   key={i}
                   className={`h-5 w-5 ${
                     i < Math.round(product.average_rating || 0)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300"
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-300'
                   }`}
                 />
               ))}
               <span className="ml-2 text-sm text-gray-600">
-                {product.average_rating ? product.average_rating.toFixed(1) : "0.0"} 
-                ({product.review_count || 0} {product.review_count === 1 ? "review" : "reviews"})
+                {product.average_rating
+                  ? product.average_rating.toFixed(1)
+                  : '0.0'}
+                ({product.review_count || 0}{' '}
+                {product.review_count === 1 ? 'review' : 'reviews'})
               </span>
             </div>
           </div>
@@ -308,7 +311,7 @@ export default function ProductDetailPage() {
                       {attr.attribute_name}
                     </label>
                     <select
-                      value={selectedAttributes[attr.attribute_name] || ""}
+                      value={selectedAttributes[attr.attribute_name] || ''}
                       onChange={(e) =>
                         setSelectedAttributes({
                           ...selectedAttributes,
@@ -347,15 +350,15 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2 mb-6 text-sm">
             <Package
               className={`h-5 w-5 ${
-                product.is_available ? "text-green-600" : "text-red-600"
+                product.is_available ? 'text-green-600' : 'text-red-600'
               }`}
             />
             <span
               className={
-                product.is_available ? "text-green-600" : "text-red-600"
+                product.is_available ? 'text-green-600' : 'text-red-600'
               }
             >
-              {product.is_available ? "In Stock" : "Out of Stock"}
+              {product.is_available ? 'In Stock' : 'Out of Stock'}
             </span>
           </div>
 
@@ -366,20 +369,20 @@ export default function ProductDetailPage() {
               className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-5 w-5" />
-              {addingToCart ? "Adding..." : "Add to Cart"}
+              {addingToCart ? 'Adding...' : 'Add to Cart'}
             </button>
             <button
               onClick={toggleWishlist}
               disabled={wishlistLoading}
               className={`p-3 border-2 rounded-lg transition-colors ${
                 isWishlisted
-                  ? "border-red-500 text-red-500 hover:bg-red-50"
-                  : "border-gray-300 hover:border-primary hover:text-primary"
+                  ? 'border-red-500 text-red-500 hover:bg-red-50'
+                  : 'border-gray-300 hover:border-primary hover:text-primary'
               }`}
-              title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+              title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
             >
               <Heart
-                className={`h-6 w-6 ${isWishlisted ? "fill-red-500" : ""}`}
+                className={`h-6 w-6 ${isWishlisted ? 'fill-red-500' : ''}`}
               />
             </button>
           </div>
@@ -391,7 +394,7 @@ export default function ProductDetailPage() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 mb-4"
             >
               <MessageSquare className="h-5 w-5" />
-              {userReview ? "Edit Your Review" : "Write a Review"}
+              {userReview ? 'Edit Your Review' : 'Write a Review'}
             </button>
           )}
 
@@ -412,17 +415,17 @@ export default function ProductDetailPage() {
               <div className="flex">
                 <dt className="text-gray-600 w-32">Category:</dt>
                 <dd className="text-gray-900 font-medium">
-                  {product.category || "General"}
+                  {product.category || 'General'}
                 </dd>
               </div>
               <div className="flex">
                 <dt className="text-gray-600 w-32">Availability:</dt>
                 <dd
                   className={`font-medium ${
-                    product.is_available ? "text-green-600" : "text-red-600"
+                    product.is_available ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
-                  {product.is_available ? "In Stock" : "Out of Stock"}
+                  {product.is_available ? 'In Stock' : 'Out of Stock'}
                 </dd>
               </div>
             </dl>
@@ -452,8 +455,8 @@ export default function ProductDetailPage() {
                             key={i}
                             className={`h-4 w-4 ${
                               i < review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
                             }`}
                           />
                         ))}
@@ -503,5 +506,5 @@ export default function ProductDetailPage() {
         onReviewSubmitted={handleReviewSubmitted}
       />
     </div>
-  );
+  )
 }

@@ -35,34 +35,60 @@ export default function Header() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/products" className="text-gray-700 hover:text-primary transition-colors font-medium">
+              <Link
+                href="/products"
+                className="text-gray-700 hover:text-primary transition-colors font-medium"
+              >
                 Products
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/stores" className="text-gray-700 hover:text-primary transition-colors font-medium">
+              <Link
+                href="/stores"
+                className="text-gray-700 hover:text-primary transition-colors font-medium"
+              >
                 Stores
               </Link>
             </motion.div>
-            
+
             {isAuthenticated ? (
               <>
                 {isSeller && (
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Link href="/seller/dashboard" className="text-gray-700 hover:text-primary transition-colors font-medium">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Link
+                      href="/seller/dashboard"
+                      className="text-gray-700 hover:text-primary transition-colors font-medium"
+                    >
                       Dashboard
                     </Link>
                   </motion.div>
                 )}
                 {!isSeller && (
                   <>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Link href="/wishlist" className="text-gray-700 hover:text-primary transition-colors flex items-center relative" title="Wishlist">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Link
+                        href="/wishlist"
+                        className="text-gray-700 hover:text-primary transition-colors flex items-center relative"
+                        title="Wishlist"
+                      >
                         <Heart className="h-5 w-5" />
                       </Link>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Link href="/cart" className="text-gray-700 hover:text-primary transition-colors flex items-center relative" title="Cart">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Link
+                        href="/cart"
+                        className="text-gray-700 hover:text-primary transition-colors flex items-center relative"
+                        title="Cart"
+                      >
                         <ShoppingCart className="h-5 w-5" />
                       </Link>
                     </motion.div>
@@ -83,10 +109,16 @@ export default function Header() {
                     exit={{ opacity: 0, y: -10 }}
                     className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 hidden group-hover:block border border-gray-100"
                   >
-                    <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       Profile
                     </Link>
-                    <Link href="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link
+                      href="/orders"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       Orders
                     </Link>
                     <button
@@ -100,12 +132,21 @@ export default function Header() {
               </>
             ) : (
               <>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link href="/login" className="text-gray-700 hover:text-primary transition-colors font-medium">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link
+                    href="/login"
+                    className="text-gray-700 hover:text-primary transition-colors font-medium"
+                  >
                     Login
                   </Link>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                <motion.div
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   <Link href="/register" className="btn-primary">
                     Register
                   </Link>
@@ -164,46 +205,82 @@ export default function Header() {
                 className="py-4 flex flex-col space-y-3"
               >
                 <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                  <Link href="/products" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                  <Link
+                    href="/products"
+                    className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                  >
                     Products
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                  <Link href="/stores" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                  <Link
+                    href="/stores"
+                    className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                  >
                     Stores
                   </Link>
                 </motion.div>
-                
+
                 {isAuthenticated ? (
                   <>
                     {isSeller && (
-                      <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                        <Link href="/seller/dashboard" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                      <motion.div
+                        whileHover={{ x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Link
+                          href="/seller/dashboard"
+                          className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                        >
                           Dashboard
                         </Link>
                       </motion.div>
                     )}
                     {!isSeller && (
                       <>
-                        <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                          <Link href="/wishlist" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                        <motion.div
+                          whileHover={{ x: 5 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Link
+                            href="/wishlist"
+                            className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                          >
                             Wishlist
                           </Link>
                         </motion.div>
-                        <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                          <Link href="/cart" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                        <motion.div
+                          whileHover={{ x: 5 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Link
+                            href="/cart"
+                            className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                          >
                             Cart
                           </Link>
                         </motion.div>
                       </>
                     )}
-                    <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                      <Link href="/profile" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/profile"
+                        className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                      >
                         Profile
                       </Link>
                     </motion.div>
-                    <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                      <Link href="/orders" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/orders"
+                        className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                      >
                         Orders
                       </Link>
                     </motion.div>
@@ -217,13 +294,25 @@ export default function Header() {
                   </>
                 ) : (
                   <>
-                    <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
-                      <Link href="/login" className="text-gray-700 hover:text-primary transition-colors font-medium block py-2">
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/login"
+                        className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                      >
                         Login
                       </Link>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Link href="/register" className="btn-primary inline-block text-center w-full">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/register"
+                        className="btn-primary inline-block text-center w-full"
+                      >
                         Register
                       </Link>
                     </motion.div>

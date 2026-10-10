@@ -1,75 +1,86 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { reviewsAPI } from "../../lib/api";
-import { Star, X } from "lucide-react";
-import toast from "react-hot-toast";
+import { useState } from 'react'
+import { reviewsAPI } from '../../lib/api'
+import { Star, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 
-export default function ReviewModal({ isOpen, onClose, product, existingReview, onReviewSubmitted }) {
-  const [rating, setRating] = useState(existingReview?.rating || 0);
-  const [comment, setComment] = useState(existingReview?.comment || "");
-  const [hoveredRating, setHoveredRating] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+export default function ReviewModal({
+  isOpen,
+  onClose,
+  product,
+  existingReview,
+  onReviewSubmitted,
+}) {
+  const [rating, setRating] = useState(existingReview?.rating || 0)
+  const [comment, setComment] = useState(existingReview?.comment || '')
+  const [hoveredRating, setHoveredRating] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (rating === 0) {
-      toast.error("Please select a rating");
-      return;
-    }
-    
-    if (!comment.trim()) {
-      toast.error("Please write a review");
-      return;
+      toast.error('Please select a rating')
+      return
     }
 
-    setSubmitting(true);
+    if (!comment.trim()) {
+      toast.error('Please write a review')
+      return
+    }
+
+    setSubmitting(true)
 
     try {
       if (existingReview) {
         // Update existing review
-        await reviewsAPI.update(existingReview.id, { rating, comment, product: product.id });
-        toast.success("Review updated successfully!");
+        await reviewsAPI.update(existingReview.id, {
+          rating,
+          comment,
+          product: product.id,
+        })
+        toast.success('Review updated successfully!')
       } else {
         // Create new review
-        await reviewsAPI.create({ product: product.id, rating, comment });
-        toast.success("Review submitted successfully!");
+        await reviewsAPI.create({ product: product.id, rating, comment })
+        toast.success('Review submitted successfully!')
       }
-      
-      onReviewSubmitted();
-      onClose();
+
+      onReviewSubmitted()
+      onClose()
     } catch (error) {
-      console.error("Error submitting review:", error);
-      const errorMsg = error.response?.data?.error || 
-                       error.response?.data?.detail || 
-                       "Failed to submit review";
-      toast.error(errorMsg);
+      console.error('Error submitting review:', error)
+      const errorMsg =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        'Failed to submit review'
+      toast.error(errorMsg)
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete your review?")) {
-      return;
+    if (!window.confirm('Are you sure you want to delete your review?')) {
+      return
     }
 
-    setSubmitting(true);
+    setSubmitting(true)
     try {
-      await reviewsAPI.delete(existingReview.id);
-      toast.success("Review deleted successfully!");
-      onReviewSubmitted();
-      onClose();
+      await reviewsAPI.delete(existingReview.id)
+      toast.success('Review deleted successfully!')
+      onReviewSubmitted()
+      onClose()
     } catch (error) {
-      console.error("Error deleting review:", error);
-      toast.error("Failed to delete review");
+      console.error('Error deleting review:', error)
+      toast.error('Failed to delete review')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -78,7 +89,7 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
-              {existingReview ? "Edit Review" : "Write a Review"}
+              {existingReview ? 'Edit Review' : 'Write a Review'}
             </h2>
             <button
               onClick={onClose}
@@ -91,13 +102,15 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
           {/* Product Info */}
           <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
             <img
-              src={product.images?.[0]?.image_url || "/placeholder-product.jpg"}
+              src={product.images?.[0]?.image_url || '/placeholder-product.jpg'}
               alt={product.name}
               className="w-16 h-16 object-cover rounded"
             />
             <div>
               <h3 className="font-semibold text-gray-900">{product.name}</h3>
-              <p className="text-sm text-gray-600">${parseFloat(product.base_price).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">
+                ${parseFloat(product.base_price).toFixed(2)}
+              </p>
             </div>
           </div>
 
@@ -120,8 +133,8 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
                     <Star
                       className={`h-8 w-8 ${
                         star <= (hoveredRating || rating)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
                       } transition-colors`}
                     />
                   </button>
@@ -129,11 +142,11 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
               </div>
               {rating > 0 && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {rating === 1 && "Poor"}
-                  {rating === 2 && "Fair"}
-                  {rating === 3 && "Good"}
-                  {rating === 4 && "Very Good"}
-                  {rating === 5 && "Excellent"}
+                  {rating === 1 && 'Poor'}
+                  {rating === 2 && 'Fair'}
+                  {rating === 3 && 'Good'}
+                  {rating === 4 && 'Very Good'}
+                  {rating === 5 && 'Excellent'}
                 </p>
               )}
             </div>
@@ -160,12 +173,18 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
             <div className="flex gap-3">
               <button
                 type="submit"
-                disabled={submitting || rating === 0 || comment.trim().length < 10}
+                disabled={
+                  submitting || rating === 0 || comment.trim().length < 10
+                }
                 className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitting ? "Submitting..." : existingReview ? "Update Review" : "Submit Review"}
+                {submitting
+                  ? 'Submitting...'
+                  : existingReview
+                    ? 'Update Review'
+                    : 'Submit Review'}
               </button>
-              
+
               {existingReview && (
                 <button
                   type="button"
@@ -176,7 +195,7 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
                   Delete
                 </button>
               )}
-              
+
               <button
                 type="button"
                 onClick={onClose}
@@ -189,5 +208,5 @@ export default function ReviewModal({ isOpen, onClose, product, existingReview, 
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,57 +1,57 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { storesAPI, productsAPI } from "../../../lib/api";
-import Link from "next/link";
-import ProductCard from "../../../components/product/ProductCard";
-import { Store, MapPin, Calendar, Package, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { storesAPI, productsAPI } from '../../../lib/api'
+import Link from 'next/link'
+import ProductCard from '../../../components/product/ProductCard'
+import { Store, MapPin, Calendar, Package, ArrowLeft } from 'lucide-react'
 
 export default function StoreDetailPage() {
-  const params = useParams();
-  const [store, setStore] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [productsLoading, setProductsLoading] = useState(true);
+  const params = useParams()
+  const [store, setStore] = useState(null)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [productsLoading, setProductsLoading] = useState(true)
 
   useEffect(() => {
     if (params.slug) {
-      fetchStoreDetails();
-      fetchStoreProducts();
+      fetchStoreDetails()
+      fetchStoreProducts()
     }
-  }, [params.slug]);
+  }, [params.slug])
 
   const fetchStoreDetails = async () => {
     try {
-      setLoading(true);
-      const response = await storesAPI.get(params.slug);
-      setStore(response.data);
+      setLoading(true)
+      const response = await storesAPI.get(params.slug)
+      setStore(response.data)
     } catch (error) {
-      console.error("Error fetching store:", error);
+      console.error('Error fetching store:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchStoreProducts = async () => {
     try {
-      setProductsLoading(true);
+      setProductsLoading(true)
       // Fetch products filtered by store slug
-      const response = await productsAPI.list({ store: params.slug });
-      setProducts(response.data.results || response.data || []);
+      const response = await productsAPI.list({ store: params.slug })
+      setProducts(response.data.results || response.data || [])
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error('Error fetching products:', error)
     } finally {
-      setProductsLoading(false);
+      setProductsLoading(false)
     }
-  };
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   if (!store) {
@@ -63,7 +63,7 @@ export default function StoreDetailPage() {
           Browse All Stores
         </Link>
       </div>
-    );
+    )
   }
 
   return (
@@ -90,7 +90,7 @@ export default function StoreDetailPage() {
                 alt={store.store_name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.target.style.display = "none";
+                  e.target.style.display = 'none'
                 }}
               />
             ) : (
@@ -111,7 +111,7 @@ export default function StoreDetailPage() {
                     alt={`${store.store_name} logo`}
                     className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg"
                     onError={(e) => {
-                      e.target.src = "/placeholder-store.jpg";
+                      e.target.src = '/placeholder-store.jpg'
                     }}
                   />
                 ) : (
@@ -153,12 +153,12 @@ export default function StoreDetailPage() {
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        Joined{" "}
+                        Joined{' '}
                         {new Date(store.created_at).toLocaleDateString(
-                          "en-US",
+                          'en-US',
                           {
-                            year: "numeric",
-                            month: "long",
+                            year: 'numeric',
+                            month: 'long',
                           }
                         )}
                       </span>
@@ -216,5 +216,5 @@ export default function StoreDetailPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

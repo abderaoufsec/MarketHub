@@ -1,19 +1,19 @@
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "../context/AuthContext";
-import Header from "../components/common/Header";
-import Footer from "../components/common/Footer";
-import ToastProvider from "../components/common/Toaster";
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { AuthProvider } from '../context/AuthContext'
+import Header from '../components/common/Header'
+import Footer from '../components/common/Footer'
+import ToastProvider from '../components/common/Toaster'
 // Validates NEXT_PUBLIC_* configuration at boot (fails fast if it is missing).
-import { SITE_NAME } from "../lib/env";
+import { SITE_NAME } from '../lib/env'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: `${SITE_NAME} - Your Online Marketplace`,
   description:
-    "Connect sellers and buyers through a simple, secure online marketplace",
-};
+    'Connect sellers and buyers through a simple, secure online marketplace',
+}
 
 export default function RootLayout({ children }) {
   return (
@@ -29,5 +29,5 @@ export default function RootLayout({ children }) {
         </AuthProvider>
       </body>
     </html>
-  );
+  )
 }

@@ -1,74 +1,70 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { cartAPI } from "../../lib/api";
-import { useAuth } from "../../context/AuthContext";
-import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { cartAPI } from '../../lib/api'
+import { cartSubtotal, lineTotal, formatPrice } from '../../lib/cart'
+import { useAuth } from '../../context/AuthContext'
+import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
+import Link from 'next/link'
 
 export default function CartPage() {
-  const router = useRouter();
-  const { isAuthenticated, isSeller } = useAuth();
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const router = useRouter()
+  const { isAuthenticated, isSeller } = useAuth()
+  const [cart, setCart] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/login");
-      return;
+      router.push('/login')
+      return
     }
     if (isSeller) {
-      router.push("/seller/dashboard");
-      return;
+      router.push('/seller/dashboard')
+      return
     }
-    fetchCart();
-  }, [isAuthenticated, isSeller]);
+    fetchCart()
+  }, [isAuthenticated, isSeller])
 
   const fetchCart = async () => {
     try {
-      const response = await cartAPI.get();
-      setCart(response.data);
+      const response = await cartAPI.get()
+      setCart(response.data)
     } catch (error) {
-      console.error("Error fetching cart:", error);
+      console.error('Error fetching cart:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const updateQuantity = async (itemId, newQuantity) => {
-    if (newQuantity < 1) return;
-    setUpdating(true);
+    if (newQuantity < 1) return
+    setUpdating(true)
 
     try {
-      await cartAPI.update(itemId, { quantity: newQuantity });
-      await fetchCart();
+      await cartAPI.update(itemId, { quantity: newQuantity })
+      await fetchCart()
     } catch (error) {
-      console.error("Error updating quantity:", error);
+      console.error('Error updating quantity:', error)
     } finally {
-      setUpdating(false);
+      setUpdating(false)
     }
-  };
+  }
 
   const removeItem = async (itemId) => {
-    setUpdating(true);
+    setUpdating(true)
     try {
-      await cartAPI.remove(itemId);
-      await fetchCart();
+      await cartAPI.remove(itemId)
+      await fetchCart()
     } catch (error) {
-      console.error("Error removing item:", error);
+      console.error('Error removing item:', error)
     } finally {
-      setUpdating(false);
+      setUpdating(false)
     }
-  };
+  }
 
-  const getTotal = () => {
-    if (!cart?.items) return 0;
-    return cart.items.reduce((sum, item) => {
-      return sum + parseFloat(item.price_at_time_of_addition) * item.quantity;
-    }, 0);
-  };
+  const getTotal = () => cartSubtotal(cart?.items)
 
   if (loading) {
     return (
@@ -82,10 +78,10 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const items = cart?.items || [];
+  const items = cart?.items || []
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -116,12 +112,12 @@ export default function CartPage() {
                 <img
                   src={
                     item.product?.images?.[0]?.image_url ||
-                    "/placeholder-product.jpg"
+                    '/placeholder-product.jpg'
                   }
                   alt={item.product?.name}
                   className="w-24 h-24 object-cover rounded-lg"
                   onError={(e) => {
-                    e.target.src = "/placeholder-product.jpg";
+                    e.target.src = '/placeholder-product.jpg'
                   }}
                 />
                 <div className="flex-1">
@@ -129,8 +125,7 @@ export default function CartPage() {
                     {item.product?.name}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    ${parseFloat(item.price_at_time_of_addition).toFixed(2)}{" "}
-                    each
+                    {formatPrice(item.price_at_time_of_addition)} each
                   </p>
                   {item.selected_attributes &&
                     Object.keys(item.selected_attributes).length > 0 && (
@@ -166,10 +161,7 @@ export default function CartPage() {
                 </div>
                 <div className="text-right sm:text-left sm:min-w-[100px]">
                   <p className="text-lg font-bold text-gray-900">
-                    $
-                    {(
-                      parseFloat(item.price_at_time_of_addition) * item.quantity
-                    ).toFixed(2)}
+                    {formatPrice(lineTotal(item))}
                   </p>
                   <button
                     onClick={() => removeItem(item.id)}
@@ -194,7 +186,7 @@ export default function CartPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="font-semibold">
-                    ${getTotal().toFixed(2)}
+                    {formatPrice(getTotal())}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -209,7 +201,9 @@ export default function CartPage() {
               <div className="border-t pt-4 mb-4">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">${getTotal().toFixed(2)}</span>
+                  <span className="text-primary">
+                    {formatPrice(getTotal())}
+                  </span>
                 </div>
               </div>
               <Link
@@ -229,5 +223,5 @@ export default function CartPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

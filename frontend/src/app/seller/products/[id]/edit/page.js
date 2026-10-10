@@ -1,106 +1,113 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useAuth } from "../../../../../context/AuthContext";
-import { productsAPI } from "../../../../../lib/api";
-import { ArrowLeft, Save, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { useAuth } from '../../../../../context/AuthContext'
+import { productsAPI } from '../../../../../lib/api'
+import {
+  ArrowLeft,
+  Save,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react'
+import Link from 'next/link'
 
 export default function EditProductPage() {
-  const router = useRouter();
-  const params = useParams();
-  const productId = params.id;
-  const { isAuthenticated, isSeller, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
+  const router = useRouter()
+  const params = useParams()
+  const productId = params.id
+  const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState(null)
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    base_price: "",
-    category: "",
+    name: '',
+    description: '',
+    base_price: '',
+    category: '',
     is_available: true,
     low_stock_threshold: 5,
-  });
+  })
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isSeller)) {
-      router.push("/login");
-      return;
+      router.push('/login')
+      return
     }
-    
+
     if (isAuthenticated && isSeller && productId) {
-      fetchProduct();
+      fetchProduct()
     }
-  }, [authLoading, isAuthenticated, isSeller, productId]);
+  }, [authLoading, isAuthenticated, isSeller, productId])
 
   const fetchProduct = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       // Try seller endpoint first, fallback to public endpoint
-      let response;
+      let response
       try {
-        response = await productsAPI.getById(productId);
+        response = await productsAPI.getById(productId)
       } catch (err) {
         // Fallback to public endpoint
-        response = await productsAPI.get(productId);
+        response = await productsAPI.get(productId)
       }
-      const product = response.data;
-      
+      const product = response.data
+
       setFormData({
-        name: product.name || "",
-        description: product.description || "",
-        base_price: product.base_price || "",
-        category: product.category || "",
-        is_available: product.is_available !== undefined ? product.is_available : true,
+        name: product.name || '',
+        description: product.description || '',
+        base_price: product.base_price || '',
+        category: product.category || '',
+        is_available:
+          product.is_available !== undefined ? product.is_available : true,
         low_stock_threshold: product.low_stock_threshold || 5,
-      });
+      })
     } catch (error) {
-      console.error("Error fetching product:", error);
+      console.error('Error fetching product:', error)
       setMessage({
-        type: "error",
-        text: error.response?.data?.detail || "Failed to load product",
-      });
+        type: 'error',
+        text: error.response?.data?.detail || 'Failed to load product',
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!formData.name || !formData.description || !formData.base_price) {
-      setMessage({ type: "error", text: "Please fill in all required fields" });
-      return;
+      setMessage({ type: 'error', text: 'Please fill in all required fields' })
+      return
     }
 
     try {
-      setSaving(true);
-      setMessage(null);
-      await productsAPI.update(productId, formData);
-      setMessage({ type: "success", text: "Product updated successfully!" });
+      setSaving(true)
+      setMessage(null)
+      await productsAPI.update(productId, formData)
+      setMessage({ type: 'success', text: 'Product updated successfully!' })
       setTimeout(() => {
-        router.push("/seller/products");
-      }, 1500);
+        router.push('/seller/products')
+      }, 1500)
     } catch (error) {
-      console.error("Error updating product:", error);
+      console.error('Error updating product:', error)
       setMessage({
-        type: "error",
-        text: error.response?.data?.detail || "Failed to update product",
-      });
+        type: 'error',
+        text: error.response?.data?.detail || 'Failed to update product',
+      })
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   if (authLoading || loading) {
     return (
@@ -110,11 +117,11 @@ export default function EditProductPage() {
           <p className="text-gray-600">Loading product...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (!isAuthenticated || !isSeller) {
-    return null;
+    return null
   }
 
   return (
@@ -128,19 +135,17 @@ export default function EditProductPage() {
       </Link>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Edit Product
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Product</h1>
 
         {message && (
           <div
             className={`mb-6 p-4 rounded-lg flex items-center ${
-              message.type === "success"
-                ? "bg-green-50 border border-green-200 text-green-700"
-                : "bg-red-50 border border-red-200 text-red-700"
+              message.type === 'success'
+                ? 'bg-green-50 border border-green-200 text-green-700'
+                : 'bg-red-50 border border-red-200 text-red-700'
             }`}
           >
-            {message.type === "success" ? (
+            {message.type === 'success' ? (
               <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
             ) : (
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -296,5 +301,5 @@ export default function EditProductPage() {
         </form>
       </div>
     </div>
-  );
+  )
 }

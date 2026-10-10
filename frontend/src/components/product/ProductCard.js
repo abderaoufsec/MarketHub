@@ -69,7 +69,9 @@ export default function ProductCard({ product, index = 0 }) {
               {product.name}
             </h3>
             <p className="text-sm text-gray-600 mb-2 line-clamp-1">
-              {product.store_name || product.store?.store_name || 'MarketHub Store'}
+              {product.store_name ||
+                product.store?.store_name ||
+                'MarketHub Store'}
             </p>
             <div className="flex items-center justify-between mt-auto">
               <motion.span

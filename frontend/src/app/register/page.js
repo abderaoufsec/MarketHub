@@ -4,7 +4,15 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
-import { Mail, Lock, User, Phone, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
+import {
+  Mail,
+  Lock,
+  User,
+  Phone,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -13,9 +21,9 @@ export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { register } = useAuth()
-  
+
   const isSeller = searchParams.get('seller') === 'true'
-  
+
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -61,9 +69,11 @@ export default function RegisterPage() {
 
     try {
       const result = await register(registrationData)
-      
+
       if (result.success) {
-        toast.success('Account created successfully! Please check your email to verify your account.')
+        toast.success(
+          'Account created successfully! Please check your email to verify your account.'
+        )
         setSuccess(true)
         setTimeout(() => {
           router.push('/login')
@@ -75,14 +85,16 @@ export default function RegisterPage() {
           toast.error(result.error)
         } else if (result.error && typeof result.error === 'object') {
           // Handle field-specific errors
-          const errorMessages = Object.entries(result.error).map(([key, value]) => {
-            if (Array.isArray(value)) {
-              return value[0]
+          const errorMessages = Object.entries(result.error).map(
+            ([key, value]) => {
+              if (Array.isArray(value)) {
+                return value[0]
+              }
+              return value
             }
-            return value
-          })
+          )
           setErrors(result.error)
-          errorMessages.forEach(msg => toast.error(msg))
+          errorMessages.forEach((msg) => toast.error(msg))
         } else {
           const errorMsg = 'Registration failed. Please try again.'
           setErrors({ general: errorMsg })
@@ -167,7 +179,10 @@ export default function RegisterPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-primary hover:text-secondary transition-colors">
+            <Link
+              href="/login"
+              className="font-medium text-primary hover:text-secondary transition-colors"
+            >
               Sign in
             </Link>
           </p>
@@ -201,7 +216,10 @@ export default function RegisterPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="first_name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   First Name
                 </label>
                 <input
@@ -220,7 +238,9 @@ export default function RegisterPage() {
                     animate={{ opacity: 1 }}
                     className="mt-1 text-sm text-red-600"
                   >
-                    {Array.isArray(errors.first_name) ? errors.first_name[0] : errors.first_name}
+                    {Array.isArray(errors.first_name)
+                      ? errors.first_name[0]
+                      : errors.first_name}
                   </motion.p>
                 )}
               </motion.div>
@@ -230,7 +250,10 @@ export default function RegisterPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="last_name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Last Name
                 </label>
                 <input
@@ -249,7 +272,9 @@ export default function RegisterPage() {
                     animate={{ opacity: 1 }}
                     className="mt-1 text-sm text-red-600"
                   >
-                    {Array.isArray(errors.last_name) ? errors.last_name[0] : errors.last_name}
+                    {Array.isArray(errors.last_name)
+                      ? errors.last_name[0]
+                      : errors.last_name}
                   </motion.p>
                 )}
               </motion.div>
@@ -260,7 +285,10 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email address
               </label>
               <div className="relative">
@@ -295,7 +323,10 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Username
               </label>
               <div className="relative">
@@ -319,7 +350,9 @@ export default function RegisterPage() {
                   animate={{ opacity: 1 }}
                   className="mt-1 text-sm text-red-600"
                 >
-                  {Array.isArray(errors.username) ? errors.username[0] : errors.username}
+                  {Array.isArray(errors.username)
+                    ? errors.username[0]
+                    : errors.username}
                 </motion.p>
               )}
             </motion.div>
@@ -329,7 +362,10 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.65 }}
             >
-              <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="phone_number"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Phone Number <span className="text-gray-400">(Optional)</span>
               </label>
               <div className="relative">
@@ -353,7 +389,10 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
             >
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <div className="relative">
@@ -379,7 +418,9 @@ export default function RegisterPage() {
                   animate={{ opacity: 1 }}
                   className="mt-1 text-sm text-red-600"
                 >
-                  {Array.isArray(errors.password) ? errors.password[0] : errors.password}
+                  {Array.isArray(errors.password)
+                    ? errors.password[0]
+                    : errors.password}
                 </motion.p>
               )}
             </motion.div>
@@ -389,7 +430,10 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
             >
-              <label htmlFor="password_confirm" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password_confirm"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Confirm Password
               </label>
               <div className="relative">
@@ -414,7 +458,9 @@ export default function RegisterPage() {
                   animate={{ opacity: 1 }}
                   className="mt-1 text-sm text-red-600"
                 >
-                  {Array.isArray(errors.password_confirm) ? errors.password_confirm[0] : errors.password_confirm}
+                  {Array.isArray(errors.password_confirm)
+                    ? errors.password_confirm[0]
+                    : errors.password_confirm}
                 </motion.p>
               )}
             </motion.div>
@@ -433,7 +479,10 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
               />
-              <label htmlFor="is_seller" className="ml-2 block text-sm text-gray-900">
+              <label
+                htmlFor="is_seller"
+                className="ml-2 block text-sm text-gray-900"
+              >
                 Register as a seller
               </label>
             </motion.div>
@@ -467,11 +516,17 @@ export default function RegisterPage() {
 
           <p className="text-xs text-center text-gray-600">
             By creating an account, you agree to our{' '}
-            <Link href="/terms" className="text-primary hover:text-secondary transition-colors">
+            <Link
+              href="/terms"
+              className="text-primary hover:text-secondary transition-colors"
+            >
               Terms of Service
             </Link>{' '}
             and{' '}
-            <Link href="/privacy" className="text-primary hover:text-secondary transition-colors">
+            <Link
+              href="/privacy"
+              className="text-primary hover:text-secondary transition-colors"
+            >
               Privacy Policy
             </Link>
           </p>

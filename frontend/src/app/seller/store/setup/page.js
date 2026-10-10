@@ -1,114 +1,114 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../../context/AuthContext";
-import { storesAPI } from "../../../../lib/api";
-import { Store, Save, AlertCircle, CheckCircle, ArrowRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import toast from "react-hot-toast";
-import LoadingSpinner from "../../../../components/common/LoadingSpinner";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../../../context/AuthContext'
+import { storesAPI } from '../../../../lib/api'
+import { Store, Save, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import toast from 'react-hot-toast'
+import LoadingSpinner from '../../../../components/common/LoadingSpinner'
 
 export default function StoreSetupPage() {
-  const router = useRouter();
-  const { isAuthenticated, isSeller, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const router = useRouter()
+  const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState(null)
   const [formData, setFormData] = useState({
-    store_name: "",
-    description: "",
-    category: "",
-  });
+    store_name: '',
+    description: '',
+    category: '',
+  })
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isSeller)) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, isSeller, router]);
+  }, [authLoading, isAuthenticated, isSeller, router])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!formData.store_name || !formData.description || !formData.category) {
-      const errorMsg = "Please fill in all required fields";
-      setMessage({ type: "error", text: errorMsg });
-      toast.error(errorMsg);
-      return;
+      const errorMsg = 'Please fill in all required fields'
+      setMessage({ type: 'error', text: errorMsg })
+      toast.error(errorMsg)
+      return
     }
 
     // Validate store name length
     if (formData.store_name.length < 3) {
-      const errorMsg = "Store name must be at least 3 characters long";
-      setMessage({ type: "error", text: errorMsg });
-      toast.error(errorMsg);
-      return;
+      const errorMsg = 'Store name must be at least 3 characters long'
+      setMessage({ type: 'error', text: errorMsg })
+      toast.error(errorMsg)
+      return
     }
 
     // Validate description length
     if (formData.description.length < 20) {
-      const errorMsg = "Store description must be at least 20 characters long";
-      setMessage({ type: "error", text: errorMsg });
-      toast.error(errorMsg);
-      return;
+      const errorMsg = 'Store description must be at least 20 characters long'
+      setMessage({ type: 'error', text: errorMsg })
+      toast.error(errorMsg)
+      return
     }
 
     try {
-      setLoading(true);
-      setMessage(null);
-      console.log("Submitting store data:", formData); // Debug log
-      const response = await storesAPI.create(formData);
-      const successMsg = "Store created successfully!";
-      setMessage({ type: "success", text: successMsg });
-      toast.success(successMsg);
+      setLoading(true)
+      setMessage(null)
+      console.log('Submitting store data:', formData) // Debug log
+      const response = await storesAPI.create(formData)
+      const successMsg = 'Store created successfully!'
+      setMessage({ type: 'success', text: successMsg })
+      toast.success(successMsg)
       setTimeout(() => {
-        router.push("/seller/dashboard");
-      }, 2000);
+        router.push('/seller/dashboard')
+      }, 2000)
     } catch (error) {
-      console.error("Error creating store:", error);
-      console.error("Error response:", error.response); // Debug log
-      
-      let errorMsg = "Failed to create store";
-      
+      console.error('Error creating store:', error)
+      console.error('Error response:', error.response) // Debug log
+
+      let errorMsg = 'Failed to create store'
+
       if (error.response?.data) {
         if (error.response.data.detail) {
-          errorMsg = error.response.data.detail;
+          errorMsg = error.response.data.detail
         } else if (error.response.data.store_name) {
-          errorMsg = Array.isArray(error.response.data.store_name) 
-            ? error.response.data.store_name[0] 
-            : error.response.data.store_name;
+          errorMsg = Array.isArray(error.response.data.store_name)
+            ? error.response.data.store_name[0]
+            : error.response.data.store_name
         } else if (error.response.data.category) {
-          errorMsg = Array.isArray(error.response.data.category) 
-            ? error.response.data.category[0] 
-            : error.response.data.category;
+          errorMsg = Array.isArray(error.response.data.category)
+            ? error.response.data.category[0]
+            : error.response.data.category
         } else if (error.response.data.error) {
-          errorMsg = error.response.data.error;
+          errorMsg = error.response.data.error
         } else if (typeof error.response.data === 'string') {
-          errorMsg = error.response.data;
+          errorMsg = error.response.data
         } else if (error.response.data.non_field_errors) {
           errorMsg = Array.isArray(error.response.data.non_field_errors)
             ? error.response.data.non_field_errors[0]
-            : error.response.data.non_field_errors;
+            : error.response.data.non_field_errors
         }
       }
-      
-      setMessage({ type: "error", text: errorMsg });
-      toast.error(errorMsg);
+
+      setMessage({ type: 'error', text: errorMsg })
+      toast.error(errorMsg)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (authLoading || !isAuthenticated || !isSeller) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <LoadingSpinner size="xl" />
       </div>
-    );
+    )
   }
 
   return (
@@ -153,12 +153,12 @@ export default function StoreSetupPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 className={`mb-6 p-4 rounded-lg flex items-center shadow-sm ${
-                  message.type === "success"
-                    ? "bg-green-50 border border-green-200 text-green-700"
-                    : "bg-red-50 border border-red-200 text-red-700"
+                  message.type === 'success'
+                    ? 'bg-green-50 border border-green-200 text-green-700'
+                    : 'bg-red-50 border border-red-200 text-red-700'
                 }`}
               >
-                {message.type === "success" ? (
+                {message.type === 'success' ? (
                   <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
                 ) : (
                   <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -308,5 +308,5 @@ export default function StoreSetupPage() {
         </motion.div>
       </motion.div>
     </div>
-  );
+  )
 }

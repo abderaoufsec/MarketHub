@@ -1,62 +1,62 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { ordersAPI } from "../../lib/api";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { ordersAPI } from '../../lib/api'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Package,
   Calendar,
   DollarSign,
   ChevronRight,
   ShoppingBag,
-} from "lucide-react";
+} from 'lucide-react'
 
 const ORDER_STATUS = {
-  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
-  PROCESSING: { label: "Processing", color: "bg-blue-100 text-blue-800" },
-  SHIPPED: { label: "Shipped", color: "bg-purple-100 text-purple-800" },
-  DELIVERED: { label: "Delivered", color: "bg-green-100 text-green-800" },
-  CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-800" },
-};
+  PENDING: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+  PROCESSING: { label: 'Processing', color: 'bg-blue-100 text-blue-800' },
+  SHIPPED: { label: 'Shipped', color: 'bg-purple-100 text-purple-800' },
+  DELIVERED: { label: 'Delivered', color: 'bg-green-100 text-green-800' },
+  CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
+}
 
 export default function OrdersPage() {
-  const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchOrders();
+      fetchOrders()
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated])
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
-      const response = await ordersAPI.list();
-      setOrders(response.data.results || response.data || []);
+      setLoading(true)
+      const response = await ordersAPI.list()
+      setOrders(response.data.results || response.data || [])
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error('Error fetching orders:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -109,7 +109,7 @@ export default function OrdersPage() {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${
                         ORDER_STATUS[order.order_status]?.color ||
-                        "bg-gray-100 text-gray-800"
+                        'bg-gray-100 text-gray-800'
                       }`}
                     >
                       {ORDER_STATUS[order.order_status]?.label ||
@@ -138,10 +138,8 @@ export default function OrdersPage() {
 
                   {order.store_name && (
                     <p className="text-sm text-gray-600 mt-2">
-                      Sold by:{" "}
-                      <span className="font-medium">
-                        {order.store_name}
-                      </span>
+                      Sold by:{' '}
+                      <span className="font-medium">{order.store_name}</span>
                     </p>
                   )}
                 </div>
@@ -158,5 +156,5 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

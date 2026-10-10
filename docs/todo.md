@@ -133,16 +133,24 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 
 ---
 
-## Phase 4 — Test infrastructure (frontend) + lint
+## Phase 4 — Test infrastructure (frontend) + lint ✅
 **Goal:** lint and unit tests exist and pass.
 
-- [ ] `.eslintrc.json` extending `next/core-web-vitals`; fix the `eslint-config-next@16` vs `next@14` mismatch.
-- [ ] Prettier + `.editorconfig`.
-- [ ] Vitest + Testing Library + jsdom: `AuthContext`, `lib/api.js` interceptors, `ProductCard`, cart math.
-- [ ] Playwright for 3 smoke journeys: register → login, post a listing, search → open listing.
-- [ ] `npm test`, `npm run test:coverage`, `npm run lint` (non-interactive).
+- [x] `.eslintrc.json` extending `next/core-web-vitals`; fix the `eslint-config-next@16` vs `next@14` mismatch. — *pinned `eslint-config-next` to ^14.2.0; config adds `prettier` last so formatting never fights lint*
+- [x] Prettier + `.editorconfig`. — *`.prettierrc.json` (single quotes, no semicolons), `.prettierignore`, root `.editorconfig`; `npm run format:check` enforced*
+- [x] Vitest + Testing Library + jsdom: `AuthContext`, `lib/api.js` interceptors, `ProductCard`, cart math. — *45 tests in 5 files; cart math extracted to `src/lib/cart.js` so it is testable without React; JSX-in-`.js` handled by a small esbuild transform in `vitest.config.mjs` (renaming source files would churn every import)*
+- [x] Playwright for 3 smoke journeys: register → login, post a listing, search → open listing. — *5 tests in `frontend/e2e/`; `webServer` starts Django + `next dev`, `globalSetup` runs `manage.py seed_e2e` (verified buyer/seller/store/listing) and prunes stale listings so the free-plan quota is never exhausted*
+- [x] `npm test`, `npm run test:coverage`, `npm run lint` (non-interactive). — *all three exit 0*
 
-**Done when:** `npm run lint` exits 0; `npm test` is green; Playwright smoke passes locally.
+**Defect found and fixed here:** `src/lib/env.js` read `process.env[name]` with a
+*dynamic* key. Next.js only inlines **statically referenced** `NEXT_PUBLIC_*`
+variables, so the client bundle got `undefined`, `env.js` threw during
+hydration, and **every page rendered blank** in the browser. Unit tests passed
+(jsdom evaluates the real `process.env`), so only the Playwright suite caught
+it. Fixed by snapshotting the known keys statically; `src/test/env.test.js`
+pins the contract.
+
+**Done when:** `npm run lint` exits 0; `npm test` is green; Playwright smoke passes locally. ✅ **Completed 2026-10-10** — lint/format clean, 45 unit tests, 5 e2e tests, all green.
 
 ---
 

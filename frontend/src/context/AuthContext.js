@@ -45,10 +45,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.login({ email, password })
       const { user: userData, access, refresh } = response.data
-      
+
       Cookies.set('access_token', access, { expires: 7 })
       Cookies.set('refresh_token', refresh, { expires: 7 })
-      
+
       setUser(userData)
       return { success: true, user: userData }
     } catch (error) {

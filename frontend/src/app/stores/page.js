@@ -1,19 +1,19 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { storesAPI } from "../../lib/api";
-import Link from "next/link";
-import { Store, Search, ChevronRight, Package } from "lucide-react";
+import { useState, useEffect } from 'react'
+import { storesAPI } from '../../lib/api'
+import Link from 'next/link'
+import { Store, Search, ChevronRight, Package } from 'lucide-react'
 
 export default function StoresPage() {
-  const [stores, setStores] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredStores, setFilteredStores] = useState([]);
+  const [stores, setStores] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filteredStores, setFilteredStores] = useState([])
 
   useEffect(() => {
-    fetchStores();
-  }, []);
+    fetchStores()
+  }, [])
 
   useEffect(() => {
     if (searchTerm) {
@@ -22,26 +22,26 @@ export default function StoresPage() {
           store.store_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           store.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           store.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredStores(filtered);
+      )
+      setFilteredStores(filtered)
     } else {
-      setFilteredStores(stores);
+      setFilteredStores(stores)
     }
-  }, [searchTerm, stores]);
+  }, [searchTerm, stores])
 
   const fetchStores = async () => {
     try {
-      setLoading(true);
-      const response = await storesAPI.list();
-      const storesData = response.data.results || response.data || [];
-      setStores(storesData);
-      setFilteredStores(storesData);
+      setLoading(true)
+      const response = await storesAPI.list()
+      const storesData = response.data.results || response.data || []
+      setStores(storesData)
+      setFilteredStores(storesData)
     } catch (error) {
-      console.error("Error fetching stores:", error);
+      console.error('Error fetching stores:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -86,15 +86,15 @@ export default function StoresPage() {
         <div className="text-center py-16">
           <Store className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? "No stores found" : "No stores available"}
+            {searchTerm ? 'No stores found' : 'No stores available'}
           </h3>
           <p className="text-gray-600 mb-6">
             {searchTerm
-              ? "Try adjusting your search terms"
-              : "Check back later for new stores"}
+              ? 'Try adjusting your search terms'
+              : 'Check back later for new stores'}
           </p>
           {searchTerm && (
-            <button onClick={() => setSearchTerm("")} className="btn-primary">
+            <button onClick={() => setSearchTerm('')} className="btn-primary">
               Clear Search
             </button>
           )}
@@ -103,8 +103,8 @@ export default function StoresPage() {
         <>
           {/* Results Count */}
           <div className="mb-4 text-sm text-gray-600">
-            Showing {filteredStores.length}{" "}
-            {filteredStores.length === 1 ? "store" : "stores"}
+            Showing {filteredStores.length}{' '}
+            {filteredStores.length === 1 ? 'store' : 'stores'}
           </div>
 
           {/* Stores Grid */}
@@ -123,7 +123,7 @@ export default function StoresPage() {
                       alt={store.store_name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.style.display = "none";
+                        e.target.style.display = 'none'
                       }}
                     />
                   ) : (
@@ -144,7 +144,7 @@ export default function StoresPage() {
                           alt={`${store.store_name} logo`}
                           className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-md"
                           onError={(e) => {
-                            e.target.src = "/placeholder-store.jpg";
+                            e.target.src = '/placeholder-store.jpg'
                           }}
                         />
                       ) : (
@@ -168,7 +168,7 @@ export default function StoresPage() {
 
                   {/* Description */}
                   <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                    {store.description || "A trusted seller on MarketHub"}
+                    {store.description || 'A trusted seller on MarketHub'}
                   </p>
 
                   {/* Stats */}
@@ -190,5 +190,5 @@ export default function StoresPage() {
         </>
       )}
     </div>
-  );
+  )
 }

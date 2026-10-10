@@ -1,73 +1,73 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../../../context/AuthContext";
-import { productsAPI } from "../../../../lib/api";
-import { ArrowLeft, Save, AlertCircle, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '../../../../context/AuthContext'
+import { productsAPI } from '../../../../lib/api'
+import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import Link from 'next/link'
 
 export default function CreateProductPage() {
-  const router = useRouter();
-  const { isAuthenticated, isSeller, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const router = useRouter()
+  const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState(null)
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    base_price: "",
-    category: "",
+    name: '',
+    description: '',
+    base_price: '',
+    category: '',
     is_available: true,
     low_stock_threshold: 5,
-  });
+  })
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isSeller)) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated, isSeller, router]);
+  }, [authLoading, isAuthenticated, isSeller, router])
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!formData.name || !formData.description || !formData.base_price) {
-      setMessage({ type: "error", text: "Please fill in all required fields" });
-      return;
+      setMessage({ type: 'error', text: 'Please fill in all required fields' })
+      return
     }
 
     try {
-      setLoading(true);
-      setMessage(null);
-      await productsAPI.create(formData);
-      setMessage({ type: "success", text: "Product created successfully!" });
+      setLoading(true)
+      setMessage(null)
+      await productsAPI.create(formData)
+      setMessage({ type: 'success', text: 'Product created successfully!' })
       setTimeout(() => {
-        router.push("/seller/products");
-      }, 1500);
+        router.push('/seller/products')
+      }, 1500)
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error('Error creating product:', error)
       setMessage({
-        type: "error",
-        text: error.response?.data?.detail || "Failed to create product",
-      });
+        type: 'error',
+        text: error.response?.data?.detail || 'Failed to create product',
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (authLoading || !isAuthenticated || !isSeller) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -88,12 +88,12 @@ export default function CreateProductPage() {
         {message && (
           <div
             className={`mb-6 p-4 rounded-lg flex items-center ${
-              message.type === "success"
-                ? "bg-green-50 border border-green-200 text-green-700"
-                : "bg-red-50 border border-red-200 text-red-700"
+              message.type === 'success'
+                ? 'bg-green-50 border border-green-200 text-green-700'
+                : 'bg-red-50 border border-red-200 text-red-700'
             }`}
           >
-            {message.type === "success" ? (
+            {message.type === 'success' ? (
               <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
             ) : (
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -228,7 +228,7 @@ export default function CreateProductPage() {
               className="btn-primary flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="h-5 w-5" />
-              {loading ? "Creating..." : "Create Product"}
+              {loading ? 'Creating...' : 'Create Product'}
             </button>
             <Link
               href="/seller/products"
@@ -240,5 +240,5 @@ export default function CreateProductPage() {
         </form>
       </div>
     </div>
-  );
+  )
 }
