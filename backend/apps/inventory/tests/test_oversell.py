@@ -4,6 +4,7 @@ Kept in its own module because it needs a *transactional* database (real
 commits, separate connections per thread) while the rest of the suite runs in
 a rolled-back transaction.
 """
+
 import threading
 
 import pytest
@@ -34,18 +35,18 @@ def test_concurrent_reservations_cannot_oversell(monkeypatch):
     original_update = inventory_services.update_inventory
     failures = []
 
-    def synchronized_update(inv, quantity_delta, action_type, reason=''):
+    def synchronized_update(inv, quantity_delta, action_type, reason=""):
         barrier.wait()
         return original_update(inv, quantity_delta, action_type, reason)
 
-    monkeypatch.setattr(inventory_services, 'update_inventory', synchronized_update)
+    monkeypatch.setattr(inventory_services, "update_inventory", synchronized_update)
 
     def worker():
         try:
             inventory_services.reserve_inventory_for_order(
-                [{'product': product, 'quantity': 1, 'selected_attributes': {}}]
+                [{"product": product, "quantity": 1, "selected_attributes": {}}]
             )
-        except Exception as exc:  # noqa: BLE001 - the loser must fail cleanly
+        except Exception as exc:
             failures.append(exc)
         finally:
             connections.close_all()
@@ -58,16 +59,16 @@ def test_concurrent_reservations_cannot_oversell(monkeypatch):
 
     inventory.refresh_from_db()
     sold = (
-        InventoryAuditLog.objects.filter(
-            inventory=inventory, action_type='SALE'
-        ).aggregate(total=Sum('quantity_delta'))['total']
+        InventoryAuditLog.objects.filter(inventory=inventory, action_type="SALE").aggregate(
+            total=Sum("quantity_delta")
+        )["total"]
         or 0
     )
 
     # Invariant: every unit sold must be reflected in the stock counter.
     assert inventory.stock_quantity == initial_stock + sold, (
-        f'Lost update detected: stock={inventory.stock_quantity} but the audit '
-        f'log accounts for {sold} units (expected {initial_stock + sold}). '
-        f'Worker errors: {failures!r}'
+        f"Lost update detected: stock={inventory.stock_quantity} but the audit "
+        f"log accounts for {sold} units (expected {initial_stock + sold}). "
+        f"Worker errors: {failures!r}"
     )
-    assert inventory.stock_quantity >= 0, 'Stock must never go negative'
+    assert inventory.stock_quantity >= 0, "Stock must never go negative"

@@ -8,6 +8,7 @@ dedicated ``test_<DB_NAME>`` database for every run.
 Environment: tests read the same configuration as the application
 (`backend/.env.local` or exported variables — see `backend/.env.example`).
 """
+
 import pytest
 from rest_framework.test import APIClient
 

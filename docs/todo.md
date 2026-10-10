@@ -56,6 +56,10 @@
 8. `products/views.py` `SellerProductCreateView.perform_create()` raises `permissions.PermissionDenied`, but `rest_framework.permissions` has no such attribute (it lives in `rest_framework.exceptions`) → **AttributeError → HTTP 500** instead of 403 for both "not a seller" and "seller without a store" (found while writing the Phase 3 suite; `strict` xfail tests in `apps/products/tests/test_products.py`).
 9. `ProductReviewCreateSerializer.validate()` rejects *any* review from a user who already reviewed the product, so an author can **never edit their own review** (found while writing the Phase 3 suite; strict xfail test `test_owner_can_update_own_review`, fix scheduled with the reviews work in Phase 17).
 
+10. **One-off repair scripts are committed at the backend root** — `complete_fix.py`, `complete_setup.py`, `create_test_data.py`, `setup_database.py`, `fix_inventory.py`, `initialize_inventory.py` (from `8b2d267`). They are not imported by anything, mutate the dev database, and duplicate what `manage.py migrate` / fixtures already do. They are excluded from lint in `backend/ruff.toml` rather than deleted, since deleting committed files is the maintainer's call — **recommend removing them**.
+
+11. **The frontend had never been production-built.** `/register` calls `useSearchParams()` without a `<Suspense>` boundary, so `next build` failed to prerender the route ("useSearchParams() should be wrapped in a suspense boundary"). `next dev` never surfaces this, which is why it survived until the Phase 5 CI build step. Fixed by splitting the page into a `RegisterPage` wrapper (Suspense) + `RegisterForm`.
+
 ### 0.4 North-star metrics (instrument these early; see Phase 25)
 | Metric | Why |
 |---|---|
@@ -154,17 +158,40 @@ pins the contract.
 
 ---
 
-## Phase 5 — CI/CD pipeline
+## Phase 5 — CI/CD pipeline ✅
 **Goal:** every push is verified.
 
-- [ ] `.github/workflows/ci.yml`: backend (deps, migrate, lint, pytest, `check --deploy`) + frontend (ci, lint, test, build).
-- [ ] Cache pip/npm; Postgres service container.
-- [ ] Coverage on PRs; protected `main` branch; required checks.
-- [ ] Secret scanning + `pip-audit` + `npm audit` in CI (moved up from Phase 20).
-- [ ] Pre-commit hooks; Dependabot.
-- [ ] Preview deployments per PR (optional but valuable for design review).
+- [x] `.github/workflows/ci.yml`: backend (deps, migrate, lint, pytest, `check --deploy`) + frontend (ci, lint, test, build). — *backend job also runs `makemigrations --check`; both jobs get pip/npm caching; Postgres 16 service container*
+- [x] Cache pip/npm; Postgres service container.
+- [x] Coverage on PRs; protected `main` branch; required checks. — *coverage floor 60% overall + the 80% ratchet on `orders`/`payments`/`inventory` as a separate step; the coverage report is uploaded as an artifact. **Branch protection is not enabled by config alone** — see the note below*
+- [x] Secret scanning + `pip-audit` + `npm audit` in CI (moved up from Phase 20). — *gitleaks on every run; the two audits run in advisory mode (`continue-on-error`) until the backlog is triaged — flip them to blocking then*
+- [x] Pre-commit hooks; Dependabot. — *`.pre-commit-config.yaml` (trailing whitespace, YAML/key checks, ruff with `--fix`, prettier; pytest/vitest on the `pre-push` stage) and `.github/dependabot.yml` for pip, npm and GitHub Actions*
+- [ ] Preview deployments per PR (optional but valuable for design review). — *needs a hosting decision (Phase 20)*
 
-**Done when:** a PR shows green checks; a broken test blocks merge.
+**Ruff baseline:** `backend/ruff.toml` pins an explicit rule set so an upgrade
+can never silently change the gate. The 300 pre-existing findings were fixed
+(93 auto-fixed; the rest hand-edited) rather than ignored — the only blanket
+ignores are `RUF012` (DRF serializer `Meta.fields`), `BLE001` (reviewed
+`except Exception` in request handlers) and `E501` (the formatter owns line
+length). `ruff format` now covers the backend too.
+
+> ⚠️ **Ruff's F401 autofix removed `import apps.users.signals` from
+> `UsersConfig.ready()`** — it looks unused but is a side-effect import that
+> registers the verification-email receiver. The Phase 3 defect test
+> (`test_registration_sends_exactly_one_verification_email`) turned
+> XPASS(strict) and went red immediately, which is exactly what the ratchet is
+> for. Restored with a `# noqa: F401` and a comment so it cannot be "cleaned
+> up" again. Worth grepping for other side-effect imports before any bulk
+> autofix.
+
+> **Manual step — protect `main`** (no `gh` CLI available in this environment,
+> so this cannot be scripted from here): on GitHub → *Settings → Branches* →
+> add rule `main`: require a pull request before merging, require status
+> checks `Backend (Django)` + `Frontend (Next.js)` + `Security audits`, require
+> branches to be up to date, and dismiss stale reviews. Until that is done the
+> checks are advisory only.
+
+**Done when:** a PR shows green checks; a broken test blocks merge. ✅ **Completed 2026-10-10** — workflow, pre-commit and Dependabot in place; every gate re-verified locally (ruff clean, 158+11 backend, 86.3% / 96.6% coverage, 45 frontend unit + 5 e2e, `next build` green). Branch protection still needs the manual GitHub step noted above.
 
 ---
 

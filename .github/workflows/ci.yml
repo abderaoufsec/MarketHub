@@ -1,0 +1,188 @@
+# CI — every push and PR is verified (Phase 5 of docs/todo.md).
+#
+# Backend: deps -> ruff lint/format -> migrate -> pytest (with coverage) ->
+#          `manage.py check --deploy` + a coverage ratchet on the
+#          money-critical apps (orders, payments, inventory).
+# Frontend: deps -> lint -> format check -> vitest -> `next build`.
+# Both jobs also run the audit / secret-scanning gates.
+#
+# Note: `check --deploy` runs with DEBUG=False, so the job supplies a throwaway
+# secret key and the Postgres password; nothing real is stored in the repo.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Django)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Values consumed by core/settings.py; see backend/.env.example.
+      DEBUG: "false"
+      DJANGO_SECRET_KEY: ci-throwaway-secret-key-not-a-real-secret
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DB_NAME: markethub
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      # Keep the console backend so no test tries to reach SMTP.
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: markethub
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Django system checks
+        run: python manage.py check
+
+      - name: No missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Pytest with coverage
+        # pytest-cov is configured in pytest.ini (addopts) and writes .coverage;
+        # a separate `coverage run` would double-instrument.
+        run: pytest
+
+      - name: Coverage floor (60% overall)
+        run: coverage report --fail-under=60
+
+      - name: Coverage ratchet (80% on orders/payments/inventory)
+        run: >
+          coverage report
+          --include="apps/orders/*,apps/payments/*,apps/inventory/*"
+          --fail-under=80
+
+      - name: Deployment checks (DEBUG=False posture)
+        # Advisory until Phase 7 lands the HTTPS posture (SECURE_*, HSTS,
+        # secure cookies). Phase 7's "done when" is `check --deploy` clean;
+        # flip continue-on-error to false there.
+        continue-on-error: true
+        run: python manage.py check --deploy
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/.coverage*
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+
+  audits:
+    name: Security audits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install audit tooling
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pip-audit
+
+      - name: pip-audit (Python dependencies)
+        working-directory: backend
+        # Advisory gate: report findings without blocking the merge until the
+        # backlog is triaged (flip `continue-on-error` to false once clean).
+        continue-on-error: true
+        run: pip-audit -r requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: npm audit (JavaScript dependencies)
+        working-directory: frontend
+        # Same advisory posture as pip-audit above.
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

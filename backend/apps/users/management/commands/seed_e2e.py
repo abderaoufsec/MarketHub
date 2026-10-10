@@ -7,6 +7,7 @@ idempotent: re-running it updates the same rows instead of duplicating them.
 
     python manage.py seed_e2e
 """
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 

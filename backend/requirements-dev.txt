@@ -11,3 +11,4 @@ Faker>=24.0
 coverage>=7.4
 ruff>=0.6
 pip-audit>=2.7
+pre-commit>=4.0

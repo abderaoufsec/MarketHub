@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
@@ -17,7 +17,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
+// `useSearchParams()` makes the route opt out of static prerendering, so the
+// page must be wrapped in a Suspense boundary or `next build` fails with
+// "useSearchParams() should be wrapped in a suspense boundary" (caught by the
+// Phase 5 CI build step — the app had never been production-built).
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <RegisterForm />
+    </Suspense>
+  )
+}
+
+function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { register } = useAuth()

@@ -4,6 +4,7 @@ Every test should build its data through these factories instead of hand
 rolled ``Model.objects.create()`` calls, so that new required fields only
 break one place.
 """
+
 from decimal import Decimal
 
 import factory
@@ -23,10 +24,10 @@ class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
 
-    email = factory.Sequence(lambda n: f'buyer{n}@example.com')
-    username = factory.Sequence(lambda n: f'user{n}')
-    first_name = 'Test'
-    last_name = 'User'
+    email = factory.Sequence(lambda n: f"buyer{n}@example.com")
+    username = factory.Sequence(lambda n: f"user{n}")
+    first_name = "Test"
+    last_name = "User"
     # Default to a verified buyer so login-based tests are not blocked by the
     # email-verification flow. Registration tests override this.
     is_verified = True
@@ -36,13 +37,13 @@ class UserFactory(factory.django.DjangoModelFactory):
     @factory.post_generation
     def password(self, create, extracted, **kwargs):
         """Hash the raw password after the row is created."""
-        raw = extracted or 'Str0ng!Passw0rd'
+        raw = extracted or "Str0ng!Passw0rd"
         self.set_password(raw)
         return raw
 
 
 class SellerFactory(UserFactory):
-    email = factory.Sequence(lambda n: f'seller{n}@example.com')
+    email = factory.Sequence(lambda n: f"seller{n}@example.com")
     is_seller = True
 
 
@@ -51,9 +52,9 @@ class StoreFactory(factory.django.DjangoModelFactory):
         model = Store
 
     owner = factory.SubFactory(SellerFactory)
-    store_name = factory.Sequence(lambda n: f'Store {n}')
-    description = 'A store created by StoreFactory.'
-    category = 'electronics'
+    store_name = factory.Sequence(lambda n: f"Store {n}")
+    description = "A store created by StoreFactory."
+    category = "electronics"
     is_active = True
 
 
@@ -62,10 +63,10 @@ class ProductFactory(factory.django.DjangoModelFactory):
         model = Product
 
     store = factory.SubFactory(StoreFactory)
-    name = factory.Sequence(lambda n: f'Product {n}')
-    description = 'A product created by ProductFactory.'
-    base_price = Decimal('100.00')
-    category = 'electronics'
+    name = factory.Sequence(lambda n: f"Product {n}")
+    description = "A product created by ProductFactory."
+    base_price = Decimal("100.00")
+    category = "electronics"
     is_available = True
     low_stock_threshold = 5
 
@@ -75,7 +76,7 @@ class ProductImageFactory(factory.django.DjangoModelFactory):
         model = ProductImage
 
     product = factory.SubFactory(ProductFactory)
-    image_url = 'https://cdn.example.com/image.jpg'
+    image_url = "https://cdn.example.com/image.jpg"
     is_primary = True
     sort_order = 0
 
@@ -87,7 +88,7 @@ class ProductReviewFactory(factory.django.DjangoModelFactory):
     product = factory.SubFactory(ProductFactory)
     user = factory.SubFactory(UserFactory)
     rating = 5
-    comment = 'Great product.'
+    comment = "Great product."
     is_approved = True
 
 
@@ -115,8 +116,8 @@ class InventoryAuditLogFactory(factory.django.DjangoModelFactory):
     product = factory.SubFactory(ProductFactory)
     inventory = None
     quantity_delta = 1
-    action_type = 'INITIAL_STOCK'
-    reason = 'Seed stock'
+    action_type = "INITIAL_STOCK"
+    reason = "Seed stock"
     previous_quantity = 0
     new_quantity = 1
 
@@ -126,11 +127,11 @@ class AddressFactory(factory.django.DjangoModelFactory):
         model = Address
 
     user = factory.SubFactory(UserFactory)
-    address_line1 = '12 Rue de la Liberté'
-    city = 'Blida'
-    state_province = 'Blida'
-    postal_code = '09000'
-    country = 'DZ'
+    address_line1 = "12 Rue de la Liberté"
+    city = "Blida"
+    state_province = "Blida"
+    postal_code = "09000"
+    country = "DZ"
     is_default = True
 
 
@@ -149,7 +150,7 @@ class CartItemFactory(factory.django.DjangoModelFactory):
     product = factory.SubFactory(ProductFactory)
     quantity = 1
     selected_attributes = factory.LazyFunction(dict)
-    price_at_time_of_addition = Decimal('100.00')
+    price_at_time_of_addition = Decimal("100.00")
 
 
 class OrderFactory(factory.django.DjangoModelFactory):
@@ -158,10 +159,10 @@ class OrderFactory(factory.django.DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     store = factory.SubFactory(StoreFactory)
-    total_amount = Decimal('100.00')
+    total_amount = Decimal("100.00")
     shipping_address = factory.SubFactory(AddressFactory)
-    order_status = 'PENDING'
-    payment_status = 'PENDING'
+    order_status = "PENDING"
+    payment_status = "PENDING"
 
 
 class OrderItemFactory(factory.django.DjangoModelFactory):
@@ -171,7 +172,7 @@ class OrderItemFactory(factory.django.DjangoModelFactory):
     order = factory.SubFactory(OrderFactory)
     product = factory.SubFactory(ProductFactory)
     quantity = 1
-    unit_price_at_purchase = Decimal('100.00')
+    unit_price_at_purchase = Decimal("100.00")
 
 
 class TransactionFactory(factory.django.DjangoModelFactory):
@@ -179,7 +180,7 @@ class TransactionFactory(factory.django.DjangoModelFactory):
         model = Transaction
 
     order = factory.SubFactory(OrderFactory)
-    transaction_id = factory.Sequence(lambda n: f'SIM-TEST{n:012d}')
-    amount = Decimal('100.00')
-    gateway_used = 'SIMULATED'
-    payment_status = 'SUCCESSFUL'
+    transaction_id = factory.Sequence(lambda n: f"SIM-TEST{n:012d}")
+    amount = Decimal("100.00")
+    gateway_used = "SIMULATED"
+    payment_status = "SUCCESSFUL"

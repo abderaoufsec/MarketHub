@@ -1,4 +1,5 @@
 """Plan-based listing quotas (stub introduced in Phase 2, real plans in 21)."""
+
 import pytest
 from django.test import override_settings
 
@@ -32,7 +33,7 @@ def test_business_plan_is_unlimited():
 
 def test_unknown_plan_falls_back_to_free_quota():
     user = UserFactory()
-    user.plan = 'enterprise'
+    user.plan = "enterprise"
 
     with override_settings(MAX_PRODUCTS_PER_SELLER=7):
         assert plans.get_product_quota(user) == 7
@@ -44,6 +45,4 @@ def test_plan_choices_cover_all_codes():
         plans.PRO,
         plans.BUSINESS,
     }
-    assert plans.get_product_quota(SellerFactory()) == plans.get_product_quota(
-        UserFactory()
-    )
+    assert plans.get_product_quota(SellerFactory()) == plans.get_product_quota(UserFactory())

@@ -1,0 +1,52 @@
+# Ruff configuration — backend (Phase 5 of docs/todo.md).
+#
+# Lint + format gate for the Django project. The rule set is deliberately
+# explicit so a ruff upgrade can never silently change what we enforce.
+# Run:  python -m ruff check .   and   python -m ruff format --check .
+
+target-version = "py312"
+line-length = 100
+exclude = [
+    ".venv",
+    "**/migrations/*",
+    "**/__pycache__/*",
+    ".ruff_cache",
+    # One-off setup/repair scripts committed in 8b2d267. They are not part of
+    # the Django project; candidates for deletion — tracked in docs/todo.md.
+    "complete_fix.py",
+    "complete_setup.py",
+    "create_test_data.py",
+    "setup_database.py",
+]
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "SIM",  # simplify
+    "C4",   # comprehensions
+    "PTH",  # pathlib
+    "RUF",  # ruff-specific
+]
+
+ignore = [
+    # DRF serializers declare `fields = [...]` inside `Meta`; annotating all
+    # ~180 of them with ClassVar adds noise without catching real bugs.
+    "RUF012",
+    # `except Exception:` around request handlers is the documented Django/DRF
+    # pattern for returning a 4xx instead of a 500; the blind-except cases are
+    # deliberate and reviewed (see apps/*/views.py).
+    "BLE001",
+    # Line length is enforced by the formatter, not by E501.
+    "E501",
+]
+
+[lint.per-file-ignores]
+# Tests assert on whatever the code does; unused imports and variables are
+# common when building fixtures.
+"**/tests/*" = ["F401", "F841", "SIM117"]
+"conftest.py" = ["F401"]

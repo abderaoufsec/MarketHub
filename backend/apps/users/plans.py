@@ -10,20 +10,19 @@ plans are resolved and what the quotas are.
 Quota semantics: an ``int`` caps the number of listings, ``None`` means
 unlimited.
 """
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
 
 from django.conf import settings
 
-FREE = 'free'
-PRO = 'pro'
-BUSINESS = 'business'
+FREE = "free"
+PRO = "pro"
+BUSINESS = "business"
 
 PLAN_CHOICES = (
-    (FREE, 'Free'),
-    (PRO, 'Pro'),
-    (BUSINESS, 'Business'),
+    (FREE, "Free"),
+    (PRO, "Pro"),
+    (BUSINESS, "Business"),
 )
 
 # Listing quota per plan. ``None`` means unlimited. The free value comes from
@@ -43,11 +42,11 @@ def get_plan(user) -> str:
     """
     if user is None:
         return FREE
-    plan = getattr(user, 'plan', FREE)
+    plan = getattr(user, "plan", FREE)
     return plan or FREE
 
 
-def get_product_quota(user) -> Optional[int]:
+def get_product_quota(user) -> int | None:
     """Max number of products the user may create, or ``None`` for unlimited."""
     plan = get_plan(user)
     if plan == FREE:
