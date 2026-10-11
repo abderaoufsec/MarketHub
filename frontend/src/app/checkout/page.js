@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { cartAPI, ordersAPI, addressesAPI, paymentsAPI } from '../../lib/api'
+import { cartAPI, ordersAPI, addressesAPI } from '../../lib/api'
+import { cartSubtotal, formatPrice } from '../../lib/cart'
 import { useAuth } from '../../context/AuthContext'
 import {
   CreditCard,
@@ -15,6 +16,13 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// One key per checkout attempt: retrying after a network timeout returns the
+// order that was already created instead of charging the buyer twice.
+const newIdempotencyKey = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
 export default function CheckoutPage() {
   const router = useRouter()
   const { isAuthenticated } = useAuth()
@@ -22,11 +30,12 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
-  const [processingPayment, setProcessingPayment] = useState(false)
   const [error, setError] = useState('')
+  const [priceChanges, setPriceChanges] = useState([])
   const [selectedAddressId, setSelectedAddressId] = useState(null)
   const [showNewAddressForm, setShowNewAddressForm] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('credit_card')
+  const [idempotencyKey] = useState(newIdempotencyKey)
   const [shippingInfo, setShippingInfo] = useState({
     address_line1: '',
     address_line2: '',
@@ -108,6 +117,23 @@ export default function CheckoutPage() {
     }
   }
 
+  // Checkout refused to charge a stale price: accept the catalogue prices and
+  // ask the buyer to confirm the new total.
+  const applyPriceChanges = async (changes) => {
+    setPriceChanges(changes)
+    try {
+      const response = await cartAPI.refreshPrices()
+      setCart(response.data.cart)
+    } catch (refreshError) {
+      console.error('Error refreshing cart prices:', refreshError)
+    }
+    const message =
+      changes.length === 1
+        ? `${changes[0].product_name} is now ${formatPrice(changes[0].new_price)}. Review your total and place the order again.`
+        : 'Some prices changed while you were checking out. Review your total and place the order again.'
+    toast.error(message, { duration: 6000 })
+  }
+
   const handleCheckout = async (e) => {
     e.preventDefault()
     setError('')
@@ -117,7 +143,6 @@ export default function CheckoutPage() {
       // Validate cart has items
       if (!cart?.items || cart.items.length === 0) {
         setError('Your cart is empty')
-        setProcessing(false)
         return
       }
 
@@ -134,7 +159,6 @@ export default function CheckoutPage() {
           !shippingInfo.country
         ) {
           setError('Please fill in all required address fields')
-          setProcessing(false)
           return
         }
 
@@ -144,54 +168,40 @@ export default function CheckoutPage() {
 
       if (!addressId) {
         setError('Please select or create a shipping address')
-        setProcessing(false)
         return
       }
 
-      // Create order using address ID
-      const checkoutData = {
+      // One call, one transaction: the backend creates the order(s), reserves
+      // stock and captures the payment together. Payment happens here — there
+      // is no second "pay again" request after the order is created.
+      const response = await ordersAPI.checkout({
         shipping_address_id: addressId,
         shipping_method: 'standard',
+        idempotency_key: idempotencyKey,
+      })
+
+      const orderId = response.data.orders?.[0]?.id
+
+      toast.success('Order placed — payment confirmed!')
+      router.push(`/orders/${orderId}?success=true`)
+    } catch (checkoutError) {
+      console.error('Checkout error:', checkoutError)
+      const data = checkoutError.response?.data
+
+      if (data?.code === 'price_changed') {
+        await applyPriceChanges(data.details || [])
+        return
       }
 
-      const response = await ordersAPI.checkout(checkoutData)
-
-      toast.success('Order created successfully!')
-
-      // Get order ID
-      const orderId = response.data.orders?.[0]?.id || response.data.id
-
-      // Process payment simulation
-      setProcessingPayment(true)
-
-      try {
-        const paymentResponse = await paymentsAPI.simulatePayment({
-          order_id: orderId,
-          payment_method: paymentMethod,
-        })
-
-        toast.success('Payment processed successfully!')
-
-        // Redirect to order details
-        router.push(`/orders/${orderId}?success=true`)
-      } catch (paymentError) {
-        console.error('Payment error:', paymentError)
-        // Order created but payment failed
-        toast.error('Payment failed. Order created but not paid.')
-        router.push(`/orders/${orderId}?payment_failed=true`)
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
       const errorMsg =
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        Object.values(error.response?.data || {})[0]?.[0] ||
+        data?.error ||
+        data?.detail ||
+        Object.values(data || {})[0]?.[0] ||
         'Failed to process order. Please try again.'
       setError(errorMsg)
       toast.error(errorMsg)
     } finally {
       setProcessing(false)
-      setProcessingPayment(false)
     }
   }
 
@@ -203,12 +213,7 @@ export default function CheckoutPage() {
     })
   }
 
-  const getTotal = () => {
-    if (!cart?.items) return 0
-    return cart.items.reduce((sum, item) => {
-      return sum + parseFloat(item.price_at_time_of_addition) * item.quantity
-    }, 0)
-  }
+  const getTotal = () => cartSubtotal(cart?.items)
 
   if (loading) {
     return (
@@ -227,6 +232,27 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+
+      {priceChanges.length > 0 && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg">
+          <p className="font-semibold flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            Prices have changed
+          </p>
+          <p className="text-sm mt-1">
+            Nothing was ordered. Your cart now shows the current prices — review
+            the total and place the order again.
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {priceChanges.map((change) => (
+              <li key={change.product_id}>
+                {change.product_name}: was {formatPrice(change.old_price)}, now{' '}
+                <strong>{formatPrice(change.new_price)}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
@@ -475,8 +501,8 @@ export default function CheckoutPage() {
                 <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
                   <p className="text-sm">
                     <strong>🔒 Simulated Payment:</strong> This is a demo
-                    payment system. No real payment will be processed. Your
-                    order will be automatically approved.
+                    payment system. No real payment will be processed. Placing
+                    the order charges it and confirms it in one step.
                   </p>
                 </div>
               </div>
@@ -553,17 +579,13 @@ export default function CheckoutPage() {
 
                 <button
                   type="submit"
-                  disabled={
-                    processing || processingPayment || !selectedAddressId
-                  }
+                  disabled={processing || !selectedAddressId}
                   className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {processing || processingPayment ? (
+                  {processing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      {processingPayment
-                        ? 'Processing Payment...'
-                        : 'Creating Order...'}
+                      Processing Order…
                     </>
                   ) : (
                     'Place Order & Pay'

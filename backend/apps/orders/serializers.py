@@ -56,6 +56,16 @@ class AddToCartSerializer(serializers.Serializer):
         return value
 
 
+class UpdateCartItemSerializer(serializers.Serializer):
+    """Serializer for changing the quantity of an existing cart line.
+
+    ``int(quantity)`` on raw input (docs/todo.md §0.3 #2) turned "lots" into an
+    HTTP 500; DRF answers 400 with a field error instead.
+    """
+
+    quantity = serializers.IntegerField(min_value=1)
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     """Serializer for OrderItem model"""
 
@@ -106,12 +116,19 @@ class CheckoutSerializer(serializers.Serializer):
 
     shipping_address_id = serializers.IntegerField()
     shipping_method = serializers.CharField(max_length=100, required=False, default="standard")
+    # Makes a retried checkout safe: sending the same key twice returns the
+    # orders that were already created instead of charging the buyer again.
+    idempotency_key = serializers.CharField(max_length=64, required=False, allow_blank=True)
 
     def validate_shipping_address_id(self, value):
         from apps.users.models import Address
 
         user = self.context["request"].user
 
+        # docs/todo.md §0.3 #3: the raw Address.objects.get() in the view used
+        # to raise DoesNotExist -> HTTP 500 for a foreign or unknown address.
+        # Scoping the lookup to the buyer makes it a 400 here; ``place_order``
+        # re-checks the same condition before it writes anything.
         if not Address.objects.filter(id=value, user=user).exists():
             raise serializers.ValidationError("Shipping address not found")
 

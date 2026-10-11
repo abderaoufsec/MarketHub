@@ -1,22 +1,39 @@
-from django.db import transaction
+"""Order endpoints (docs/todo.md Phase 6).
+
+The views only translate HTTP ⇄ domain calls. Checkout itself lives in
+``apps.orders.services.place_order``: it runs in one transaction and reports
+failures by raising, so a rejected checkout can never commit an order.
+"""
+
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.inventory.services import reserve_inventory_for_order
-from apps.payments.services import process_simulated_payment
 from apps.products.models import Product
-from apps.users.models import Address
 
-from .models import Cart, CartItem, Order, OrderItem
+from .exceptions import OrderDomainError
+from .models import Cart, CartItem, Order
 from .serializers import (
     AddToCartSerializer,
     CartItemSerializer,
     CartSerializer,
     CheckoutSerializer,
     OrderSerializer,
+    UpdateCartItemSerializer,
 )
+from .services import place_order, refresh_cart_prices, stock_error_for
+
+
+def _stock_rejection(product, quantity, attributes):
+    """The 400 body for a quantity that cannot be sold, or ``None``."""
+    message = stock_error_for(product, attributes, quantity)
+    if message is None:
+        return None
+    return Response(
+        {"error": message, "code": "insufficient_stock"},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 @api_view(["GET"])
@@ -38,27 +55,44 @@ def add_to_cart(request):
 
     cart, _created = Cart.objects.get_or_create(user=request.user)
 
-    product = Product.objects.get(id=serializer.validated_data["product_id"])
-    quantity = serializer.validated_data["quantity"]
-    selected_attributes = serializer.validated_data.get("selected_attributes", {})
+    # The serializer already validated existence + availability; re-read with
+    # the same filter so a product deleted mid-request answers 400, not 500.
+    product = Product.objects.filter(
+        id=serializer.validated_data["product_id"], is_available=True
+    ).first()
+    if product is None:
+        return Response(
+            {"error": "Product not found or not available", "code": "product_unavailable"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    # Check if item already in cart
-    cart_item, item_created = CartItem.objects.get_or_create(
+    quantity = serializer.validated_data["quantity"]
+    selected_attributes = serializer.validated_data.get("selected_attributes", {}) or {}
+
+    existing = CartItem.objects.filter(
+        cart=cart, product=product, selected_attributes=selected_attributes
+    ).first()
+    desired_quantity = (existing.quantity if existing else 0) + quantity
+
+    # Validate before writing: an unsellable quantity must not create or grow
+    # a cart line that checkout would only reject later.
+    rejection = _stock_rejection(product, desired_quantity, selected_attributes)
+    if rejection is not None:
+        return rejection
+
+    if existing is not None:
+        existing.quantity = desired_quantity
+        existing.save(update_fields=["quantity", "updated_at"])
+        return Response(CartItemSerializer(existing).data, status=status.HTTP_200_OK)
+
+    cart_item = CartItem.objects.create(
         cart=cart,
         product=product,
+        quantity=quantity,
         selected_attributes=selected_attributes,
-        defaults={"quantity": quantity, "price_at_time_of_addition": product.base_price},
+        price_at_time_of_addition=product.base_price,
     )
-
-    if not item_created:
-        # Update quantity if item already exists
-        cart_item.quantity += quantity
-        cart_item.save()
-
-    return Response(
-        CartItemSerializer(cart_item).data,
-        status=status.HTTP_201_CREATED if item_created else status.HTTP_200_OK,
-    )
+    return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["PUT"])
@@ -66,16 +100,24 @@ def add_to_cart(request):
 def update_cart_item(request, item_id):
     """Update cart item quantity"""
     try:
-        cart_item = CartItem.objects.get(id=item_id, cart__user=request.user)
+        cart_item = CartItem.objects.select_related("product").get(
+            id=item_id, cart__user=request.user
+        )
     except CartItem.DoesNotExist:
         return Response({"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    quantity = request.data.get("quantity")
-    if not quantity or int(quantity) < 1:
-        return Response({"error": "Invalid quantity"}, status=status.HTTP_400_BAD_REQUEST)
+    serializer = UpdateCartItemSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    cart_item.quantity = int(quantity)
-    cart_item.save()
+    quantity = serializer.validated_data["quantity"]
+
+    rejection = _stock_rejection(cart_item.product, quantity, cart_item.selected_attributes or {})
+    if rejection is not None:
+        return rejection
+
+    cart_item.quantity = quantity
+    cart_item.save(update_fields=["quantity", "updated_at"])
 
     return Response(CartItemSerializer(cart_item).data)
 
@@ -106,104 +148,50 @@ def clear_cart(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def update_cart_prices(request):
+    """Accept the current catalogue prices for the buyer's cart.
+
+    Checkout refuses to charge a stale price (docs/todo.md Phase 6); this is
+    the recovery endpoint the "price changed" UI calls before retrying.
+    """
+    cart, _created = Cart.objects.get_or_create(user=request.user)
+    updated = refresh_cart_prices(request.user)
+    cart.refresh_from_db()
+    return Response(
+        {"updated": updated, "cart": CartSerializer(cart).data},
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def checkout(request):
-    """Process checkout and create order"""
+    """Process checkout and create order(s).
+
+    Payment happens here, inside the same transaction as the order and the
+    stock reservation: there is a single authoritative payment path, and a
+    failure anywhere leaves nothing behind. The ``Idempotency-Key`` body field
+    makes a retried request return the orders it already created.
+    """
     serializer = CheckoutSerializer(data=request.data, context={"request": request})
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        cart = Cart.objects.get(user=request.user)
-    except Cart.DoesNotExist:
-        return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
-
-    if not cart.items.exists():
-        return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Group items by store
-    items_by_store = {}
-    for item in cart.items.all():
-        store = item.product.store
-        if store.id not in items_by_store:
-            items_by_store[store.id] = {"store": store, "items": []}
-        items_by_store[store.id]["items"].append(item)
-
-    # Get shipping address
-    shipping_address = Address.objects.get(
-        id=serializer.validated_data["shipping_address_id"], user=request.user
-    )
-
-    orders = []
-
-    with transaction.atomic():
-        # Create order for each store
-        for store_data in items_by_store.values():
-            store = store_data["store"]
-            items = store_data["items"]
-
-            # Calculate total
-            total_amount = sum(item.subtotal for item in items)
-
-            # Create order
-            order = Order.objects.create(
-                user=request.user,
-                store=store,
-                total_amount=total_amount,
-                shipping_address=shipping_address,
-                shipping_method=serializer.validated_data.get("shipping_method", "standard"),
-                order_status="PENDING",
-                payment_status="PENDING",
-            )
-
-            # Create order items and prepare inventory data
-            inventory_items = []
-            for cart_item in items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=cart_item.product,
-                    quantity=cart_item.quantity,
-                    unit_price_at_purchase=cart_item.price_at_time_of_addition,
-                    selected_attributes=cart_item.selected_attributes,
-                )
-
-                inventory_items.append(
-                    {
-                        "product": cart_item.product,
-                        "quantity": cart_item.quantity,
-                        "selected_attributes": cart_item.selected_attributes,
-                    }
-                )
-
-            # Reserve inventory
-            try:
-                reserve_inventory_for_order(inventory_items)
-            except ValueError as e:
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Process payment (simulated)
-            payment_result = process_simulated_payment(order)
-
-            if payment_result["success"]:
-                order.payment_status = "SUCCESSFUL"
-                order.order_status = "PROCESSING"
-                order.save()
-            else:
-                order.payment_status = "FAILED"
-                order.save()
-                return Response(
-                    {"error": "Payment failed", "details": payment_result.get("error")},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            orders.append(order)
-
-        # Clear cart after successful checkout
-        cart.items.all().delete()
+        orders, is_replay = place_order(
+            user=request.user,
+            shipping_address_id=serializer.validated_data["shipping_address_id"],
+            shipping_method=serializer.validated_data.get("shipping_method", "standard"),
+            idempotency_key=serializer.validated_data.get("idempotency_key") or None,
+        )
+    except OrderDomainError as exc:
+        return Response(exc.as_response_body(), status=exc.status_code)
 
     return Response(
         {
             "message": "Order(s) placed successfully",
             "orders": OrderSerializer(orders, many=True).data,
+            "idempotent_replay": is_replay,
         },
         status=status.HTTP_201_CREATED,
     )

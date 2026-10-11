@@ -1,5 +1,6 @@
 import logging
 
+from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -53,66 +54,72 @@ def simulate_payment(request):
     """
     Simulate payment processing for an order
 
+    The order row is locked before ``payment_status`` is read, and the capture
+    itself re-checks it under that lock, so two concurrent attempts cannot both
+    charge the same order. An ``idempotency_key`` replays the original result
+    instead of charging again.
+
     Expected payload:
     {
         "order_id": 123,
-        "payment_method": "credit_card"  # optional, for demonstration
+        "payment_method": "credit_card",  # optional, for demonstration
+        "idempotency_key": "…"            # optional, makes retries safe
     }
     """
     order_id = request.data.get("order_id")
     payment_method = request.data.get("payment_method", "credit_card")
+    idempotency_key = request.data.get("idempotency_key") or None
 
     if not order_id:
         return Response({"error": "order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Get the order
-        order = Order.objects.get(id=order_id, user=request.user)
+        with transaction.atomic():
+            # Get the order, locked for the rest of this transaction.
+            order = Order.objects.select_for_update().get(id=order_id, user=request.user)
 
-        # Check if order is already paid
-        if order.payment_status == "SUCCESSFUL":
-            return Response(
-                {"error": "Order has already been paid"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            # Every decision (already paid? cancelled? replay?) is made by the
+            # service, which re-reads the order under the same lock: one
+            # authoritative path instead of a pre-check that can go stale.
+            result = process_simulated_payment(order, idempotency_key=idempotency_key)
 
-        # Check if order is cancelled
-        if order.order_status == "CANCELLED":
-            return Response(
-                {"error": "Cannot process payment for cancelled order"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Process simulated payment
-        result = process_simulated_payment(order)
-
-        if result["success"]:
-            # Update order payment status
-            order.payment_status = "SUCCESSFUL"
-            order.order_status = "PROCESSING"
-            order.save()
-
-            return Response(
-                {
+            if result["success"]:
+                payload = {
                     "message": "Payment processed successfully",
                     "transaction_id": result["transaction_id"],
                     "amount_paid": result["amount"],
                     "commission": result["commission"],
                     "net_to_seller": result["net_payout"],
                     "payment_method": payment_method,
+                    "idempotent_replay": result.get("replay", False),
                     "order": {
                         "id": order.id,
                         "status": order.order_status,
                         "payment_status": order.payment_status,
                     },
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            logger.error("Simulated payment failed for order %s: %s", order_id, result.get("error"))
-            return Response(
-                {"error": "Payment processing failed. Please try again."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                }
+                code = status.HTTP_200_OK
+            elif result.get("reason") == "already_paid":
+                payload = {"error": "Order has already been paid", "code": "already_paid"}
+                code = status.HTTP_400_BAD_REQUEST
+            elif result.get("reason") == "order_cancelled":
+                payload = {
+                    "error": "Cannot process payment for cancelled order",
+                    "code": "order_cancelled",
+                }
+                code = status.HTTP_400_BAD_REQUEST
+            else:
+                # The service logs the real cause; never echo it back.
+                logger.error(
+                    "Simulated payment failed for order %s: %s", order_id, result.get("error")
+                )
+                payload = {
+                    "error": "Payment processing failed. Please try again.",
+                    "code": "payment_failed",
+                }
+                code = status.HTTP_400_BAD_REQUEST
+
+        return Response(payload, status=code)
 
     except Order.DoesNotExist:
         return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -133,49 +140,55 @@ def process_payment_refund(request, order_id):
     Only order owner can request refund
     """
     try:
-        order = Order.objects.get(id=order_id, user=request.user)
+        with transaction.atomic():
+            # Lock before reading payment_status so a refund cannot race a
+            # payment or a second refund for the same order.
+            order = Order.objects.select_for_update().get(id=order_id, user=request.user)
 
-        # Check if order can be refunded
-        if order.payment_status != "SUCCESSFUL":
-            return Response(
-                {"error": "Order payment was not successful, cannot refund"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            # Check if order can be refunded
+            if order.payment_status != "SUCCESSFUL":
+                payload = {
+                    "error": "Order payment was not successful, cannot refund",
+                    "code": "not_paid",
+                }
+                code = status.HTTP_400_BAD_REQUEST
+            elif order.order_status == "DELIVERED":
+                payload = {
+                    "error": "Cannot refund delivered orders. Please contact support.",
+                    "code": "already_delivered",
+                }
+                code = status.HTTP_400_BAD_REQUEST
+            else:
+                # Process refund
+                result = process_refund(order)
 
-        if order.order_status == "DELIVERED":
-            return Response(
-                {"error": "Cannot refund delivered orders. Please contact support."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                if result["success"]:
+                    # Update order status inside the same transaction as the
+                    # refund rows, so they can never disagree.
+                    order.payment_status = "FAILED"  # Mark payment as failed after refund
+                    order.order_status = "CANCELLED"
+                    order.save(update_fields=["payment_status", "order_status"])
 
-        # Process refund
-        result = process_refund(order)
+                    payload = {
+                        "message": "Refund processed successfully",
+                        "transaction_id": result["transaction_id"],
+                        "refund_amount": result["refund_amount"],
+                        "order": {
+                            "id": order.id,
+                            "status": order.order_status,
+                            "payment_status": order.payment_status,
+                        },
+                    }
+                    code = status.HTTP_200_OK
+                else:
+                    logger.error("Refund failed for order %s: %s", order_id, result.get("error"))
+                    payload = {
+                        "error": "Refund processing failed. Please contact support.",
+                        "code": "refund_failed",
+                    }
+                    code = status.HTTP_400_BAD_REQUEST
 
-        if result["success"]:
-            # Update order status
-            order.payment_status = "FAILED"  # Mark payment as failed after refund
-            order.order_status = "CANCELLED"
-            order.save()
-
-            return Response(
-                {
-                    "message": "Refund processed successfully",
-                    "transaction_id": result["transaction_id"],
-                    "refund_amount": result["refund_amount"],
-                    "order": {
-                        "id": order.id,
-                        "status": order.order_status,
-                        "payment_status": order.payment_status,
-                    },
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            logger.error("Refund failed for order %s: %s", order_id, result.get("error"))
-            return Response(
-                {"error": "Refund processing failed. Please contact support."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(payload, status=code)
 
     except Order.DoesNotExist:
         return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)

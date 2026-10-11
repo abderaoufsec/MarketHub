@@ -20,6 +20,10 @@ class Transaction(models.Model):
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="transactions")
     transaction_id = models.CharField(max_length=255, unique=True)
+    # Client-supplied key that makes a retried payment safe to replay: the
+    # same key can only ever produce one transaction per order
+    # (docs/todo.md Phase 6).
+    idempotency_key = models.CharField(max_length=64, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     gateway_used = models.CharField(max_length=50, choices=GATEWAY_CHOICES, default="SIMULATED")
     payment_status = models.CharField(
@@ -30,6 +34,7 @@ class Transaction(models.Model):
     class Meta:
         db_table = "transactions"
         ordering = ["-transaction_timestamp"]
+        unique_together = ["idempotency_key", "order"]
         indexes = [
             models.Index(fields=["-transaction_timestamp"]),
             models.Index(fields=["payment_status"]),

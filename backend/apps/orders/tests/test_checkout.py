@@ -1,8 +1,8 @@
-"""Checkout: order creation, per-store split, and the transactional defects.
+"""Checkout: order creation, per-store split, and the transactional guarantees.
 
-docs/todo.md §0.3 #3/#4 — ``return Response(...)`` *inside*
-``transaction.atomic()`` commits partial state (an order for a FAILED payment,
-or an order whose inventory reservation failed).
+docs/todo.md §0.3 #3/#4 and Phase 6: a failed checkout must commit *nothing* —
+no order, no stock reservation, no payment — and it must never charge a price
+that changed while the item sat in the cart.
 """
 
 from decimal import Decimal
@@ -24,6 +24,7 @@ pytestmark = pytest.mark.django_db
 CHECKOUT_URL = "/api/orders/checkout/"
 ORDERS_URL = "/api/orders/"
 SELLER_ORDERS_URL = "/api/orders/seller/list/"
+REFRESH_URL = "/api/orders/cart/refresh-prices/"
 
 
 def checkout_payload(address, **overrides):
@@ -115,14 +116,8 @@ def test_checkout_rejects_foreign_shipping_address(buyer_client, address, buyer)
 
 
 # ---------------------------------------------------------------------------
-# Defects (failing-first, fixed in Phase 6)
+# Transactional defects — docs/todo.md §0.3 #1/#4, fixed in Phase 6
 # ---------------------------------------------------------------------------
-@pytest.mark.xfail(
-    reason="docs/todo.md §0.3 #1/#4: the stock-failure branch returns inside "
-    "transaction.atomic(), committing an order with no inventory reserved "
-    "(fixed in Phase 6 by raising a domain exception outside the block)",
-    strict=True,
-)
 def test_checkout_rolls_back_when_stock_is_missing(buyer_client, buyer, address, product):
     """No inventory row at all -> reservation must fail and commit nothing."""
     fill_cart(buyer, product, quantity=1)
@@ -130,39 +125,52 @@ def test_checkout_rolls_back_when_stock_is_missing(buyer_client, buyer, address,
     response = buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json")
 
     assert response.status_code == 400
+    assert response.data["code"] == "insufficient_stock"
     assert Order.objects.count() == 0
     assert OrderItem.objects.count() == 0
 
 
-@pytest.mark.xfail(
-    reason="docs/todo.md §0.3 #4: a FAILED order is committed with its stock "
-    "still reserved because the failure branch returns inside the atomic block "
-    "(fixed in Phase 6)",
-    strict=True,
-)
+def test_checkout_rolls_back_every_store_when_one_cannot_be_reserved(
+    buyer_client, buyer, address, product, inventory
+):
+    """One unresolvable line must not leave the other stores' orders behind."""
+    other_store = StoreFactory()
+    other_product = ProductFactory(store=other_store)  # no Inventory row
+    fill_cart(buyer, product, quantity=2)
+    fill_cart(buyer, other_product, quantity=1)
+
+    response = buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json")
+
+    assert response.status_code == 400
+    assert Order.objects.count() == 0
+    assert OrderItem.objects.count() == 0
+    assert Transaction.objects.count() == 0
+    inventory.refresh_from_db()
+    assert inventory.stock_quantity == 10
+    # The cart survives a rejected checkout so the buyer can fix it.
+    assert CartItem.objects.count() == 2
+
+
 def test_failed_payment_leaves_no_order_and_no_reserved_stock(
     buyer_client, buyer, address, product, inventory, monkeypatch
 ):
     monkeypatch.setattr(
-        "apps.orders.views.process_simulated_payment",
-        lambda order: {"success": False, "error": "declined"},
+        # The capture lives in the service layer now (single payment path).
+        "apps.orders.services.process_simulated_payment",
+        lambda order, **kwargs: {"success": False, "error": "declined"},
     )
     fill_cart(buyer, product, quantity=2)
 
     response = buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json")
 
     assert response.status_code == 400
+    assert response.data["code"] == "payment_failed"
     assert Order.objects.count() == 0
     inventory.refresh_from_db()
     assert inventory.stock_quantity == 10
 
 
-@pytest.mark.xfail(
-    reason="docs/todo.md Phase 6: checkout charges price_at_time_of_addition "
-    "instead of re-validating the current price",
-    strict=True,
-)
-def test_checkout_uses_the_current_price(buyer_client, buyer, address, product, inventory):
+def test_checkout_rejects_a_stale_price(buyer_client, buyer, address, product, inventory):
     """A price change between add-to-cart and checkout must never be silent."""
     fill_cart(buyer, product, quantity=1, price=Decimal("100.00"))
     product.base_price = Decimal("150.00")
@@ -170,12 +178,102 @@ def test_checkout_uses_the_current_price(buyer_client, buyer, address, product, 
 
     response = buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json")
 
-    if response.status_code == 201:
-        order = Order.objects.get()
-        assert order.total_amount == Decimal("150.00")
-    else:
-        # Rejecting with a "price changed" response is also acceptable.
-        assert response.status_code == 400
+    assert response.status_code == 400
+    assert response.data["code"] == "price_changed"
+    assert response.data["details"] == [
+        {
+            "product_id": product.id,
+            "product_name": product.name,
+            "old_price": Decimal("100.00"),
+            "new_price": Decimal("150.00"),
+        }
+    ]
+    assert Order.objects.count() == 0
+    inventory.refresh_from_db()
+    assert inventory.stock_quantity == 10
+
+
+def test_checkout_charges_the_current_price_after_a_refresh(
+    buyer_client, buyer, address, product, inventory
+):
+    fill_cart(buyer, product, quantity=2, price=Decimal("100.00"))
+    product.base_price = Decimal("150.00")
+    product.save()
+
+    # 400 until the buyer accepts the new price…
+    assert (
+        buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json").status_code == 400
+    )
+    # …then the order is priced from the catalogue, not from the stale cart.
+    refreshed = buyer_client.post(REFRESH_URL, {}, format="json")
+    assert refreshed.status_code == 200
+
+    response = buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json")
+
+    assert response.status_code == 201
+    order = Order.objects.get()
+    assert order.total_amount == Decimal("300.00")
+    assert order.items.get().unit_price_at_purchase == Decimal("150.00")
+
+
+def test_checkout_rejects_a_product_that_became_unavailable(
+    buyer_client, buyer, address, product, inventory
+):
+    fill_cart(buyer, product, quantity=1)
+    product.is_available = False
+    product.save()
+
+    response = buyer_client.post(CHECKOUT_URL, checkout_payload(address), format="json")
+
+    assert response.status_code == 400
+    assert response.data["code"] == "product_unavailable"
+    assert Order.objects.count() == 0
+    inventory.refresh_from_db()
+    assert inventory.stock_quantity == 10
+
+
+def test_retried_checkout_with_the_same_idempotency_key_returns_the_same_orders(
+    buyer_client, buyer, address, product, inventory
+):
+    """A double-submitted checkout must not create (or charge) twice."""
+    fill_cart(buyer, product, quantity=2)
+    payload = checkout_payload(address, idempotency_key="retry-me-1")
+
+    first = buyer_client.post(CHECKOUT_URL, payload, format="json")
+    second = buyer_client.post(CHECKOUT_URL, payload, format="json")
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert second.data["idempotent_replay"] is True
+    assert [order["id"] for order in second.data["orders"]] == [
+        order["id"] for order in first.data["orders"]
+    ]
+
+    order = Order.objects.get()
+    assert order.idempotency_key == "retry-me-1"
+    # Reserved once, charged once.
+    inventory.refresh_from_db()
+    assert inventory.stock_quantity == 8
+    assert Transaction.objects.filter(order=order).count() == 1
+
+
+def test_different_idempotency_keys_create_different_orders(
+    buyer_client, buyer, address, product, inventory
+):
+    fill_cart(buyer, product, quantity=1)
+
+    first = buyer_client.post(
+        CHECKOUT_URL, checkout_payload(address, idempotency_key="key-1"), format="json"
+    )
+    # The cart is emptied by a successful checkout, so refill it for round two.
+    fill_cart(buyer, product, quantity=1)
+    second = buyer_client.post(
+        CHECKOUT_URL, checkout_payload(address, idempotency_key="key-2"), format="json"
+    )
+
+    assert first.status_code == second.status_code == 201
+    assert second.data["idempotent_replay"] is False
+    assert Order.objects.count() == 2
 
 
 # ---------------------------------------------------------------------------

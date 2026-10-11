@@ -1,7 +1,8 @@
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, permissions, status
+from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -99,11 +100,15 @@ class SellerProductCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
+        # docs/todo.md §0.3 #8: this used to raise ``permissions.PermissionDenied``,
+        # which does not exist on rest_framework.permissions, so every rejection
+        # came back as an AttributeError -> HTTP 500. ``PermissionDenied`` lives
+        # in ``rest_framework.exceptions`` and renders as a 403.
         if not self.request.user.is_seller:
-            raise permissions.PermissionDenied("Only sellers can create products")
+            raise PermissionDenied("Only sellers can create products")
 
         if not hasattr(self.request.user, "store"):
-            raise permissions.PermissionDenied("You must have a store to create products")
+            raise PermissionDenied("You must have a store to create products")
 
         serializer.save()
 

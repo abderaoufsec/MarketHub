@@ -124,10 +124,49 @@ def test_second_payment_for_same_order_is_rejected(buyer_client, buyer):
     assert Transaction.objects.filter(order=order).count() == 1
 
 
+def test_payment_idempotency_key_replays_the_first_result(buyer_client, buyer):
+    """A client retrying with the same key gets its original answer back."""
+    order = OrderFactory(user=buyer, total_amount=Decimal("200.00"))
+    payload = {"order_id": order.id, "idempotency_key": "retry-after-timeout"}
+
+    first = buyer_client.post(SIMULATE_URL, payload, format="json")
+    second = buyer_client.post(SIMULATE_URL, payload, format="json")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.data["idempotent_replay"] is True
+    assert second.data["transaction_id"] == first.data["transaction_id"]
+    assert second.data["amount_paid"] == first.data["amount_paid"]
+
+    assert Transaction.objects.filter(order=order).count() == 1
+    order.refresh_from_db()
+    assert order.payment_status == "SUCCESSFUL"
+
+
+def test_idempotency_key_cannot_be_reused_on_another_order(buyer_client, buyer):
+    """Keys are scoped to one order: another order charging under the same key
+    must go through a fresh capture instead of replaying somebody else's."""
+    first_order = OrderFactory(user=buyer, total_amount=Decimal("200.00"))
+    payload = {"order_id": first_order.id, "idempotency_key": "shared-key"}
+
+    assert buyer_client.post(SIMULATE_URL, payload, format="json").status_code == 200
+
+    second_order = OrderFactory(user=buyer, total_amount=Decimal("50.00"))
+    response = buyer_client.post(
+        SIMULATE_URL,
+        {"order_id": second_order.id, "idempotency_key": "shared-key"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["idempotent_replay"] is False
+    assert Transaction.objects.filter(order=second_order).count() == 1
+
+
 def test_payment_failure_does_not_leak_internal_details(buyer_client, buyer, monkeypatch):
     monkeypatch.setattr(
         "apps.payments.views.process_simulated_payment",
-        lambda order: {
+        lambda order, **kwargs: {
             "success": False,
             "error": 'psycopg2.OperationalError: password "12345" failed',
         },
@@ -143,7 +182,7 @@ def test_payment_failure_does_not_leak_internal_details(buyer_client, buyer, mon
 
 
 def test_unexpected_payment_error_does_not_leak_stack_trace(buyer_client, buyer, monkeypatch):
-    def boom(order):
+    def boom(order, **kwargs):
         raise RuntimeError("secret internal state")
 
     monkeypatch.setattr("apps.payments.views.process_simulated_payment", boom)

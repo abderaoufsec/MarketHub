@@ -12,9 +12,9 @@ MarketHub is **under active development**. The core commerce flows work end-to-e
 
 | Area | State |
 |---|---|
-| Backend | 6 apps · 51 API routes · migrations in sync |
+| Backend | 6 apps · 52 API routes · migrations in sync |
 | Frontend | 19 pages (Next.js App Router) |
-| Tests | Backend: **158 passing** (11 strict xfails pinning known defects) · Frontend: **45 unit + 5 e2e passing** |
+| Tests | Backend: **180 passing** (4 strict xfails pinning known defects) · Frontend: **49 unit + 5 e2e passing** |
 | CI | **GitHub Actions** — backend, frontend and security-audit jobs on every push/PR |
 | API docs | ⚠️ Not yet generated — Phase 9 |
 
@@ -163,7 +163,7 @@ npx playwright install chromium   # once
 npm run e2e
 ```
 
-> The backend suite pins 11 known defects as `xfail(strict=True)` (see [docs/todo.md](docs/todo.md) §0.3): they are expected to fail until Phase 6 fixes them, and the suite turns red the moment a fix lands so the marker gets removed.
+> The backend suite pins 4 known defects as `xfail(strict=True)` (see [docs/todo.md](docs/todo.md) §0.3): they are expected to fail until Phases 7, 8 and 17 fix them, and the suite turns red the moment a fix lands so the marker gets removed.
 
 ### 5. Optional: git hooks
 
@@ -202,12 +202,14 @@ Dependabot opens weekly PRs for pip, npm and GitHub Actions dependencies.
 
 ### Commerce flow
 1. Seller creates a store, then products.
-2. `Inventory` rows track stock per product/variant, with an `InventoryAuditLog` trail.
-3. Buyer adds to cart → `POST /api/orders/checkout/` splits the cart **per store**, reserves inventory, and processes a simulated payment.
+2. `Inventory` rows track stock per product/variant, with an `InventoryAuditLog` trail. Stock is checked when a buyer adds to or changes the cart, and reserved under row locks at checkout.
+3. Buyer adds to cart → `POST /api/orders/checkout/` runs in **one transaction**: it splits the cart **per store**, re-validates availability and price, reserves inventory, and captures the payment. Any failure rolls the whole checkout back — no order, no reservation, no charge. Sending an `idempotency_key` makes a retried checkout return the orders it already created instead of creating more.
 4. Seller updates order status; refunds reverse the commission ledger.
 
+> A cart line whose price changed since it was added is rejected with `400` + `code: "price_changed"`. `POST /api/orders/cart/refresh-prices/` accepts the current catalogue prices (the checkout page shows a "Prices have changed" banner and calls it).
+
 ### Payments
-Payments are **simulated** — there is no live payment gateway. `POST /api/payments/simulate/` always succeeds and writes a `Transaction` plus a `PlatformCommissionLedger` entry using `PLATFORM_COMMISSION_RATE`.
+Payments are **simulated** — there is no live payment gateway, and there is exactly **one** capture path: `process_simulated_payment()`, called from inside the checkout transaction. It writes a `Transaction` plus a `PlatformCommissionLedger` entry using `PLATFORM_COMMISSION_RATE`, and locks the order row so one order can never be charged twice — not concurrently, not by a client retry. `POST /api/payments/simulate/` exists as the retry endpoint for an unpaid (`PENDING`) order and accepts an `idempotency_key` to replay a previous attempt safely.
 
 ---
 
@@ -215,12 +217,11 @@ Payments are **simulated** — there is no live payment gateway. `POST /api/paym
 
 Tracked with concrete file references in [docs/todo.md](docs/todo.md):
 
-- **11 known defects pinned by strict xfails** in the backend suite — fixed in Phases 6–8, 17 (see [docs/todo.md](docs/todo.md) §0.3).
-- **Transactional bugs in checkout** — `return` inside `transaction.atomic()` can commit partial state (Phase 6).
-- **Inventory oversell race** — no `select_for_update()` / `F()` expressions (Phase 6).
+- **4 known defects pinned by strict xfails** in the backend suite — fixed in Phases 7, 8 and 17 (see [docs/todo.md](docs/todo.md) §0.3).
 - **`is_seller` is writable** via profile `PUT`, allowing privilege escalation (Phase 7).
 - **Duplicate email-verification flows**, and no frontend verification page (Phase 8).
 - **Product card images don't render** — serializer/field mismatch (Phase 12).
+- **Refunds never restock inventory** — `return_inventory_for_order()` exists but nothing calls it (Phase 18).
 - **No Docker or deploy configuration** (Phases 19–20).
 
 ---

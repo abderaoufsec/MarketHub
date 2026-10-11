@@ -119,6 +119,8 @@ export const cartAPI = {
   update: (itemId, data) => api.put(`/orders/cart/items/${itemId}/`, data),
   remove: (itemId) => api.delete(`/orders/cart/items/${itemId}/remove/`),
   clear: () => api.delete('/orders/cart/clear/'),
+  // Accept the current catalogue prices after checkout reports "price_changed".
+  refreshPrices: () => api.post('/orders/cart/refresh-prices/', {}),
 }
 
 // ==================== REVIEWS API ====================

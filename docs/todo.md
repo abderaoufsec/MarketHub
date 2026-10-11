@@ -46,15 +46,21 @@
 | No monetization | No boosts, subscriptions, or promoted ads | 21 |
 
 ### 0.3 Newly found defects (in addition to the original verified list)
-1. `orders/views.py` `add_to_cart`: `Product.objects.get(...)` is unguarded → **HTTP 500** on unknown product (should be 404). Also never checks `is_available` or stock.
-2. `orders/views.py` `update_cart_item`: `int(quantity)` on non-numeric input → **HTTP 500**.
-3. `orders/views.py` `checkout`: `Address.objects.get(...)` is outside the validation path → 500 if the address is missing/not the user's.
-4. Failed-payment branch returns **inside** `atomic()` *after* `order.payment_status='FAILED'` is saved → a FAILED order is committed with its stock still reserved (same root cause as defect 1, different symptom).
+1. `orders/views.py` `add_to_cart`: `Product.objects.get(...)` is unguarded → **HTTP 500** on unknown product (should be 404). Also never checks `is_available` or stock. — *the serializer's `validate_product_id` already covered existence/availability (verified in Phase 3); Phase 6 added the stock check and a re-read guard in the view.*
+2. `orders/views.py` `update_cart_item`: `int(quantity)` on non-numeric input → **HTTP 500**. — **Fixed in Phase 6** (`UpdateCartItemSerializer` → 400).
+3. `orders/views.py` `checkout`: `Address.objects.get(...)` is outside the validation path → 500 if the address is missing/not the user's. — *the serializer already scoped the lookup to the buyer (verified in Phase 3); Phase 6 re-checks the same condition in `place_order()` before writing.*
+4. Failed-payment branch returns **inside** `atomic()` *after* `order.payment_status='FAILED'` is saved → a FAILED order is committed with its stock still reserved. — **Fixed in Phase 6**: `place_order()` raises and the whole checkout rolls back.
 5. `settings.py` declares `AUTH_COOKIE*` keys under `SIMPLE_JWT`. These are **not SimpleJWT options** (no cookie auth is built in), so they do nothing and give a false sense of HttpOnly security.
-6. `settings.py` ends with a duplicate `AUTH_USER_MODEL` (already tracked), plus `DB_PASSWORD` defaults to `'12345'` and `DEBUG` defaults to `True`.
+6. `settings.py` ends with a duplicate `AUTH_USER_MODEL` (already tracked), plus `DB_PASSWORD` defaults to `'12345'` and `DEBUG` defaults to `True`. — *`AUTH_USER_MODEL`, the password and the `DEBUG` default were fixed in Phases 1–2.*
 7. `User` has no unique/validated `phone_number`, which is the *primary identity* in the Algerian market.
-8. `products/views.py` `SellerProductCreateView.perform_create()` raises `permissions.PermissionDenied`, but `rest_framework.permissions` has no such attribute (it lives in `rest_framework.exceptions`) → **AttributeError → HTTP 500** instead of 403 for both "not a seller" and "seller without a store" (found while writing the Phase 3 suite; `strict` xfail tests in `apps/products/tests/test_products.py`).
+8. `products/views.py` `SellerProductCreateView.perform_create()` raises `permissions.PermissionDenied`, but `rest_framework.permissions` has no such attribute (it lives in `rest_framework.exceptions`) → **AttributeError → HTTP 500** instead of 403 for both "not a seller" and "seller without a store" (found while writing the Phase 3 suite; `strict` xfail tests in `apps/products/tests/test_products.py`). — **Fixed in Phase 6.**
 9. `ProductReviewCreateSerializer.validate()` rejects *any* review from a user who already reviewed the product, so an author can **never edit their own review** (found while writing the Phase 3 suite; strict xfail test `test_owner_can_update_own_review`, fix scheduled with the reviews work in Phase 17).
+
+10. **One-off repair scripts are committed at the backend root** — `complete_fix.py`, `complete_setup.py`, `create_test_data.py`, `setup_database.py`, `fix_inventory.py`, `initialize_inventory.py` (from `8b2d267`). They are not imported by anything, mutate the dev database, and duplicate what `manage.py migrate` / fixtures already do. They are excluded from lint in `backend/ruff.toml` rather than deleted, since deleting committed files is the maintainer's call — **recommend removing them**.
+
+11. **The frontend had never been production-built.** `/register` calls `useSearchParams()` without a `<Suspense>` boundary, so `next build` failed to prerender the route ("useSearchParams() should be wrapped in a suspense boundary"). `next dev` never surfaces this, which is why it survived until the Phase 5 CI build step. Fixed by splitting the page into a `RegisterPage` wrapper (Suspense) + `RegisterForm`.
+
+12. **Checkout paid twice — and told the buyer it failed.** `checkout/page.js` called `POST /orders/checkout/` (which already captures the simulated payment and marks the order `SUCCESSFUL`) and then `POST /payments/simulate/`, which correctly answered **400 "Order has already been paid"**; the page read that as a failed payment and redirected to `?payment_failed=true`. So every successful order was shown to the buyer as a failure. **Fixed in Phase 6**: one authoritative payment path (§Phase 6).
 
 10. **One-off repair scripts are committed at the backend root** — `complete_fix.py`, `complete_setup.py`, `create_test_data.py`, `setup_database.py`, `fix_inventory.py`, `initialize_inventory.py` (from `8b2d267`). They are not imported by anything, mutate the dev database, and duplicate what `manage.py migrate` / fixtures already do. They are excluded from lint in `backend/ruff.toml` rather than deleted, since deleting committed files is the maintainer's call — **recommend removing them**.
 
@@ -130,7 +136,7 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 - [x] `pytest.ini` + `conftest.py` (DB, API client, auth, seller/buyer/store factories). — *independent `buyer_client`/`seller_client` instances (sharing one `APIClient` made the last `force_authenticate` win); 16 factories in `tests/factories.py`*
 - [x] Tests run against a dedicated Postgres test DB (**not SQLite**: you will rely on Postgres FTS, `select_for_update`, and trigram in later phases). — *pytest-django creates `test_markethub`*
 - [x] Per-app `tests/` packages. — *users, stores, products, inventory, orders, payments*
-- [x] Failing-first tests for every defect in the original list **and** §0.3 (rollback, oversell, double-pay, privilege escalation, 500s on bad input). — *11 `xfail(strict=True)` markers; XPASS turns the suite red the moment a fix lands, so the markers get deleted with the fix in Phase 6*
+- [x] Failing-first tests for every defect in the original list **and** §0.3 (rollback, oversell, double-pay, privilege escalation, 500s on bad input). — *11 `xfail(strict=True)` markers; XPASS turns the suite red the moment a fix lands, so each marker gets deleted with its fix. Phase 6 removed 7 of them; the 4 left are Phase 7 (privilege escalation), Phase 8 (duplicate verification email, phone validation) and Phase 17 (review edit)*
 - [x] Coverage floor 60%, ratchet to 80% on `orders`, `payments`, `inventory`. — *`--cov-fail-under=60` in `pytest.ini`; the 80% ratchet is a separate `coverage report --include=...` step in CI (Phase 5). Actual: 87.8% overall, 96.6% on the three target apps*
 
 **Done when:** `pytest` is green with real assertions; coverage report is generated. ✅ **Completed 2026-10-10** — 158 passed, 11 xfailed (all intended), ~3 min.
@@ -195,19 +201,26 @@ length). `ruff format` now covers the backend too.
 
 ---
 
-## Phase 6 — Critical transactional correctness
+## Phase 6 — Critical transactional correctness ✅
 **Goal:** money and stock are never wrong. *Highest-risk code in the repo.*
 
-- [ ] **Fix checkout rollback:** no `return` inside `transaction.atomic()` (`orders/views.py` stock-failure and payment-failure branches). Raise a domain exception, catch it *outside* the atomic block. Covers the FAILED-order-with-reserved-stock bug (§0.3 #4).
-- [ ] **Fix oversell race:** `select_for_update()` / `F()` in `inventory/services.py`.
-- [ ] **One authoritative payment path** (checkout page currently pays again from `checkout/page.js:156`).
-- [ ] **Lock order row** before reading `payment_status`; add idempotency keys.
-- [ ] **Re-validate price at checkout** (currently uses `price_at_time_of_addition`); show "price changed" UX.
-- [ ] Validate existence, `is_available`, and stock at `cart/add` and `cart/update` (fixes §0.3 #1, #2).
-- [ ] Guard `Address` lookup in checkout (§0.3 #3).
-- [ ] Move order creation into a `orders/services.py` `place_order()` function. Views stay thin; the logic is unit-testable.
+- [x] **Fix checkout rollback:** no `return` inside `transaction.atomic()`. — *new `apps/orders/services.py::place_order()` runs the whole checkout in one atomic block and raises a domain error (`apps/orders/exceptions.py`) instead of returning; the block is exited by the exception, so a failed checkout commits no order, no reservation and no payment*
+- [x] **Fix oversell race:** `select_for_update()` in `inventory/services.py`. — *`update_inventory()` re-reads the row under `FOR UPDATE`; `reserve_inventory_for_order()` locks before it checks, in a stable (product id, attribute) order; `place_order()` walks stores in ascending id so concurrent carts take the same global lock order and cannot deadlock*
+- [x] **One authoritative payment path.** — *`checkout` captures the payment itself (in the same transaction as the order and the stock); the frontend no longer calls `/payments/simulate/` afterwards, which used to make a **paid** order show "Payment failed". `simulate/` remains as the retry endpoint for a PENDING order and now delegates every decision (replay? already paid? cancelled?) to the service, which re-checks under the order row lock*
+- [x] **Lock order row** before reading `payment_status`; add idempotency keys. — *`Order.objects.select_for_update()` in `simulate_payment`, `process_payment_refund` and `process_simulated_payment`; `Order.idempotency_key` (unique per store) on checkout and `Transaction.idempotency_key` (unique per order) on payment, both client-supplied and replayed instead of re-charging*
+- [x] **Re-validate price at checkout.** — *a cart line priced below `product.base_price` is rejected with `400 code=price_changed` + the list of changes; `POST /api/orders/cart/refresh-prices/` is the explicit way to accept the new prices, and the checkout page shows a "Prices have changed" banner with old → new before the buyer retries*
+- [x] Validate existence, `is_available`, and stock at `cart/add` and `cart/update` (fixes §0.3 #1, #2). — *stock is checked **before** anything is written (including growing an existing line); `UpdateCartItemSerializer` replaces the raw `int(quantity)` that turned `"lots"` into a 500; a product with no `Inventory` row is not cartable, matching checkout*
+- [x] Guard `Address` lookup in checkout (§0.3 #3). — *already guarded by `CheckoutSerializer`; `place_order()` re-checks the same condition before writing*
+- [x] Move order creation into `orders/services.py` `place_order()`. — *views are now HTTP ⇄ domain translators only*
 
-**Done when:** concurrency tests prove no oversell, no double charge, no partial commit; no endpoint returns 500 on bad input.
+**Also fixed here** (the two §0.3 #8 markers were annotated "fixed in Phase 6"):
+`SellerProductCreateView.perform_create()` raised `rest_framework.permissions.PermissionDenied`,
+which does not exist, so both rejections came back as **500** — now
+`rest_framework.exceptions.PermissionDenied` → 403.
+
+**Done when:** concurrency tests prove no oversell, no double charge, no partial commit; no endpoint returns 500 on bad input. ✅ **Completed 2026-10-11** — 180 passed + 4 strict xfails (was 158 + 11); coverage 86.7% overall / **95.7%** on `orders`/`payments`/`inventory`. New proofs: `test_oversell.py` (two threads, one unit → one winner, stock counter reconciles with the audit log), `payments/tests/test_concurrency.py` (two simultaneous captures → one `Transaction`, and a concurrent retry of one idempotency key → one `Transaction`), plus rollback, price-changed, stock-at-cart and idempotent-retry regression tests on both sides of the API (4 new Vitest cases on the checkout page).
+
+*Still open (later phases):* `return_inventory_for_order()` is still never called from the cancel/refund paths (Phase 18), and refunds still mark the order `payment_status="FAILED"` rather than a proper refunded state (Phase 18).
 
 ---
 
@@ -604,4 +617,4 @@ length). `ruff format` now covers the backend too.
 
 **Parallelizable once Phase 5 is done:** (6, 7), (11, 12), (14, 15), (17, 22), (23, 24).
 **Do not start before Phase 6:** anything touching orders/payments/inventory (19, 20, 21).
-**Current status:** Phases 0–3 ✅ · everything else open · backend `158 tests green (11 strict xfails)`, frontend `no test runner`. Phases 4–5 remain the highest-leverage starting point.
+**Current status:** Phases 0–6 ✅ · everything else open · backend `180 tests green (4 strict xfails)`, frontend `49 unit + 5 e2e green`. **Do not start Phases 19–21 before now** — the money/stock invariants they build on are in place.

@@ -166,14 +166,11 @@ def test_seller_can_create_product(seller_client, seller, store):
     assert seller.store.products.count() == 1
 
 
-@pytest.mark.xfail(
-    reason="docs/todo.md §0.3 #8: SellerProductCreateView.perform_create() raises "
-    "permissions.PermissionDenied, but rest_framework.permissions has no such "
-    "attribute -> AttributeError -> HTTP 500 instead of 403 (fixed in Phase 6)",
-    strict=True,
-)
 def test_product_create_requires_store(seller_client, seller):
-    """A seller flag without a store must not create products."""
+    """A seller flag without a store must not create products.
+
+    docs/todo.md §0.3 #8 (fixed in Phase 6): this used to answer HTTP 500.
+    """
     assert not hasattr(seller, "store")
 
     response = seller_client.post(SELLER_CREATE_URL, product_payload(), format="json")
@@ -181,13 +178,8 @@ def test_product_create_requires_store(seller_client, seller):
     assert response.status_code == 403
 
 
-@pytest.mark.xfail(
-    reason="docs/todo.md §0.3 #8: SellerProductCreateView.perform_create() raises "
-    "permissions.PermissionDenied, which does not exist on rest_framework.permissions "
-    "-> AttributeError -> HTTP 500 instead of 403 (fixed in Phase 6)",
-    strict=True,
-)
 def test_product_create_rejected_for_buyer(buyer_client):
+    """docs/todo.md §0.3 #8 (fixed in Phase 6): 403, not 500."""
     response = buyer_client.post(SELLER_CREATE_URL, product_payload(), format="json")
 
     assert response.status_code == 403

@@ -83,10 +83,14 @@ class Order(models.Model):
     )
     shipping_method = models.CharField(max_length=100, blank=True, null=True)
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    # Client-supplied key that makes a retried checkout idempotent: the same
+    # key can create at most one order per store (docs/todo.md Phase 6).
+    idempotency_key = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
         db_table = "orders"
         ordering = ["-order_date"]
+        unique_together = ["idempotency_key", "store"]
         indexes = [
             models.Index(fields=["-order_date"]),
             models.Index(fields=["order_status"]),

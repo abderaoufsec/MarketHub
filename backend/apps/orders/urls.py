@@ -9,6 +9,7 @@ urlpatterns = [
     path("cart/items/<int:item_id>/", views.update_cart_item, name="cart-item-update"),
     path("cart/items/<int:item_id>/remove/", views.remove_cart_item, name="cart-item-remove"),
     path("cart/clear/", views.clear_cart, name="cart-clear"),
+    path("cart/refresh-prices/", views.update_cart_prices, name="cart-refresh-prices"),
     # Checkout
     path("checkout/", views.checkout, name="checkout"),
     # Buyer order endpoints
