@@ -27,15 +27,16 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const token = Cookies.get('access_token')
-      if (token) {
+      // The JWTs are HttpOnly; only the readable session hint tells us a
+      // session may exist. The interceptor refreshes it transparently.
+      const hasSession = Cookies.get('mh_session')
+      if (hasSession) {
         const response = await authAPI.getProfile()
         setUser(response.data)
       }
     } catch (error) {
       console.error('Auth check failed:', error)
-      Cookies.remove('access_token')
-      Cookies.remove('refresh_token')
+      Cookies.remove('mh_session')
     } finally {
       setLoading(false)
     }
@@ -44,11 +45,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login({ email, password })
-      const { user: userData, access, refresh } = response.data
+      const { user: userData } = response.data
 
-      Cookies.set('access_token', access, { expires: 7 })
-      Cookies.set('refresh_token', refresh, { expires: 7 })
-
+      // Tokens are set as HttpOnly cookies by the server; nothing to store
+      // client side (the `mh_session` hint comes with the same response).
       setUser(userData)
       return { success: true, user: userData }
     } catch (error) {
@@ -73,13 +73,13 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const refreshToken = Cookies.get('refresh_token')
-      await authAPI.logout(refreshToken)
+      await authAPI.logout()
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
-      Cookies.remove('access_token')
-      Cookies.remove('refresh_token')
+      // Server clears the HttpOnly pair; the readable hint goes here so the
+      // UI never attempts a session restore for a logged-out visitor.
+      Cookies.remove('mh_session')
       setUser(null)
       router.push('/')
     }

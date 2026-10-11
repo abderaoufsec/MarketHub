@@ -186,6 +186,66 @@ if not DEBUG:
         )
 
 # ---------------------------------------------------------------------------
+# HTTPS posture (Phase 7 of docs/todo.md)
+# ---------------------------------------------------------------------------
+# Enabled whenever DEBUG is off; every value can be overridden per environment
+# (e.g. a staging box behind plain HTTP, or a proxy that terminates TLS).
+# `manage.py check --deploy` must be clean with these defaults.
+
+
+def _https_settings(debug: bool) -> dict:
+    if debug:
+        # Development over plain HTTP: secure-only cookies and redirects would
+        # break http://localhost:3000 -> http://localhost:8000.
+        return {
+            "SECURE_SSL_REDIRECT": env_bool("SECURE_SSL_REDIRECT", default=False),
+            "SESSION_COOKIE_SECURE": env_bool("SESSION_COOKIE_SECURE", default=False),
+            "CSRF_COOKIE_SECURE": env_bool("CSRF_COOKIE_SECURE", default=False),
+            "SECURE_HSTS_SECONDS": env_int("SECURE_HSTS_SECONDS", default=0),
+            "SECURE_HSTS_INCLUDE_SUBDOMAINS": False,
+            "SECURE_HSTS_PRELOAD": False,
+            "AUTH_COOKIE_SECURE": env_bool("AUTH_COOKIE_SECURE", default=False),
+        }
+    return {
+        "SECURE_SSL_REDIRECT": env_bool("SECURE_SSL_REDIRECT", default=True),
+        "SESSION_COOKIE_SECURE": env_bool("SESSION_COOKIE_SECURE", default=True),
+        "CSRF_COOKIE_SECURE": env_bool("CSRF_COOKIE_SECURE", default=True),
+        "SECURE_HSTS_SECONDS": env_int("SECURE_HSTS_SECONDS", default=31536000),
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True),
+        "SECURE_HSTS_PRELOAD": env_bool("SECURE_HSTS_PRELOAD", default=True),
+        "AUTH_COOKIE_SECURE": env_bool("AUTH_COOKIE_SECURE", default=True),
+    }
+
+
+globals().update(_https_settings(DEBUG))
+
+# Hardened regardless of DEBUG — none of these break plain-HTTP development.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = env_str("SECURE_REFERRER_POLICY", "same-origin")
+X_FRAME_OPTIONS = "DENY"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = env_str("SESSION_COOKIE_SAMESITE", "Lax")
+# The frontend must be able to read `csrftoken` to echo it as X-CSRFToken
+# (double-submit). Only the JWT cookies below are HttpOnly.
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = env_str("CSRF_COOKIE_SAMESITE", "Lax")
+
+# Set when TLS terminates at a reverse proxy in front of the app.
+if env_bool("USE_X_FORWARDED_PROTO", default=False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Cross-origin cookie auth (Phase 7): the Next.js origin must be trusted for
+# Django's Origin/Referer CSRF check on unsafe requests.
+CSRF_TRUSTED_ORIGINS = env_list(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000,http://127.0.0.1:3000",
+)
+
+# SameSite policy for the HttpOnly JWT cookies. `Lax` covers same-site setups
+# (www + api on one domain); a split-site deployment must set `None` (+ secure).
+AUTH_COOKIE_SAMESITE = env_str("AUTH_COOKIE_SAMESITE", "Lax")
+
+# ---------------------------------------------------------------------------
 # Password validation
 # ---------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
@@ -244,7 +304,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Bearer header (API/mobile clients) *and* HttpOnly cookie + CSRF (web).
+        "apps.users.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
@@ -254,11 +315,24 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    # Phase 7 throttling: strict rates on the auth endpoints, a scoped
+    # anti-scraping rate on endpoints that expose phone numbers. Only views
+    # that opt in (throttle_classes) are throttled — there is deliberately no
+    # global default, so ordinary API traffic is unaffected.
+    "DEFAULT_THROTTLE_RATES": {
+        "login": env_str("THROTTLE_RATE_LOGIN", "10/min"),
+        "register": env_str("THROTTLE_RATE_REGISTER", "10/hour"),
+        "verify_email": env_str("THROTTLE_RATE_VERIFY_EMAIL", "20/hour"),
+        "change_password": env_str("THROTTLE_RATE_CHANGE_PASSWORD", "5/hour"),
+        "token_refresh": env_str("THROTTLE_RATE_TOKEN_REFRESH", "30/min"),
+        "reveal_phone": env_str("THROTTLE_RATE_REVEAL_PHONE", "30/min"),
+    },
 }
 
 # JWT Settings
-# NOTE: no AUTH_COOKIE* keys — SimpleJWT has no built-in cookie support; those
-# options did nothing. Cookie-based auth is implemented deliberately in Phase 7.
+# NOTE: no AUTH_COOKIE* keys here — SimpleJWT has no built-in cookie support
+# (those options never did anything). The HttpOnly cookie flow is implemented
+# deliberately in apps/users (CookieJWTAuthentication + set_auth_cookies).
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env_int("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", 60)),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env_int("JWT_REFRESH_TOKEN_LIFETIME_DAYS", 7)),
@@ -267,6 +341,17 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# ---------------------------------------------------------------------------
+# Cache — backs DRF throttling and the failed-login backoff (Phase 7).
+# LocMem is per-process; Phase 22 swaps in Redis for shared/production use.
+# ---------------------------------------------------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": env_str("CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"),
+        "LOCATION": env_str("CACHE_LOCATION", "markethub"),
+    }
 }
 
 # ---------------------------------------------------------------------------

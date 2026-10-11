@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.products.models import Product
+from apps.users.permissions import IsStoreOwner
 
 from .exceptions import OrderDomainError
 from .models import Cart, CartItem, Order
@@ -243,14 +244,9 @@ class SellerOrderListView(generics.ListAPIView):
 
 
 @api_view(["PUT"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsStoreOwner])
 def update_order_status(request, order_id):
-    """Update order status (seller only)"""
-    if not request.user.is_seller or not hasattr(request.user, "store"):
-        return Response(
-            {"error": "Only sellers can update order status"}, status=status.HTTP_403_FORBIDDEN
-        )
-
+    """Update order status (own store only — enforced by ``IsStoreOwner``)."""
     try:
         order = Order.objects.get(id=order_id, store=request.user.store)
     except Order.DoesNotExist:

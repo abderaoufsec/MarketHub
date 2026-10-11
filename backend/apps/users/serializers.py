@@ -20,7 +20,10 @@ class UserSerializer(serializers.ModelSerializer):
             "is_verified",
             "date_joined",
         ]
-        read_only_fields = ["id", "is_verified", "date_joined"]
+        # is_seller is read-only: a profile update must never be able to grant
+        # the seller role (privilege escalation, Phase 7). Sellers opt in at
+        # registration ("I want to sell") or later via a dedicated flow.
+        read_only_fields = ["id", "is_seller", "is_verified", "date_joined"]
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

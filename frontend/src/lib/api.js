@@ -11,47 +11,74 @@ const api = axios.create({
   withCredentials: true,
 })
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = Cookies.get('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
+const SAFE_METHODS = new Set(['get', 'head', 'options', 'trace'])
+// Readable session flag set by the backend next to the HttpOnly JWT cookies.
+// The tokens themselves are unreadable by design (Phase 7); this only tells
+// the client whether a session restore is worth attempting.
+const SESSION_HINT = 'mh_session'
 
-// Response interceptor to handle token refresh
+/**
+ * Make sure the readable double-submit `csrftoken` cookie exists and return
+ * it. Unsafe requests must echo it as `X-CSRFToken`: cookie-authenticated
+ * writes are CSRF-checked server side (the browser would attach the JWT
+ * cookie automatically otherwise).
+ */
+async function ensureCsrfToken() {
+  const existing = Cookies.get('csrftoken')
+  if (existing) return existing
+  try {
+    await axios.get(`${API_URL}/auth/csrf/`, { withCredentials: true })
+  } catch {
+    // Best effort: anonymous endpoints don't need CSRF anyway. A cookie-
+    // authenticated write will fail loudly with 403 if the cookie is missing.
+  }
+  return Cookies.get('csrftoken')
+}
+
+// Request interceptor: attach the CSRF header on unsafe methods. The JWTs
+// travel in HttpOnly cookies automatically (withCredentials) — there is no
+// token for JavaScript to read or attach.
+api.interceptors.request.use(async (config) => {
+  const method = (config.method || 'get').toLowerCase()
+  if (!SAFE_METHODS.has(method)) {
+    const token = await ensureCsrfToken()
+    if (token) {
+      config.headers['X-CSRFToken'] = token
+    }
+  }
+  return config
+})
+
+// Response interceptor: on 401, rotate the refresh cookie once and retry.
+// Only attempted when the session hint says someone is logged in, so public
+// pages for anonymous visitors never trigger a refresh round-trip.
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
 
-    // If error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      Cookies.get(SESSION_HINT)
+    ) {
       originalRequest._retry = true
 
       try {
-        const refreshToken = Cookies.get('refresh_token')
-        if (refreshToken) {
-          const response = await axios.post(`${API_URL}/auth/token/refresh/`, {
-            refresh: refreshToken,
-          })
-
-          const { access } = response.data
-          Cookies.set('access_token', access)
-
-          originalRequest.headers.Authorization = `Bearer ${access}`
-          return api(originalRequest)
-        }
+        const csrf = await ensureCsrfToken()
+        await axios.post(
+          `${API_URL}/auth/token/refresh/`,
+          {},
+          {
+            withCredentials: true,
+            headers: csrf ? { 'X-CSRFToken': csrf } : {},
+          }
+        )
+        // New access cookie is set — replay the original request.
+        return api(originalRequest)
       } catch (refreshError) {
-        // Refresh failed, logout user
-        Cookies.remove('access_token')
-        Cookies.remove('refresh_token')
+        // Session is dead: clear the hint and send the user to login.
+        Cookies.remove(SESSION_HINT)
         window.location.href = '/login'
         return Promise.reject(refreshError)
       }
@@ -67,8 +94,8 @@ export default api
 export const authAPI = {
   register: (data) => api.post('/auth/register/', data),
   login: (data) => api.post('/auth/login/', data),
-  logout: (refreshToken) =>
-    api.post('/auth/logout/', { refresh_token: refreshToken }),
+  // Blacklists the refresh cookie and clears the HttpOnly pair server side.
+  logout: () => api.post('/auth/logout/', {}),
   verifyEmail: (token) => api.get(`/auth/verify-email/${token}/`),
   getProfile: () => api.get('/auth/profile/'),
   updateProfile: (data) => api.put('/auth/profile/', data),

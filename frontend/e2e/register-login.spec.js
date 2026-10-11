@@ -45,7 +45,7 @@ test.describe('register and login', () => {
     await page.getByPlaceholder('Password').fill(BUYER.password)
     await page.getByRole('button', { name: 'Sign in' }).click()
 
-    // AuthContext stores the JWT cookies and the header greets the user.
+    // The HttpOnly session cookie makes the header greet the user.
     // The Logout control lives in the user dropdown, which only opens on hover.
     await expect(page.getByText(BUYER.firstName).first()).toBeVisible()
     await page.getByRole('button', { name: BUYER.firstName }).hover()

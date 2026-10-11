@@ -12,9 +12,9 @@ MarketHub is **under active development**. The core commerce flows work end-to-e
 
 | Area | State |
 |---|---|
-| Backend | 6 apps · 52 API routes · migrations in sync |
+| Backend | 6 apps · 53 API routes · migrations in sync |
 | Frontend | 19 pages (Next.js App Router) |
-| Tests | Backend: **180 passing** (4 strict xfails pinning known defects) · Frontend: **49 unit + 5 e2e passing** |
+| Tests | Backend: **224 passing** (3 strict xfails pinning known defects) · Frontend: **52 unit + 5 e2e passing** |
 | CI | **GitHub Actions** — backend, frontend and security-audit jobs on every push/PR |
 | API docs | ⚠️ Not yet generated — Phase 9 |
 
@@ -195,10 +195,10 @@ Dependabot opens weekly PRs for pip, npm and GitHub Actions dependencies.
 
 ### Auth
 - JWT access/refresh tokens via SimpleJWT, with rotation and blacklisting on logout.
-- Role-based access: buyers and sellers share one `User` model with an `is_seller` flag.
+- **HttpOnly cookie session (Phase 7):** the JWT pair lives in `HttpOnly` + `SameSite` cookies set by the server — tokens never appear in response bodies and never touch JavaScript. Unsafe requests authenticated this way must echo the readable `csrftoken` cookie as `X-CSRFToken` (`GET /api/auth/csrf/` bootstraps it); `Authorization: Bearer` still works for API/mobile clients. A readable `mh_session` hint flag tells the SPA whether to attempt a session restore.
+- Auth endpoints are rate-limited, failed logins back off exponentially per (IP, email), password changes revoke every other session, and an `AuthEvent` audit trail records logins/failures/logout/password changes.
+- Role-based access: buyers and sellers share one `User` model with an `is_seller` flag (read-only on profile updates — sellers opt in at registration).
 - Email verification tokens on registration.
-
-> ⚠️ The frontend currently stores JWTs in JS-readable cookies, not `HttpOnly` cookies. Hardening is tracked in Phase 7 of the roadmap.
 
 ### Commerce flow
 1. Seller creates a store, then products.
@@ -217,8 +217,7 @@ Payments are **simulated** — there is no live payment gateway, and there is ex
 
 Tracked with concrete file references in [docs/todo.md](docs/todo.md):
 
-- **4 known defects pinned by strict xfails** in the backend suite — fixed in Phases 7, 8 and 17 (see [docs/todo.md](docs/todo.md) §0.3).
-- **`is_seller` is writable** via profile `PUT`, allowing privilege escalation (Phase 7).
+- **3 known defects pinned by strict xfails** in the backend suite — fixed in Phases 8 and 17 (see [docs/todo.md](docs/todo.md) §0.3).
 - **Duplicate email-verification flows**, and no frontend verification page (Phase 8).
 - **Product card images don't render** — serializer/field mismatch (Phase 12).
 - **Refunds never restock inventory** — `return_inventory_for_order()` exists but nothing calls it (Phase 18).

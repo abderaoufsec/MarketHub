@@ -95,7 +95,7 @@ backend/
 ## Key Features
 
 ### Authentication
-- JWT-based authentication with HttpOnly cookies
+- JWT-based authentication with HttpOnly cookies (tokens never reach JavaScript; unsafe cookie-authenticated writes require the `X-CSRFToken` header)
 - Email verification required
 - Role-based access (Buyer/Seller)
 
@@ -103,12 +103,14 @@ backend/
 
 #### Authentication (`/api/auth/`)
 - POST `/register/` - User registration
-- POST `/login/` - User login
+- POST `/login/` - User login (sets the HttpOnly token pair)
 - POST `/logout/` - User logout
+- GET `/csrf/` - Ensure the double-submit CSRF cookie exists
+- POST `/token/refresh/` - Rotate the session (cookie) or tokens (API body)
 - GET `/verify-email/<token>/` - Email verification
 - GET `/profile/` - Get user profile
 - PUT `/profile/` - Update profile
-- POST `/change-password/` - Change password
+- POST `/change-password/` - Change password (revokes all other sessions)
 
 #### Stores (`/api/stores/`)
 - GET `/` - List all stores
@@ -131,9 +133,11 @@ backend/
 - GET `/<id>/` - Order details
 
 ### Security Features
-- HTTPS enforced in production
+- HTTPS enforced in production (SSL redirect, HSTS, secure cookies — `manage.py check --deploy` is clean and blocking in CI)
 - CORS protection
-- CSRF protection
+- CSRF protection (double-submit cookie for the HttpOnly session)
+- Rate limiting on auth endpoints + failed-login backoff; anti-scraping throttle on endpoints that expose phone numbers
+- Auth audit log (`AuthEvent`)
 - Password validation
 - SQL injection protection
 - XSS protection via HttpOnly cookies

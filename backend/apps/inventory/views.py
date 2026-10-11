@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.products.models import Product
+from apps.users.permissions import IsStoreOwner
 
 from .models import Inventory, InventoryAuditLog
 from .serializers import InventoryAuditLogSerializer, InventorySerializer, InventoryUpdateSerializer
@@ -39,14 +40,9 @@ class InventoryDetailView(generics.RetrieveAPIView):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsStoreOwner])
 def update_product_inventory(request, product_id):
-    """Update inventory for a product"""
-    if not request.user.is_seller or not hasattr(request.user, "store"):
-        return Response(
-            {"error": "Only sellers can update inventory"}, status=status.HTTP_403_FORBIDDEN
-        )
-
+    """Update inventory for a product (own store only — ``IsStoreOwner``)."""
     try:
         product = Product.objects.get(id=product_id, store=request.user.store)
     except Product.DoesNotExist:

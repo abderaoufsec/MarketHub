@@ -10,6 +10,7 @@ Environment: tests read the same configuration as the application
 """
 
 import pytest
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from tests.factories import (
@@ -86,3 +87,27 @@ def seller_client(seller):
     client = APIClient()
     client.force_authenticate(user=seller)
     return client
+
+
+# ---------------------------------------------------------------------------
+# Test-environment guards (Phase 7)
+# ---------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def _reset_rate_limit_state():
+    """DRF throttling and the failed-login backoff share the Django cache.
+
+    Clearing it before every test keeps rate-limited endpoints order-
+    independent: the suite runs in one process, so a leftover counter from a
+    previous test would otherwise produce spurious 429s.
+    """
+    cache.clear()
+
+
+@pytest.fixture(autouse=True)
+def _disable_ssl_redirect(settings):
+    """With ``DEBUG=false`` (the CI posture) ``SECURE_SSL_REDIRECT`` is on,
+    but the test client speaks plain HTTP and would be 301-redirected away
+    from every endpoint. Production redirection is asserted in
+    ``core/test_settings_config.py`` instead.
+    """
+    settings.SECURE_SSL_REDIRECT = False

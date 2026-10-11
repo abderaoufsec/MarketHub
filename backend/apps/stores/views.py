@@ -4,39 +4,44 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.users.permissions import IsSeller
+from apps.users.throttles import RevealPhoneRateThrottle
+
 from .models import Store
 from .serializers import StoreCreateSerializer, StoreSerializer
 
 
 class StoreListView(generics.ListAPIView):
-    """Public list of all active stores"""
+    """Public list of all active stores.
+
+    Throttled with the scoped ``reveal_phone`` rate: the embedded ``owner``
+    payload includes the seller's phone number, which scrapers harvest
+    aggressively on Ouedkniss-style sites (Phase 7 anti-scraping).
+    """
 
     queryset = Store.objects.filter(is_active=True)
     serializer_class = StoreSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RevealPhoneRateThrottle]
     filterset_fields = ["category"]
     search_fields = ["store_name", "description"]
     ordering_fields = ["created_at", "store_name"]
 
 
 class StoreDetailView(generics.RetrieveAPIView):
-    """Public view of a single store"""
+    """Public view of a single store (owner contact data → reveal-phone throttle)"""
 
     queryset = Store.objects.filter(is_active=True)
     serializer_class = StoreSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RevealPhoneRateThrottle]
     lookup_field = "store_slug"
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsSeller])
 def create_store(request):
-    """Create a new store (seller only)"""
-    if not request.user.is_seller:
-        return Response(
-            {"error": "Only sellers can create stores"}, status=status.HTTP_403_FORBIDDEN
-        )
-
+    """Create a new store (seller only — enforced by ``IsSeller``)"""
     if hasattr(request.user, "store"):
         return Response({"error": "You already have a store"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -49,14 +54,9 @@ def create_store(request):
 
 
 @api_view(["GET", "PUT"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsSeller])
 def my_store(request):
     """Get or update seller's own store"""
-    if not request.user.is_seller:
-        return Response(
-            {"error": "Only sellers can access this endpoint"}, status=status.HTTP_403_FORBIDDEN
-        )
-
     if not hasattr(request.user, "store"):
         return Response({"error": "You do not have a store yet"}, status=status.HTTP_404_NOT_FOUND)
 

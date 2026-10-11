@@ -103,7 +103,7 @@ later requires an ADR (Phase 27).
 | 1 | Product model | **Hybrid** — classifieds posting for everyone + store features/checkout for businesses | Phase 13 evolves `Product` → `Listing`; Phases 11–16 are the critical path |
 | 2 | Catalogue model | **Evolve `Product` into `Listing`** with a nullable `store` | One search index, no parallel catalogues |
 | 3 | Search engine | **Postgres FTS + `pg_trgm`** behind a `SearchService` interface | No extra infra at launch; Meilisearch/Typesense can be swapped in |
-| 4 | JWT storage | **Bearer tokens in JS-readable cookies for now** → HttpOnly cookie + CSRF for web, bearer for mobile | Truthful README today (Phase 2/7), cookie auth implemented in Phase 7 |
+| 4 | JWT storage | **HttpOnly cookie + CSRF** for web; bearer for mobile (versioned API) — *implemented in Phase 7* | Bearer-first README disclaimer was truthful from Phase 2; cookie auth shipped in Phase 7 with a custom auth class + double-submit CSRF |
 | 5 | Online payments | **Launch COD only**; aggregator after legal confirmation | Phase 19 builds the `PaymentProvider` interface first |
 | 6 | Real-time chat | **Polling + push for MVP**; Channels/WebSockets in v1.1 | Phase 16 ships without a socket server |
 | 7 | Launch region & categories | **Blida × (phones, cars, electronics)** | Written into §3 above; changeable without re-planning |

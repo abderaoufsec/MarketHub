@@ -5,8 +5,16 @@ import { afterEach, vi } from 'vitest'
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
-  document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-  document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+  // Session cookies: the JWT pair is HttpOnly (server-side), but the readable
+  // hint and CSRF cookies must not leak between tests.
+  for (const name of [
+    'access_token',
+    'refresh_token',
+    'mh_session',
+    'csrftoken',
+  ]) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+  }
 })
 
 // jsdom does not implement these browser APIs, which framer-motion and

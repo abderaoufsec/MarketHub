@@ -46,12 +46,8 @@ def test_profile_update_ignores_read_only_is_verified(buyer_client):
     assert user.is_verified is False
 
 
-@pytest.mark.xfail(
-    reason="Privilege escalation: UserSerializer exposes is_seller as writable "
-    "(docs/todo.md §0.3 #2, fixed in Phase 7)",
-    strict=True,
-)
 def test_profile_update_cannot_escalate_to_seller(buyer_client, buyer):
+    """Phase 7 fix: ``is_seller`` is read-only on the profile serializer."""
     assert buyer.is_seller is False
 
     response = buyer_client.put(PROFILE_URL, {"is_seller": True}, format="json")
@@ -119,3 +115,32 @@ def test_change_password_rejects_mismatch(buyer_client, buyer):
     )
 
     assert response.status_code == 400
+
+
+def test_change_password_revokes_other_sessions(buyer_client, buyer):
+    """Phase 7: every outstanding refresh token is blacklisted on a password
+    change, so a stolen session dies with it."""
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    old_refresh = RefreshToken.for_user(buyer)
+
+    response = buyer_client.post(
+        CHANGE_PASSWORD_URL,
+        {
+            "old_password": "Str0ng!Passw0rd",
+            "new_password": "EvenBetter!Pass9",
+            "new_password_confirm": "EvenBetter!Pass9",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    # The old session cannot be refreshed any more...
+    from rest_framework.test import APIClient
+
+    replay = APIClient().post(
+        "/api/auth/token/refresh/", {"refresh": str(old_refresh)}, format="json"
+    )
+    assert replay.status_code == 401
+    # ...and this device received a fresh cookie pair to stay logged in.
+    assert response.cookies["access_token"]["httponly"]

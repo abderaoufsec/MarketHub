@@ -50,7 +50,7 @@
 2. `orders/views.py` `update_cart_item`: `int(quantity)` on non-numeric input → **HTTP 500**. — **Fixed in Phase 6** (`UpdateCartItemSerializer` → 400).
 3. `orders/views.py` `checkout`: `Address.objects.get(...)` is outside the validation path → 500 if the address is missing/not the user's. — *the serializer already scoped the lookup to the buyer (verified in Phase 3); Phase 6 re-checks the same condition in `place_order()` before writing.*
 4. Failed-payment branch returns **inside** `atomic()` *after* `order.payment_status='FAILED'` is saved → a FAILED order is committed with its stock still reserved. — **Fixed in Phase 6**: `place_order()` raises and the whole checkout rolls back.
-5. `settings.py` declares `AUTH_COOKIE*` keys under `SIMPLE_JWT`. These are **not SimpleJWT options** (no cookie auth is built in), so they do nothing and give a false sense of HttpOnly security.
+5. `settings.py` declares `AUTH_COOKIE*` keys under `SIMPLE_JWT`. These are **not SimpleJWT options** (no cookie auth is built in), so they do nothing and give a false sense of HttpOnly security. — *keys removed in Phase 2; **real** HttpOnly cookie auth implemented in Phase 7 (`CookieJWTAuthentication` + `set_auth_cookies`).*
 6. `settings.py` ends with a duplicate `AUTH_USER_MODEL` (already tracked), plus `DB_PASSWORD` defaults to `'12345'` and `DEBUG` defaults to `True`. — *`AUTH_USER_MODEL`, the password and the `DEBUG` default were fixed in Phases 1–2.*
 7. `User` has no unique/validated `phone_number`, which is the *primary identity* in the Algerian market.
 8. `products/views.py` `SellerProductCreateView.perform_create()` raises `permissions.PermissionDenied`, but `rest_framework.permissions` has no such attribute (it lives in `rest_framework.exceptions`) → **AttributeError → HTTP 500** instead of 403 for both "not a seller" and "seller without a store" (found while writing the Phase 3 suite; `strict` xfail tests in `apps/products/tests/test_products.py`). — **Fixed in Phase 6.**
@@ -62,9 +62,7 @@
 
 12. **Checkout paid twice — and told the buyer it failed.** `checkout/page.js` called `POST /orders/checkout/` (which already captures the simulated payment and marks the order `SUCCESSFUL`) and then `POST /payments/simulate/`, which correctly answered **400 "Order has already been paid"**; the page read that as a failed payment and redirected to `?payment_failed=true`. So every successful order was shown to the buyer as a failure. **Fixed in Phase 6**: one authoritative payment path (§Phase 6).
 
-10. **One-off repair scripts are committed at the backend root** — `complete_fix.py`, `complete_setup.py`, `create_test_data.py`, `setup_database.py`, `fix_inventory.py`, `initialize_inventory.py` (from `8b2d267`). They are not imported by anything, mutate the dev database, and duplicate what `manage.py migrate` / fixtures already do. They are excluded from lint in `backend/ruff.toml` rather than deleted, since deleting committed files is the maintainer's call — **recommend removing them**.
-
-11. **The frontend had never been production-built.** `/register` calls `useSearchParams()` without a `<Suspense>` boundary, so `next build` failed to prerender the route ("useSearchParams() should be wrapped in a suspense boundary"). `next dev` never surfaces this, which is why it survived until the Phase 5 CI build step. Fixed by splitting the page into a `RegisterPage` wrapper (Suspense) + `RegisterForm`.
+13. **Privilege escalation: `is_seller` was writable via profile `PUT`.** Any buyer could grant themselves the seller role by sending `{"is_seller": true}` to `PUT /api/auth/profile/`, then create stores/products. Pinned by a strict xfail (`test_profile_update_cannot_escalate_to_seller`). **Fixed in Phase 7**: `is_seller` is read-only on `UserSerializer` (sellers opt in at registration); the IDOR/permission matrix in `backend/tests/test_idor.py` locks the whole write surface in.
 
 ### 0.4 North-star metrics (instrument these early; see Phase 25)
 | Metric | Why |
@@ -136,7 +134,7 @@ Everything else (online payments, delivery APIs, subscriptions, native apps) shi
 - [x] `pytest.ini` + `conftest.py` (DB, API client, auth, seller/buyer/store factories). — *independent `buyer_client`/`seller_client` instances (sharing one `APIClient` made the last `force_authenticate` win); 16 factories in `tests/factories.py`*
 - [x] Tests run against a dedicated Postgres test DB (**not SQLite**: you will rely on Postgres FTS, `select_for_update`, and trigram in later phases). — *pytest-django creates `test_markethub`*
 - [x] Per-app `tests/` packages. — *users, stores, products, inventory, orders, payments*
-- [x] Failing-first tests for every defect in the original list **and** §0.3 (rollback, oversell, double-pay, privilege escalation, 500s on bad input). — *11 `xfail(strict=True)` markers; XPASS turns the suite red the moment a fix lands, so each marker gets deleted with its fix. Phase 6 removed 7 of them; the 4 left are Phase 7 (privilege escalation), Phase 8 (duplicate verification email, phone validation) and Phase 17 (review edit)*
+- [x] Failing-first tests for every defect in the original list **and** §0.3 (rollback, oversell, double-pay, privilege escalation, 500s on bad input). — *11 `xfail(strict=True)` markers; XPASS turns the suite red the moment a fix lands, so each marker gets deleted with its fix. Phase 6 removed 7 of them, Phase 7 removed the privilege-escalation one; the 3 left are Phase 8 (duplicate verification email, phone validation) and Phase 17 (review edit)*
 - [x] Coverage floor 60%, ratchet to 80% on `orders`, `payments`, `inventory`. — *`--cov-fail-under=60` in `pytest.ini`; the 80% ratchet is a separate `coverage report --include=...` step in CI (Phase 5). Actual: 87.8% overall, 96.6% on the three target apps*
 
 **Done when:** `pytest` is green with real assertions; coverage report is generated. ✅ **Completed 2026-10-10** — 158 passed, 11 xfailed (all intended), ~3 min.
@@ -224,19 +222,19 @@ which does not exist, so both rejections came back as **500** — now
 
 ---
 
-## Phase 7 — Authorization & security hardening
+## Phase 7 — Authorization & security hardening ✅
 **Goal:** no privilege escalation, no brute force, real HTTPS posture.
 
-- [ ] `is_seller` read-only in `UserSerializer`; audit all serializers for writable sensitive fields.
-- [ ] Reusable `IsSeller` / `IsStoreOwner` / `IsListingOwner` permission classes.
-- [ ] DRF throttling: strict on login/register/OTP/password-reset; **scoped throttle on "reveal phone number"** (anti-scraping; Ouedkniss-style sites are scraped heavily).
-- [ ] `SECURE_*`, HSTS, secure cookies when not `DEBUG`.
-- [ ] Blacklist refresh tokens on password change; failed-login backoff; auth audit log.
-- [ ] **Decide JWT storage:** HttpOnly cookie (needs a custom auth class + CSRF handling) or bearer tokens. The README claim must match reality.
-- [ ] Object-level permission tests for every write endpoint (IDOR checks).
-- [ ] Upload security rules reserved for Phase 14 (MIME sniffing, size, EXIF stripping).
+- [x] `is_seller` read-only in `UserSerializer`; audit all serializers for writable sensitive fields. — *Profile `PUT {is_seller: true}` is now a no-op (strict xfail removed). Audit: `UserRegistrationSerializer` keeps `is_seller` (explicit "I want to sell" opt-in at signup — self-serve seller creation is a Phase 13 feature, not an escalation path); `AddressSerializer` never exposed `user`; `ProductCreateUpdateSerializer`/`StoreCreateSerializer` never exposed `store`/`owner`; `StoreSerializer.is_active` is writable only on the owner's own store*
+- [x] Reusable `IsSeller` / `IsStoreOwner` / `IsListingOwner` permission classes. — *`apps/users/permissions.py`; applied to seller product create/detail, store create/my-store, order status update, inventory update. `IsListingOwner` runs object-level checks inside `get_object()`; a seller without a store now gets 403 instead of an empty/404 path.*
+- [x] DRF throttling: strict on login/register/OTP/password-reset; **scoped throttle on "reveal phone number"** (anti-scraping; Ouedkniss-style sites are scraped heavily). — *Rates env-driven (`THROTTLE_RATE_*` in `.env.example`). No OTP/password-reset endpoints yet (Phase 8) — scopes reserved. The reveal-phone surface today is the public store endpoints (the embedded `owner` payload includes `phone_number`), so `StoreListView`/`StoreDetailView` carry the scoped `reveal_phone` rate; Phase 16's dedicated reveal endpoint must reuse `RevealPhoneRateThrottle`. Note: DRF's `ScopedRateThrottle` is unusable here — it reads the scope off the view, which `api_view()` never copies — so `apps/users/throttles.py` subclasses `SimpleRateThrottle` with a class-level scope.*
+- [x] `SECURE_*`, HSTS, secure cookies when not `DEBUG`. — *`_https_settings()` in `settings.py`: with `DEBUG=False` → SSL redirect, HSTS (1 y, include-subdomains, preload), secure session/CSRF/JWT cookies — all env-overridable; nosniff/referrer-policy/X-Frame-Options are unconditional; `CSRF_TRUSTED_ORIGINS` covers the Next.js origin. CI's `check --deploy` step is now blocking (was `continue-on-error`).*
+- [x] Blacklist refresh tokens on password change; failed-login backoff; auth audit log. — *Password change blacklists every outstanding refresh token and re-issues this device's pair; `apps/users/security.py` locks out (IP, email) after 5 failures with exponential backoff (1→15 min); `AuthEvent` model + `apps/users/audit.py` records login success/failure (with IP + reason), logout, password change, registration, email verification — writes are best-effort and never fail the request.*
+- [x] **Decide JWT storage:** HttpOnly cookie (needs a custom auth class + CSRF handling) or bearer tokens. The README claim must match reality. — *Decision implemented in full: `CookieJWTAuthentication` (Bearer header first, then `access_token` HttpOnly cookie + CSRF for unsafe methods), login/refresh/logout/change-password set and rotate the HttpOnly pair (tokens never appear in response bodies), `GET /api/auth/csrf/` + `X-CSRFToken` double-submit, readable `mh_session` hint for session-restore detection. Frontend no longer touches tokens (`js-cookie` only reads `csrftoken`/`mh_session`); `Authorization: Bearer` still works for API/mobile clients. README claims updated to match.*
+- [x] Object-level permission tests for every write endpoint (IDOR checks). — *`backend/tests/test_idor.py`: 18 tests covering listings, orders, inventory, payments, cart, addresses, anonymous access, plus permission-class unit tests.*
+- [x] Upload security rules reserved for Phase 14 (MIME sniffing, size, EXIF stripping). — *deferred by design.*
 
-**Done when:** escalation test fails; login is rate-limited; `check --deploy` is clean.
+**Done when:** escalation test fails ✅ (the strict xfail XPASSed and was deleted; `test_idor.py` locks it in); login is rate-limited ✅ (`429` + backoff tests); `check --deploy` is clean ✅ (blocking in CI).
 
 ---
 
@@ -595,7 +593,7 @@ which does not exist, so both rejections came back as **500** — now
 | 1 | Product model: classifieds-first, store-first, or hybrid? | **Hybrid:** classifieds posting for everyone + store features/checkout for businesses. |
 | 2 | Evolve `Product` → `Listing` or add a separate `Ad` model? | **Evolve into `Listing`** with nullable `store`; avoids two parallel catalogs and search indexes. |
 | 3 | Search engine | Start **Postgres FTS + trigram**; plan for Meilisearch/Typesense behind an interface. |
-| 4 | JWT storage | **HttpOnly cookie + CSRF** for web; bearer for the future mobile app (versioned API). |
+| 4 | JWT storage | **HttpOnly cookie + CSRF** for web; bearer for the future mobile app (versioned API). — *implemented in Phase 7 (`CookieJWTAuthentication`)* |
 | 5 | Online payment path | **Launch with COD only**, add an aggregator after the legal path is confirmed. |
 | 6 | Real-time chat tech | **Polling + push for MVP**, Channels/WebSockets in v1.1. |
 | 7 | Launch region and categories | One wilaya (your local one) × phones/cars/electronics or whichever your seed sellers cover. |
@@ -617,4 +615,4 @@ which does not exist, so both rejections came back as **500** — now
 
 **Parallelizable once Phase 5 is done:** (6, 7), (11, 12), (14, 15), (17, 22), (23, 24).
 **Do not start before Phase 6:** anything touching orders/payments/inventory (19, 20, 21).
-**Current status:** Phases 0–6 ✅ · everything else open · backend `180 tests green (4 strict xfails)`, frontend `49 unit + 5 e2e green`. **Do not start Phases 19–21 before now** — the money/stock invariants they build on are in place.
+**Current status:** Phases 0–7 ✅ · everything else open · backend `224 tests green (3 strict xfails)`, frontend `52 unit + 5 e2e green`. **Do not start Phases 19–21 before now** — the money/stock invariants they build on are in place.

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 
-from core.settings import _secret_is_usable
+from core.settings import _https_settings, _secret_is_usable
 
 SETTINGS_SOURCE = Path(__file__).with_name("settings.py").read_text(encoding="utf-8")
 
@@ -78,3 +78,64 @@ def test_cors_origins_are_a_list():
 @pytest.mark.parametrize("app", ["users", "stores", "products", "inventory", "orders", "payments"])
 def test_all_apps_installed(app):
     assert f"apps.{app}" in settings.INSTALLED_APPS
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — HTTPS posture, cookie auth, throttling
+# ---------------------------------------------------------------------------
+def test_https_posture_when_debug_is_off():
+    """`manage.py check --deploy` must be clean with these defaults."""
+    prod = _https_settings(debug=False)
+    assert prod["SECURE_SSL_REDIRECT"] is True
+    assert prod["SESSION_COOKIE_SECURE"] is True
+    assert prod["CSRF_COOKIE_SECURE"] is True
+    assert prod["SECURE_HSTS_SECONDS"] >= 31536000
+    assert prod["SECURE_HSTS_INCLUDE_SUBDOMAINS"] is True
+    assert prod["SECURE_HSTS_PRELOAD"] is True
+    assert prod["AUTH_COOKIE_SECURE"] is True
+
+
+def test_https_posture_relaxes_for_local_dev():
+    dev = _https_settings(debug=True)
+    assert dev["SECURE_SSL_REDIRECT"] is False
+    assert dev["SESSION_COOKIE_SECURE"] is False
+    assert dev["CSRF_COOKIE_SECURE"] is False
+    assert dev["SECURE_HSTS_SECONDS"] == 0
+    assert dev["AUTH_COOKIE_SECURE"] is False
+
+
+def test_hardened_headers_are_on_regardless_of_debug():
+    assert settings.SECURE_CONTENT_TYPE_NOSNIFF is True
+    assert settings.X_FRAME_OPTIONS == "DENY"
+    assert settings.SECURE_REFERRER_POLICY == "same-origin"
+    assert settings.SESSION_COOKIE_HTTPONLY is True
+    # The SPA must be able to read csrftoken (double-submit) — only the JWT
+    # cookies are HttpOnly.
+    assert settings.CSRF_COOKIE_HTTPONLY is False
+
+
+def test_csrf_trusted_origins_cover_the_frontend():
+    assert "http://localhost:3000" in settings.CSRF_TRUSTED_ORIGINS
+    assert "CSRF_TRUSTED_ORIGINS" in SETTINGS_SOURCE
+
+
+def test_authentication_is_the_cookie_aware_class():
+    auth_classes = settings.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]
+    assert auth_classes[0] == "apps.users.authentication.CookieJWTAuthentication"
+
+
+def test_every_throttle_scope_has_a_rate():
+    rates = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
+    for scope in (
+        "login",
+        "register",
+        "verify_email",
+        "change_password",
+        "token_refresh",
+        "reveal_phone",
+    ):
+        assert rates.get(scope), f"missing throttle rate for {scope}"
+
+
+def test_cache_is_configured_for_throttling():
+    assert settings.CACHES["default"]["BACKEND"]

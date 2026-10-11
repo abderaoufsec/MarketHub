@@ -47,13 +47,11 @@ const USER = { id: 1, email: 'buyer@example.com', is_seller: false }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  Cookies.remove('access_token')
-  Cookies.remove('refresh_token')
+  Cookies.remove('mh_session')
 })
 
 afterEach(() => {
-  Cookies.remove('access_token')
-  Cookies.remove('refresh_token')
+  Cookies.remove('mh_session')
 })
 
 describe('useAuth', () => {
@@ -67,7 +65,7 @@ describe('useAuth', () => {
 })
 
 describe('AuthProvider session restore', () => {
-  it('stays anonymous and finishes loading when no token cookie exists', async () => {
+  it('stays anonymous and finishes loading without a session hint', async () => {
     renderAuth()
 
     await waitFor(() =>
@@ -77,8 +75,8 @@ describe('AuthProvider session restore', () => {
     expect(authAPI.getProfile).not.toHaveBeenCalled()
   })
 
-  it('fetches the profile when an access token cookie exists', async () => {
-    Cookies.set('access_token', 'token-123')
+  it('fetches the profile when the session hint exists', async () => {
+    Cookies.set('mh_session', '1')
     authAPI.getProfile.mockResolvedValue({ data: USER })
 
     renderAuth()
@@ -90,9 +88,8 @@ describe('AuthProvider session restore', () => {
     expect(latestAuth.isAuthenticated).toBe(true)
   })
 
-  it('drops stale tokens when the profile fetch fails', async () => {
-    Cookies.set('access_token', 'stale')
-    Cookies.set('refresh_token', 'stale')
+  it('drops a stale session hint when the profile fetch fails', async () => {
+    Cookies.set('mh_session', '1')
     authAPI.getProfile.mockRejectedValue(new Error('401'))
 
     renderAuth()
@@ -101,15 +98,14 @@ describe('AuthProvider session restore', () => {
       expect(screen.getByTestId('loading')).toHaveTextContent('false')
     )
     expect(screen.getByTestId('user')).toHaveTextContent('anonymous')
-    expect(Cookies.get('access_token')).toBeUndefined()
-    expect(Cookies.get('refresh_token')).toBeUndefined()
+    expect(Cookies.get('mh_session')).toBeUndefined()
   })
 })
 
 describe('login', () => {
-  it('stores tokens and sets the user on success', async () => {
+  it('sets the user without touching tokens (they live in HttpOnly cookies)', async () => {
     authAPI.login.mockResolvedValue({
-      data: { user: USER, access: 'acc', refresh: 'ref' },
+      data: { user: USER },
     })
     renderAuth()
     await waitFor(() =>
@@ -124,8 +120,9 @@ describe('login', () => {
       email: 'buyer@example.com',
       password: 'pw',
     })
-    expect(Cookies.get('access_token')).toBe('acc')
-    expect(Cookies.get('refresh_token')).toBe('ref')
+    // Phase 7: the client must never write JWTs to JS-visible storage.
+    expect(Cookies.get('access_token')).toBeUndefined()
+    expect(Cookies.get('refresh_token')).toBeUndefined()
     await waitFor(() =>
       expect(screen.getByTestId('user')).toHaveTextContent('buyer@example.com')
     )
@@ -161,9 +158,8 @@ describe('login', () => {
 })
 
 describe('logout', () => {
-  it('clears cookies, resets the user and navigates home', async () => {
-    Cookies.set('access_token', 'acc')
-    Cookies.set('refresh_token', 'ref')
+  it('clears the session hint, resets the user and navigates home', async () => {
+    Cookies.set('mh_session', '1')
     authAPI.getProfile.mockResolvedValue({ data: USER })
     authAPI.logout.mockResolvedValue({})
     renderAuth()
@@ -173,9 +169,9 @@ describe('logout', () => {
 
     await latestAuth.logout()
 
-    expect(authAPI.logout).toHaveBeenCalledWith('ref')
-    expect(Cookies.get('access_token')).toBeUndefined()
-    expect(Cookies.get('refresh_token')).toBeUndefined()
+    // No refresh token argument any more: the server reads the HttpOnly cookie.
+    expect(authAPI.logout).toHaveBeenCalledWith()
+    expect(Cookies.get('mh_session')).toBeUndefined()
     expect(mockPush).toHaveBeenCalledWith('/')
     await waitFor(() =>
       expect(screen.getByTestId('user')).toHaveTextContent('anonymous')
@@ -183,8 +179,7 @@ describe('logout', () => {
   })
 
   it('still clears local state when the API call fails', async () => {
-    Cookies.set('access_token', 'acc')
-    Cookies.set('refresh_token', 'ref')
+    Cookies.set('mh_session', '1')
     authAPI.getProfile.mockResolvedValue({ data: USER })
     authAPI.logout.mockRejectedValue(new Error('offline'))
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -195,7 +190,7 @@ describe('logout', () => {
 
     await latestAuth.logout()
 
-    expect(Cookies.get('access_token')).toBeUndefined()
+    expect(Cookies.get('mh_session')).toBeUndefined()
     await waitFor(() =>
       expect(screen.getByTestId('user')).toHaveTextContent('anonymous')
     )
@@ -233,7 +228,7 @@ describe('register', () => {
 
 describe('role flags', () => {
   it('exposes isSeller from the user record', async () => {
-    Cookies.set('access_token', 'token-123')
+    Cookies.set('mh_session', '1')
     authAPI.getProfile.mockResolvedValue({
       data: { ...USER, is_seller: true },
     })
@@ -248,7 +243,7 @@ describe('role flags', () => {
 
 describe('updateProfile', () => {
   it('replaces the cached user with the updated one', async () => {
-    Cookies.set('access_token', 'token-123')
+    Cookies.set('mh_session', '1')
     authAPI.getProfile.mockResolvedValue({ data: USER })
     authAPI.updateProfile.mockResolvedValue({
       data: { user: { ...USER, first_name: 'Nadia' } },

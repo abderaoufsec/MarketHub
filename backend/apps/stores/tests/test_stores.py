@@ -139,3 +139,27 @@ def test_store_stats_requires_store(buyer_client):
     response = buyer_client.get(STATS_URL)
 
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Anti-scraping (Phase 7): the store payload embeds the owner's phone number,
+# so the public endpoints carry the scoped `reveal_phone` throttle.
+# ---------------------------------------------------------------------------
+def test_store_list_exposes_owner_contact(api_client, store):
+    response = api_client.get(LIST_URL)
+
+    assert response.status_code == 200
+    assert "phone_number" in response.data["results"][0]["owner"]
+
+
+def test_reveal_phone_scoped_throttle_trips():
+    from rest_framework.test import APIClient
+
+    from tests.helpers import throttle_rate
+
+    client = APIClient()
+    with throttle_rate("reveal_phone", "2/min"):
+        codes = [client.get(LIST_URL).status_code for _ in range(4)]
+
+    assert codes[:2] == [200, 200]
+    assert codes[2:] == [429, 429]

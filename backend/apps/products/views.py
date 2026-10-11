@@ -2,9 +2,10 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from apps.users.permissions import IsListingOwner, IsStoreOwner
 
 from .models import Product, ProductReview, Wishlist
 from .serializers import (
@@ -94,30 +95,27 @@ class SellerProductListView(generics.ListAPIView):
 
 
 class SellerProductCreateView(generics.CreateAPIView):
-    """Create a new product (seller only)"""
+    """Create a new product (seller with a store only).
+
+    docs/todo.md §0.3 #8: the two rejection checks used to raise
+    ``permissions.PermissionDenied`` — an attribute that does not exist on
+    ``rest_framework.permissions`` — so every rejection came back as an
+    AttributeError → HTTP 500. Phase 7 replaced them with the reusable
+    ``IsStoreOwner`` permission class (403 before the view body runs).
+    """
 
     serializer_class = ProductCreateUpdateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStoreOwner]
 
     def perform_create(self, serializer):
-        # docs/todo.md §0.3 #8: this used to raise ``permissions.PermissionDenied``,
-        # which does not exist on rest_framework.permissions, so every rejection
-        # came back as an AttributeError -> HTTP 500. ``PermissionDenied`` lives
-        # in ``rest_framework.exceptions`` and renders as a 403.
-        if not self.request.user.is_seller:
-            raise PermissionDenied("Only sellers can create products")
-
-        if not hasattr(self.request.user, "store"):
-            raise PermissionDenied("You must have a store to create products")
-
         serializer.save()
 
 
 class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update, or delete a product (seller only)"""
+    """Retrieve, update, or delete a product (own store only)"""
 
     serializer_class = ProductCreateUpdateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsListingOwner]
 
     def get_queryset(self):
         if not self.request.user.is_seller or not hasattr(self.request.user, "store"):

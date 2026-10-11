@@ -33,7 +33,8 @@ jobs:
     env:
       # Values consumed by core/settings.py; see backend/.env.example.
       DEBUG: "false"
-      DJANGO_SECRET_KEY: ci-throwaway-secret-key-not-a-real-secret
+      # >= 50 chars with >= 6 unique characters so security.W009 stays quiet.
+      DJANGO_SECRET_KEY: ci-throwaway-secret-key-0123456789-abcdefghijklmnop-QRSTUVWXYZ
       ALLOWED_HOSTS: localhost,127.0.0.1,testserver
       DB_NAME: markethub
       DB_USER: postgres
@@ -95,10 +96,9 @@ jobs:
           --fail-under=80
 
       - name: Deployment checks (DEBUG=False posture)
-        # Advisory until Phase 7 lands the HTTPS posture (SECURE_*, HSTS,
-        # secure cookies). Phase 7's "done when" is `check --deploy` clean;
-        # flip continue-on-error to false there.
-        continue-on-error: true
+        # Phase 7 landed the HTTPS posture (SECURE_*, HSTS, secure cookies,
+        # CSRF trusted origins), so `check --deploy` must be clean — a warning
+        # here fails the build.
         run: python manage.py check --deploy
 
       - name: Upload coverage report

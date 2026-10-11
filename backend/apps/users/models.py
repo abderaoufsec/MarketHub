@@ -88,3 +88,49 @@ class EmailVerificationToken(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.expires_at
+
+
+class AuthEvent(models.Model):
+    """Append-only audit trail of authentication events (Phase 7).
+
+    Answers "who touched this account, from where, when" for incident
+    response: login successes/failures, logout, password changes,
+    registrations and email verifications.
+    """
+
+    LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    LOGIN_FAILED = "LOGIN_FAILED"
+    LOGOUT = "LOGOUT"
+    PASSWORD_CHANGED = "PASSWORD_CHANGED"
+    REGISTERED = "REGISTERED"
+    EMAIL_VERIFIED = "EMAIL_VERIFIED"
+    EVENT_CHOICES = [
+        (LOGIN_SUCCESS, "Login succeeded"),
+        (LOGIN_FAILED, "Login failed"),
+        (LOGOUT, "Logout"),
+        (PASSWORD_CHANGED, "Password changed"),
+        (REGISTERED, "Registered"),
+        (EMAIL_VERIFIED, "Email verified"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="auth_events",
+        help_text="Null when the event references an unknown/failed account.",
+    )
+    event = models.CharField(max_length=32, choices=EVENT_CHOICES, db_index=True)
+    email = models.EmailField(blank=True, max_length=254)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=256, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "auth_events"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.event} {self.email or self.user_id} @ {self.created_at:%Y-%m-%d %H:%M}"
