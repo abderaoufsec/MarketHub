@@ -81,12 +81,10 @@ def test_register_rejects_weak_password(api_client):
     assert "password" in response.data
 
 
-@pytest.mark.xfail(
-    reason="Duplicate verification flow: users/views.py AND users/signals.py both "
-    "send a link on registration (Phase 8 removes one of them)",
-    strict=True,
-)
 def test_registration_sends_exactly_one_verification_email(api_client):
+    """Phase 8 fix: the duplicate ``post_save`` receiver is deleted — one
+    registration, one email, one flow (the old one emailed a raw-uuid link no
+    view ever accepted)."""
     before = len(mail.outbox)
 
     response = api_client.post(REGISTER_URL, registration_payload(), format="json")

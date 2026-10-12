@@ -44,6 +44,37 @@ class TokenRefreshRateThrottle(ClassScopedRateThrottle):
     scope = "token_refresh"
 
 
+class OtpRequestRateThrottle(ClassScopedRateThrottle):
+    """SMS *request* rate per IP (Phase 8).
+
+    The per-number/per-IP daily budgets in ``otp.py`` are the real
+    SMS-pumping defence; this is the coarse per-IP request gate in front of
+    them, so a single host cannot even reach the point of counting.
+    """
+
+    scope = "otp_request"
+
+
+class OtpVerifyRateThrottle(ClassScopedRateThrottle):
+    """Code *verification* rate — the endpoint a guessing attack hits."""
+
+    scope = "otp_verify"
+
+
+class ForgotPasswordRateThrottle(ClassScopedRateThrottle):
+    scope = "forgot_password"
+
+
+class ResendVerificationRateThrottle(ClassScopedRateThrottle):
+    scope = "resend_verification"
+
+
+class SocialLoginRateThrottle(ClassScopedRateThrottle):
+    """Social sign-in attempts per IP (token replay / probing)."""
+
+    scope = "social_login"
+
+
 class RevealPhoneRateThrottle(ClassScopedRateThrottle):
     """Anti-scraping throttle for endpoints that expose a phone number.
 

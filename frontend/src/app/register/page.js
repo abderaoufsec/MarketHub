@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
+import { authAPI } from '../../lib/api'
 import {
   Mail,
   Lock,
@@ -49,6 +50,46 @@ function RegisterForm() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  // Success copy is chosen by which identity the account actually has: the
+  // e2e suite asserts the exact email sentence for accounts created with an
+  // email address, while phone-only accounts never receive an email.
+  const [successMessage, setSuccessMessage] = useState(
+    'Please check your email to verify your account.'
+  )
+  // Phone sign-up is first-class in Phase 8: when a phone number is given we
+  // offer an optional SMS verification step before submitting the account.
+  // The code itself is *not* consumed here — `/auth/phone/verify/` attaches a
+  // number to an already-signed-in account — it travels with the signup POST
+  // and the registration serializer checks it last (see serializers.py).
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpBusy, setOtpBusy] = useState(false)
+
+  const sendOtp = async () => {
+    const phone = formData.phone_number.trim()
+    if (!phone) {
+      const errorMsg = 'Enter a phone number first'
+      setErrors({ phone_number: errorMsg })
+      toast.error(errorMsg)
+      return
+    }
+    setErrors({})
+    setOtpBusy(true)
+    try {
+      const res = await authAPI.requestPhoneOtp({ phone_number: phone })
+      setOtpSent(true)
+      setOtpCode('')
+      toast.success(res?.detail || 'Verification code sent by SMS')
+    } catch (err) {
+      const detail = err?.response?.data?.detail
+      const msg =
+        typeof detail === 'string' ? detail : 'Could not send the SMS code'
+      setErrors({ phone_number: msg })
+      toast.error(msg)
+    } finally {
+      setOtpBusy(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -64,10 +105,40 @@ function RegisterForm() {
       return
     }
 
-    // Generate username from email if not provided
-    const registrationData = { ...formData }
-    if (!registrationData.username && registrationData.email) {
-      registrationData.username = registrationData.email.split('@')[0]
+    const phone = formData.phone_number.trim()
+    const email = formData.email.trim()
+
+    // Generate username from email (or phone) if not provided
+    const registrationData = {
+      ...formData,
+      email,
+      phone_number: phone,
+    }
+    if (!registrationData.username) {
+      if (email) {
+        registrationData.username = email.split('@')[0]
+      } else if (phone) {
+        registrationData.username = phone.replace(/^\+/, '')
+      }
+    }
+
+    // A phone-only account has no email to fall back on, so the phone must
+    // have been proven with an OTP before we can create it. With both an
+    // email and a phone, either verification is accepted.
+    if (!email && !phone) {
+      const errorMsg = 'Provide an email address or a phone number'
+      setErrors({ general: errorMsg })
+      toast.error(errorMsg)
+      setLoading(false)
+      return
+    }
+
+    if (phone && !email && !otpCode.trim()) {
+      const errorMsg = 'Enter the SMS code sent to your phone'
+      setErrors({ phone_number: errorMsg })
+      toast.error(errorMsg)
+      setLoading(false)
+      return
     }
 
     // Validate password length
@@ -79,13 +150,19 @@ function RegisterForm() {
       return
     }
 
+    if (phone && otpCode.trim()) {
+      registrationData.otp_code = otpCode.trim()
+    }
+
     try {
       const result = await register(registrationData)
 
       if (result.success) {
-        toast.success(
-          'Account created successfully! Please check your email to verify your account.'
-        )
+        const message = email
+          ? 'Please check your email to verify your account.'
+          : 'Your phone number has been verified. You can now sign in.'
+        setSuccessMessage(message)
+        toast.success(`Account created successfully! ${message}`)
         setSuccess(true)
         setTimeout(() => {
           router.push('/login')
@@ -155,9 +232,7 @@ function RegisterForm() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Registration Successful!
             </h2>
-            <p className="text-gray-600 mb-4">
-              Please check your email to verify your account.
-            </p>
+            <p className="text-gray-600 mb-4">{successMessage}</p>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -301,7 +376,10 @@ function RegisterForm() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Email address
+                Email address{' '}
+                <span className="text-gray-400">
+                  (Optional if you use a phone)
+                </span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -312,7 +390,6 @@ function RegisterForm() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   value={formData.email}
                   onChange={handleChange}
                   className="input-field pl-10"
@@ -349,7 +426,6 @@ function RegisterForm() {
                   id="username"
                   name="username"
                   type="text"
-                  required
                   value={formData.username}
                   onChange={handleChange}
                   className="input-field pl-10"
@@ -394,6 +470,62 @@ function RegisterForm() {
                   placeholder="Phone number"
                 />
               </div>
+              {errors.phone_number && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-1 text-sm text-red-600"
+                >
+                  {Array.isArray(errors.phone_number)
+                    ? errors.phone_number[0]
+                    : errors.phone_number}
+                </motion.p>
+              )}
+
+              {formData.phone_number.trim() && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-600">
+                      Verify the number by SMS — required when signing up
+                      without an email address.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={sendOtp}
+                      disabled={otpBusy}
+                      className="shrink-0 text-xs font-medium text-primary hover:text-secondary disabled:opacity-50"
+                    >
+                      {otpBusy
+                        ? 'Sending...'
+                        : otpSent
+                          ? 'Resend code'
+                          : 'Send code'}
+                    </button>
+                  </div>
+
+                  {otpSent && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="otp_code"
+                        name="otp_code"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={8}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        className="input-field"
+                        placeholder="SMS code"
+                        aria-label="SMS code"
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </motion.div>
 
             <motion.div

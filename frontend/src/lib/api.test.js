@@ -182,6 +182,65 @@ describe('service endpoints', () => {
     expect(apiMock.history.post[0].headers['X-CSRFToken']).toBe('csrf-abc')
   })
 
+  it('authAPI.verifyEmail puts uidb64 and token in the path (Phase 8)', async () => {
+    // The pre-Phase-8 call passed both as query params and 404'd on every
+    // emailed link; the backend route is /verify-email/<uidb64>/<token>/.
+    apiMock.onGet('/auth/verify-email/bXktdXNlcg/abc123/').reply(200, {
+      detail: 'Email verified.',
+    })
+
+    const response = await authAPI.verifyEmail('bXktdXNlcg', 'abc123')
+
+    expect(apiMock.history.get[0].url).toBe(
+      '/auth/verify-email/bXktdXNlcg/abc123/'
+    )
+    expect(response.data.detail).toBe('Email verified.')
+  })
+
+  it('authAPI password-recovery calls target the Phase 8 routes', async () => {
+    apiMock.onPost('/auth/password/forgot/').reply(200, { detail: '…' })
+    apiMock.onPost('/auth/password/reset/').reply(200, { detail: '…' })
+
+    await authAPI.forgotPassword({ email: 'x@y.z' })
+    await authAPI.resetPassword({ uidb64: 'u', token: 't', new_password: 'p' })
+
+    expect(apiMock.history.post[0].url).toBe('/auth/password/forgot/')
+    expect(apiMock.history.post[1].url).toBe('/auth/password/reset/')
+  })
+
+  it('authAPI phone endpoints each post to their own route (Phase 8)', async () => {
+    apiMock.onPost('/auth/phone/otp/').reply(200, { detail: '…' })
+    apiMock.onPost('/auth/phone/login/').reply(200, { access: 'a' })
+    apiMock.onPost('/auth/phone/reset/').reply(200, { detail: '…' })
+    apiMock.onPost('/auth/phone/verify/').reply(200, { detail: '…' })
+    apiMock.onPost('/auth/social/').reply(200, { access: 'a' })
+
+    await authAPI.requestPhoneOtp({ phone_number: '+213555000000' })
+    await authAPI.loginWithPhone({
+      phone_number: '+213555000000',
+      code: '123456',
+    })
+    await authAPI.resetPasswordWithPhone({
+      phone_number: '+213555000000',
+      code: '123456',
+      new_password: 'pw',
+      new_password_confirm: 'pw',
+    })
+    await authAPI.verifyPhone({
+      phone_number: '+213555000000',
+      code: '123456',
+    })
+    await authAPI.socialLogin({ provider: 'google', access_token: 'tok' })
+
+    expect(apiMock.history.post.map((r) => r.url)).toEqual([
+      '/auth/phone/otp/',
+      '/auth/phone/login/',
+      '/auth/phone/reset/',
+      '/auth/phone/verify/',
+      '/auth/social/',
+    ])
+  })
+
   it('cartAPI.update PUTs the new quantity to the item URL', async () => {
     Cookies.set('csrftoken', 'csrf-abc')
     apiMock.onPut('/orders/cart/items/7/').reply(200, { quantity: 3 })

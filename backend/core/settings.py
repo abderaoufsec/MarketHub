@@ -319,6 +319,8 @@ REST_FRAMEWORK = {
     # anti-scraping rate on endpoints that expose phone numbers. Only views
     # that opt in (throttle_classes) are throttled — there is deliberately no
     # global default, so ordinary API traffic is unaffected.
+    # Phase 8 adds the OTP/social scopes (the per-number budgets that make
+    # SMS pumping unprofitable live in apps.users.otp, on top of these).
     "DEFAULT_THROTTLE_RATES": {
         "login": env_str("THROTTLE_RATE_LOGIN", "10/min"),
         "register": env_str("THROTTLE_RATE_REGISTER", "10/hour"),
@@ -326,6 +328,11 @@ REST_FRAMEWORK = {
         "change_password": env_str("THROTTLE_RATE_CHANGE_PASSWORD", "5/hour"),
         "token_refresh": env_str("THROTTLE_RATE_TOKEN_REFRESH", "30/min"),
         "reveal_phone": env_str("THROTTLE_RATE_REVEAL_PHONE", "30/min"),
+        "otp_request": env_str("THROTTLE_RATE_OTP_REQUEST", "30/hour"),
+        "otp_verify": env_str("THROTTLE_RATE_OTP_VERIFY", "30/min"),
+        "forgot_password": env_str("THROTTLE_RATE_FORGOT_PASSWORD", "10/hour"),
+        "resend_verification": env_str("THROTTLE_RATE_RESEND_VERIFICATION", "10/hour"),
+        "social_login": env_str("THROTTLE_RATE_SOCIAL_LOGIN", "10/hour"),
     },
 }
 
@@ -378,6 +385,36 @@ EMAIL_HOST_USER = env_str("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env_str("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = env_str("DEFAULT_FROM_EMAIL", "noreply@markethub.com")
 EMAIL_TIMEOUT = env_int("EMAIL_TIMEOUT", 10)
+
+# ---------------------------------------------------------------------------
+# SMS / Phone OTP (Phase 8) — phone is the primary identity in Algeria.
+# ---------------------------------------------------------------------------
+# The transport is pluggable (apps.users.sms). Default mirrors the email
+# console backend: the message is logged + appended to `outbox`, so dev and
+# tests never pay for an SMS. Production sets a real gateway:
+#   SMS_BACKEND=apps.users.sms.HttpJsonSmsBackend  (+ SMS_API_URL / SMS_API_KEY)
+# A WhatsApp/Viber business API plugs in behind the same one-method class.
+SMS_BACKEND = env_str("SMS_BACKEND", "apps.users.sms.ConsoleSmsBackend")
+SMS_API_URL = env_str("SMS_API_URL")
+SMS_API_KEY = env_str("SMS_API_KEY")
+SMS_FROM = env_str("SMS_FROM", "MarketHub")
+SMS_TIMEOUT = env_int("SMS_TIMEOUT", 10)
+
+# OTP hardening: short, single-use, attempt-capped, budgeted per number/IP.
+OTP_LENGTH = env_int("OTP_LENGTH", 6)
+OTP_TTL_SECONDS = env_int("OTP_TTL_SECONDS", 300)
+OTP_MAX_ATTEMPTS = env_int("OTP_MAX_ATTEMPTS", 5)
+OTP_RESEND_COOLDOWN_SECONDS = env_int("OTP_RESEND_COOLDOWN_SECONDS", 60)
+OTP_MAX_PER_PHONE_PER_DAY = env_int("OTP_MAX_PER_PHONE_PER_DAY", 5)
+OTP_MAX_PER_IP_PER_DAY = env_int("OTP_MAX_PER_IP_PER_DAY", 20)
+
+# ---------------------------------------------------------------------------
+# Social login (Phase 8, optional) — empty means the provider answers 503.
+# ---------------------------------------------------------------------------
+GOOGLE_CLIENT_ID = env_str("GOOGLE_CLIENT_ID")
+FACEBOOK_APP_ID = env_str("FACEBOOK_APP_ID")
+FACEBOOK_APP_SECRET = env_str("FACEBOOK_APP_SECRET")
+SOCIAL_HTTP_TIMEOUT = env_int("SOCIAL_HTTP_TIMEOUT", 10)
 
 # ---------------------------------------------------------------------------
 # Platform Settings

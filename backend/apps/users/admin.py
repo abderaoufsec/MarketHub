@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html, mark_safe
 
-from .models import Address, User
+from .models import Address, PhoneOtp, User
 
 
 class AddressInline(admin.TabularInline):
@@ -39,7 +39,10 @@ class UserAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Account Information", {"fields": ("email", "password", "id")}),
-        ("Personal Information", {"fields": ("first_name", "last_name", "phone_number")}),
+        (
+            "Personal Information",
+            {"fields": ("first_name", "last_name", "phone_number", "phone_verified_at")},
+        ),
         (
             "Permissions & Status",
             {
@@ -236,6 +239,45 @@ class UserAdmin(admin.ModelAdmin):
         self.message_user(request, f"Seller status removed from {updated} user(s).")
 
     remove_seller.short_description = "❌ Remove seller status"
+
+
+@admin.register(PhoneOtp)
+class PhoneOtpAdmin(admin.ModelAdmin):
+    """Operational view of SMS verification attempts (Phase 8).
+
+    Read-only: codes are issued and consumed by the API, and the row stores
+    only a hash — there is nothing an operator should ever edit.
+    """
+
+    list_display = [
+        "masked_phone",
+        "purpose",
+        "attempts",
+        "expires_at",
+        "consumed_at",
+        "created_at",
+    ]
+    list_filter = ["purpose", "consumed_at"]
+    search_fields = ["phone_number"]
+    ordering = ["-created_at"]
+    readonly_fields = [
+        "user",
+        "phone_number",
+        "purpose",
+        "code_hash",
+        "attempts",
+        "created_at",
+        "expires_at",
+        "consumed_at",
+        "ip",
+    ]
+
+    def masked_phone(self, obj):
+        # Never render the full number in a list meant for eyeballing:
+        # the mask matches what the logs show (apps.users.phones.mask_phone).
+        return f"{obj.phone_number[:5]}••••{obj.phone_number[-2:]}" if obj.phone_number else "-"
+
+    masked_phone.short_description = "Number"
 
 
 @admin.register(Address)

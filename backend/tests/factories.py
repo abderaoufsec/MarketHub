@@ -5,16 +5,19 @@ rolled ``Model.objects.create()`` calls, so that new required fields only
 break one place.
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
 import factory
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.inventory.models import Inventory, InventoryAuditLog
 from apps.orders.models import Cart, CartItem, Order, OrderItem
 from apps.payments.models import Transaction
 from apps.products.models import Product, ProductImage, ProductReview, Wishlist
 from apps.stores.models import Store
+from apps.users import otp
 from apps.users.models import Address
 
 User = get_user_model()
@@ -40,6 +43,28 @@ class UserFactory(factory.django.DjangoModelFactory):
         raw = extracted or "Str0ng!Passw0rd"
         self.set_password(raw)
         return raw
+
+
+class PhoneOnlyUserFactory(UserFactory):
+    """A phone-first account (Phase 8): no email, verified number.
+
+    ``is_verified`` (the *email* flag) stays False — the verified phone is
+    the identity, which is exactly the login gate Phase 8 has to accept."""
+
+    email = None
+    is_verified = False
+    phone_number = factory.Sequence(lambda n: f"+2135551234{n % 100:02d}")
+    phone_verified_at = factory.LazyFunction(timezone.now)
+
+
+class PhoneOtpFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = "users.PhoneOtp"
+
+    phone_number = factory.Sequence(lambda n: f"+2136661234{n % 100:02d}")
+    purpose = "register"
+    code_hash = factory.LazyFunction(lambda: otp.hash_code("123456"))
+    expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(minutes=5))
 
 
 class SellerFactory(UserFactory):

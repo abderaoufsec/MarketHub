@@ -96,7 +96,22 @@ export const authAPI = {
   login: (data) => api.post('/auth/login/', data),
   // Blacklists the refresh cookie and clears the HttpOnly pair server side.
   logout: () => api.post('/auth/logout/', {}),
-  verifyEmail: (token) => api.get(`/auth/verify-email/${token}/`),
+  // Phase 8: the backend route is /verify-email/<uidb64>/<token>/ — both
+  // parts are path segments (the old single-token call 404'd on every link).
+  verifyEmail: (uidb64, token) =>
+    api.get(`/auth/verify-email/${uidb64}/${token}/`),
+  resendVerification: (data) => api.post('/auth/verify-email/resend/', data),
+  // Phase 8: password recovery (email link and SMS-code paths).
+  forgotPassword: (data) => api.post('/auth/password/forgot/', data),
+  resetPassword: (data) => api.post('/auth/password/reset/', data),
+  // Phase 8: phone OTP — request a code, sign in with it, reset with it,
+  // or bind the number to the signed-in account.
+  requestPhoneOtp: (data) => api.post('/auth/phone/otp/', data),
+  loginWithPhone: (data) => api.post('/auth/phone/login/', data),
+  resetPasswordWithPhone: (data) => api.post('/auth/phone/reset/', data),
+  verifyPhone: (data) => api.post('/auth/phone/verify/', data),
+  // Phase 8: Google/Facebook sign-in (tokens verified server-side).
+  socialLogin: (data) => api.post('/auth/social/', data),
   getProfile: () => api.get('/auth/profile/'),
   updateProfile: (data) => api.put('/auth/profile/', data),
   changePassword: (data) => api.post('/auth/change-password/', data),

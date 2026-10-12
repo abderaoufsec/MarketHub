@@ -13,6 +13,7 @@ import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
 
+from apps.users.sms import outbox as sms_outbox
 from tests.factories import (
     AddressFactory,
     InventoryFactory,
@@ -99,8 +100,14 @@ def _reset_rate_limit_state():
     Clearing it before every test keeps rate-limited endpoints order-
     independent: the suite runs in one process, so a leftover counter from a
     previous test would otherwise produce spurious 429s.
+
+    The console SMS backend's outbox (Phase 8) is module-level state like
+    ``django.core.mail.outbox`` (which pytest-django resets per test), so it
+    is cleared here too — otherwise a test asserting "nothing was sent" would
+    depend on which test ran before it.
     """
     cache.clear()
+    sms_outbox.clear()
 
 
 @pytest.fixture(autouse=True)

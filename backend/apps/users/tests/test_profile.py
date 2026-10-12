@@ -2,6 +2,7 @@
 defect recorded in docs/todo.md §0.3 #2/#7 (Phase 6/8 fix them)."""
 
 import pytest
+from django.utils import timezone
 
 from tests.factories import UserFactory
 
@@ -57,15 +58,49 @@ def test_profile_update_cannot_escalate_to_seller(buyer_client, buyer):
     assert buyer.is_seller is False
 
 
-@pytest.mark.xfail(
-    reason="phone_number is an unvalidated free-text field (docs/todo.md §0.3 #7, "
-    "fixed in Phase 8 with E.164 normalization)",
-    strict=True,
-)
 def test_profile_update_rejects_invalid_phone_number(buyer_client):
+    """Phase 8 fix: ``phone_number`` is E.164-validated (§0.3 #7), so junk can
+    no longer land in the identity column."""
     response = buyer_client.put(PROFILE_URL, {"phone_number": "not-a-phone"}, format="json")
 
     assert response.status_code == 400
+    assert "phone_number" in response.data
+
+
+def test_profile_update_normalizes_phone_number(buyer_client, buyer):
+    """The Algerian formats people actually type all land as one value."""
+    for typed in ("0555 12 34 56", "555123456", "00213555123456", "+213 555 12 34 56"):
+        response = buyer_client.put(PROFILE_URL, {"phone_number": typed}, format="json")
+        assert response.status_code == 200, typed
+        buyer.refresh_from_db()
+        assert buyer.phone_number == "+213555123456", typed
+
+
+def test_profile_update_cannot_take_another_accounts_verified_phone(buyer_client):
+    """The partial unique constraint is mirrored as a 400, not an IntegrityError."""
+    from tests.factories import PhoneOnlyUserFactory
+
+    holder = PhoneOnlyUserFactory(phone_number="+213555000111")
+
+    response = buyer_client.put(PROFILE_URL, {"phone_number": holder.phone_number}, format="json")
+
+    assert response.status_code == 400
+    assert "phone_number" in response.data
+
+
+def test_changing_the_number_invalidates_the_old_proof(buyer_client, buyer):
+    """A new number is stored *unverified* until its own OTP confirms it —
+    otherwise binding an unproved number would grant a verified identity."""
+    buyer.phone_number = "+213555123456"
+    buyer.phone_verified_at = timezone.now()
+    buyer.save()
+
+    response = buyer_client.put(PROFILE_URL, {"phone_number": "0777 88 99 00"}, format="json")
+
+    assert response.status_code == 200
+    buyer.refresh_from_db()
+    assert buyer.phone_number == "+213777889900"
+    assert buyer.phone_verified is False
 
 
 # ---------------------------------------------------------------------------
