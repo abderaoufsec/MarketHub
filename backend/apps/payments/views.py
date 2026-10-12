@@ -1,18 +1,33 @@
-import logging
+"""Payment endpoints: capture, refund, status, commission ledger.
+
+Phase 9 of docs/todo.md: these views used to translate the service's
+``{"success": False, "error": …}`` dicts into hand-built ``{"error": …}``
+bodies — about fourteen branches that had to stay in sync with what the
+service logged. The service raises now (``apps/payments/exceptions.py``), so a
+failure travels untouched to ``core.exceptions.api_exception_handler`` and the
+views are left with one job: build the *success* bodies, exactly as before.
+"""
 
 from django.db import transaction
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.orders.models import Order
+from core.exceptions import ApiError, InternalServerError
+from core.idempotency import IdempotentPostMixin, idempotency_key
 
+from .exceptions import (
+    OrderNotFoundError,
+    RefundAlreadyDeliveredError,
+    RefundNotPaidError,
+)
 from .models import PlatformCommissionLedger, Transaction
 from .serializers import PlatformCommissionLedgerSerializer, TransactionSerializer
 from .services import process_refund, process_simulated_payment
-
-logger = logging.getLogger(__name__)
 
 
 class TransactionListView(generics.ListAPIView):
@@ -48,6 +63,22 @@ class SellerCommissionListView(generics.ListAPIView):
         )
 
 
+# Note on decorator order (drf-spectacular): ``@extend_schema`` must sit
+# *above* ``@api_view``. Applied below it, it annotates the bare function and
+# is silently dropped — ``api_view`` copies ``schema``/``permission_classes``
+# off the function but not the ``kwargs`` the annotation lives in, so
+# ``manage.py spectacular`` would keep logging "unable to guess serializer"
+# for the route. ``@permission_classes`` stays innermost: that attribute *is*
+# copied by ``api_view``.
+@extend_schema(
+    # Both sides are hand-built: the request is the bare {"order_id",
+    # "payment_method", "idempotency_key"} dict in the docstring, and the 2xx
+    # body is assembled from the service result plus the order. No serializer
+    # models them, so they are documented as free-form objects rather than
+    # with a schema that would silently drift away from the view.
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def simulate_payment(request):
@@ -56,8 +87,9 @@ def simulate_payment(request):
 
     The order row is locked before ``payment_status`` is read, and the capture
     itself re-checks it under that lock, so two concurrent attempts cannot both
-    charge the same order. An ``idempotency_key`` replays the original result
-    instead of charging again.
+    charge the same order. An ``idempotency_key`` — the body field, or the
+    standard ``Idempotency-Key`` header, which wins when both are sent —
+    replays the original result instead of charging again.
 
     Expected payload:
     {
@@ -65,142 +97,156 @@ def simulate_payment(request):
         "payment_method": "credit_card",  # optional, for demonstration
         "idempotency_key": "…"            # optional, makes retries safe
     }
+
+    Failures raise (apps/payments/exceptions.py) and come back as the standard
+    ``{code, message, details, request_id}`` envelope.
     """
     order_id = request.data.get("order_id")
     payment_method = request.data.get("payment_method", "credit_card")
-    idempotency_key = request.data.get("idempotency_key") or None
+    # The standard header wins; the Phase 6 body field keeps working for
+    # clients that only ever sent that (core/idempotency.py).
+    key = idempotency_key(request, body_value=request.data.get("idempotency_key"))
 
     if not order_id:
-        return Response({"error": "order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # Raised, not hand-built: the envelope carries the branchable code.
+        raise ApiError("order_id is required", code="order_id_required")
 
     try:
         with transaction.atomic():
-            # Get the order, locked for the rest of this transaction.
-            order = Order.objects.select_for_update().get(id=order_id, user=request.user)
+            try:
+                # Get the order, locked for the rest of this transaction.
+                order = Order.objects.select_for_update().get(id=order_id, user=request.user)
+            except Order.DoesNotExist:
+                # ``from None``: "no such order" and "not yours" must be
+                # indistinguishable, or the endpoint becomes an order-id oracle.
+                raise OrderNotFoundError("Order not found") from None
 
             # Every decision (already paid? cancelled? replay?) is made by the
             # service, which re-reads the order under the same lock: one
             # authoritative path instead of a pre-check that can go stale.
-            result = process_simulated_payment(order, idempotency_key=idempotency_key)
+            # Refusals raise out of here; only a real result returns.
+            result = process_simulated_payment(order, idempotency_key=key)
+    except ApiError:
+        # Expected failures (already_paid, order_cancelled, payment_failed, …)
+        # already carry their own code and status: pass them through untouched.
+        raise
+    except Exception as exc:
+        # Never expose internal error details to the client. InternalServerError
+        # logs the traceback with the request id and renders the generic 500.
+        raise InternalServerError(
+            "An unexpected error occurred while processing the payment.", cause=exc
+        ) from exc
 
-            if result["success"]:
-                payload = {
-                    "message": "Payment processed successfully",
-                    "transaction_id": result["transaction_id"],
-                    "amount_paid": result["amount"],
-                    "commission": result["commission"],
-                    "net_to_seller": result["net_payout"],
-                    "payment_method": payment_method,
-                    "idempotent_replay": result.get("replay", False),
-                    "order": {
-                        "id": order.id,
-                        "status": order.order_status,
-                        "payment_status": order.payment_status,
-                    },
-                }
-                code = status.HTTP_200_OK
-            elif result.get("reason") == "already_paid":
-                payload = {"error": "Order has already been paid", "code": "already_paid"}
-                code = status.HTTP_400_BAD_REQUEST
-            elif result.get("reason") == "order_cancelled":
-                payload = {
-                    "error": "Cannot process payment for cancelled order",
-                    "code": "order_cancelled",
-                }
-                code = status.HTTP_400_BAD_REQUEST
-            else:
-                # The service logs the real cause; never echo it back.
-                logger.error(
-                    "Simulated payment failed for order %s: %s", order_id, result.get("error")
-                )
-                payload = {
-                    "error": "Payment processing failed. Please try again.",
-                    "code": "payment_failed",
-                }
-                code = status.HTTP_400_BAD_REQUEST
-
-        return Response(payload, status=code)
-
-    except Order.DoesNotExist:
-        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception:
-        # Never expose internal error details to the client; log them instead.
-        logger.exception("Unexpected error while handling payment request for order %s", order_id)
-        return Response(
-            {"error": "An unexpected error occurred while processing the payment."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    # Success body — unchanged since Phase 6.
+    return Response(
+        {
+            "message": "Payment processed successfully",
+            "transaction_id": result["transaction_id"],
+            "amount_paid": result["amount"],
+            "commission": result["commission"],
+            "net_to_seller": result["net_payout"],
+            "payment_method": payment_method,
+            "idempotent_replay": result.get("replay", False),
+            "order": {
+                "id": order.id,
+                "status": order.order_status,
+                "payment_status": order.payment_status,
+            },
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def process_payment_refund(request, order_id):
-    """
-    Process refund for an order
-    Only order owner can request refund
-    """
-    try:
-        with transaction.atomic():
-            # Lock before reading payment_status so a refund cannot race a
-            # payment or a second refund for the same order.
-            order = Order.objects.select_for_update().get(id=order_id, user=request.user)
+class RefundActionView(APIView):
+    """The refund action itself, split into its own class so that
+    :class:`IdempotentPostMixin` can sit *in front of* ``post`` in the MRO
+    (see :class:`ProcessRefundView`)."""
 
-            # Check if order can be refunded
-            if order.payment_status != "SUCCESSFUL":
-                payload = {
-                    "error": "Order payment was not successful, cannot refund",
-                    "code": "not_paid",
-                }
-                code = status.HTTP_400_BAD_REQUEST
-            elif order.order_status == "DELIVERED":
-                payload = {
-                    "error": "Cannot refund delivered orders. Please contact support.",
-                    "code": "already_delivered",
-                }
-                code = status.HTTP_400_BAD_REQUEST
-            else:
-                # Process refund
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        """Process refund for an order; only the order's owner can request it."""
+        try:
+            with transaction.atomic():
+                try:
+                    # Lock before reading payment_status so a refund cannot
+                    # race a payment or a second refund for the same order.
+                    order = Order.objects.select_for_update().get(id=order_id, user=request.user)
+                except Order.DoesNotExist:
+                    raise OrderNotFoundError("Order not found") from None
+
+                # Check if order can be refunded
+                if order.payment_status != "SUCCESSFUL":
+                    raise RefundNotPaidError("Order payment was not successful, cannot refund")
+
+                if order.order_status == "DELIVERED":
+                    raise RefundAlreadyDeliveredError(
+                        "Cannot refund delivered orders. Please contact support."
+                    )
+
+                # Raises (no_successful_transaction / refund_failed) rather
+                # than reporting failure with a dict.
                 result = process_refund(order)
 
-                if result["success"]:
-                    # Update order status inside the same transaction as the
-                    # refund rows, so they can never disagree.
-                    order.payment_status = "FAILED"  # Mark payment as failed after refund
-                    order.order_status = "CANCELLED"
-                    order.save(update_fields=["payment_status", "order_status"])
+                # Update order status inside the same transaction as the
+                # refund rows, so they can never disagree.
+                order.payment_status = "FAILED"  # Mark payment as failed after refund
+                order.order_status = "CANCELLED"
+                order.save(update_fields=["payment_status", "order_status"])
+        except ApiError:
+            raise
+        except Exception as exc:
+            # Never expose internal error details to the client.
+            raise InternalServerError(
+                "An unexpected error occurred while processing the payment.", cause=exc
+            ) from exc
 
-                    payload = {
-                        "message": "Refund processed successfully",
-                        "transaction_id": result["transaction_id"],
-                        "refund_amount": result["refund_amount"],
-                        "order": {
-                            "id": order.id,
-                            "status": order.order_status,
-                            "payment_status": order.payment_status,
-                        },
-                    }
-                    code = status.HTTP_200_OK
-                else:
-                    logger.error("Refund failed for order %s: %s", order_id, result.get("error"))
-                    payload = {
-                        "error": "Refund processing failed. Please contact support.",
-                        "code": "refund_failed",
-                    }
-                    code = status.HTTP_400_BAD_REQUEST
-
-        return Response(payload, status=code)
-
-    except Order.DoesNotExist:
-        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception:
-        # Never expose internal error details to the client; log them instead.
-        logger.exception("Unexpected error while handling payment request for order %s", order_id)
+        # Success body — unchanged since Phase 6.
         return Response(
-            {"error": "An unexpected error occurred while processing the payment."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            {
+                "message": "Refund processed successfully",
+                "transaction_id": result["transaction_id"],
+                "refund_amount": result["refund_amount"],
+                "order": {
+                    "id": order.id,
+                    "status": order.order_status,
+                    "payment_status": order.payment_status,
+                },
+            },
+            status=status.HTTP_200_OK,
         )
 
 
+# Class-based views annotate themselves by decorating the *routed* class (a
+# method-level annotation would be shadowed by the mixin's ``post``). The
+# request body is empty in practice — the order is in the path — but it is
+# still documented, because every mutating operation must say so.
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.OBJECT},
+)
+class ProcessRefundView(IdempotentPostMixin, RefundActionView):
+    """Process refund for an order; only the order's owner can request it.
+
+    Phase 9: mixed with ``IdempotentPostMixin`` so a retried refund cannot pay
+    the buyer out twice. The first 200 is cached per (user,
+    ``Idempotency-Key``) and replayed with ``Idempotency-Replayed: true``;
+    reusing the key with a *different* payload is a 409
+    ``idempotency_key_conflict``. No header, no replay: exactly the old
+    behaviour.
+
+    The mixin defines ``post``, so it must come *before* the class that holds
+    the action in the MRO — otherwise the view's own ``post`` would shadow it
+    and the idempotency would never run. Hence the small split with
+    :class:`RefundActionView`.
+    """
+
+    #: Replay namespace: two endpoints under the same user must not collide on
+    #: the same key (see ``core/idempotency.py``).
+    idempotency_scope = "refund"
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def payment_status(request, order_id):
@@ -209,25 +255,24 @@ def payment_status(request, order_id):
     """
     try:
         order = Order.objects.get(id=order_id, user=request.user)
-
-        # Get transactions for this order
-        transactions = Transaction.objects.filter(order=order).order_by("-transaction_timestamp")
-
-        latest_transaction = transactions.first()
-
-        return Response(
-            {
-                "order_id": order.id,
-                "payment_status": order.payment_status,
-                "order_status": order.order_status,
-                "total_amount": float(order.total_amount),
-                "latest_transaction": TransactionSerializer(latest_transaction).data
-                if latest_transaction
-                else None,
-                "transaction_count": transactions.count(),
-            },
-            status=status.HTTP_200_OK,
-        )
-
     except Order.DoesNotExist:
-        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+        raise OrderNotFoundError("Order not found") from None
+
+    # Get transactions for this order
+    transactions = Transaction.objects.filter(order=order).order_by("-transaction_timestamp")
+
+    latest_transaction = transactions.first()
+
+    return Response(
+        {
+            "order_id": order.id,
+            "payment_status": order.payment_status,
+            "order_status": order.order_status,
+            "total_amount": float(order.total_amount),
+            "latest_transaction": TransactionSerializer(latest_transaction).data
+            if latest_transaction
+            else None,
+            "transaction_count": transactions.count(),
+        },
+        status=status.HTTP_200_OK,
+    )

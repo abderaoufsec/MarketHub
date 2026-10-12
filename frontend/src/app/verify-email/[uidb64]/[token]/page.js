@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react'
 import { authAPI } from '../../../../lib/api'
+import { apiErrorMessage } from '../../../../lib/errors'
 import LoadingSpinner from '../../../../components/common/LoadingSpinner'
 
 /**
@@ -40,8 +41,10 @@ export default function VerifyEmailPage() {
       .catch((error) => {
         setStatus('error')
         setMessage(
-          error.response?.data?.error ||
+          apiErrorMessage(
+            error,
             'This verification link is invalid or has expired.'
+          )
         )
       })
   }, [uidb64, token])

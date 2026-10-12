@@ -1,11 +1,14 @@
 from django.db.models import Avg, Count, Sum
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.users.permissions import IsSeller
 from apps.users.throttles import RevealPhoneRateThrottle
+from core.exceptions import ApiError
 
 from .models import Store
 from .serializers import StoreCreateSerializer, StoreSerializer
@@ -38,27 +41,41 @@ class StoreDetailView(generics.RetrieveAPIView):
     lookup_field = "store_slug"
 
 
+@extend_schema(request=StoreCreateSerializer, responses={201: StoreSerializer})
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsSeller])
 def create_store(request):
-    """Create a new store (seller only — enforced by ``IsSeller``)"""
+    """Create a new store (seller only — enforced by ``IsSeller``).
+
+    Phase 9 note: deliberately *not* mixed with ``IdempotentPostMixin`` the way
+    the seller listing-create view is. A retried create can never publish a
+    second store — the guard below rejects it and ``Store.owner`` is a
+    ``OneToOneField``, so the database refuses a duplicate as well — which is
+    exactly the harm the mixin exists to prevent for listings. Turning this
+    function view into a class just to replay the first 201 instead of the
+    already-safe 400 would be a larger change than the guarantee needs; a
+    client that lost the response can confirm success with ``my_store``.
+    """
     if hasattr(request.user, "store"):
-        return Response({"error": "You already have a store"}, status=status.HTTP_400_BAD_REQUEST)
+        # Phase 9: raised, not hand-built, so the 400 is the standard envelope
+        # ({"code": "store_exists", …}).
+        raise ApiError("You already have a store", code="store_exists")
 
     serializer = StoreCreateSerializer(data=request.data, context={"request": request})
-    if serializer.is_valid():
-        store = serializer.save()
-        return Response(StoreSerializer(store).data, status=status.HTTP_201_CREATED)
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
+    store = serializer.save()
+    return Response(StoreSerializer(store).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=StoreSerializer, responses={200: StoreSerializer})
 @api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated, IsSeller])
 def my_store(request):
     """Get or update seller's own store"""
     if not hasattr(request.user, "store"):
-        return Response({"error": "You do not have a store yet"}, status=status.HTTP_404_NOT_FOUND)
+        # Phase 9: raised so the 404 is the standard envelope
+        # ({"code": "store_not_found", …}) rather than {"error": …}.
+        raise NotFound("You do not have a store yet", code="store_not_found")
 
     store = request.user.store
 
@@ -67,19 +84,23 @@ def my_store(request):
         return Response(serializer.data)
 
     elif request.method == "PUT":
+        # raise_exception keeps the 200 body untouched and lets the shared
+        # exception handler render any field errors as the Phase 9 envelope.
         serializer = StoreSerializer(store, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def store_stats(request):
     """Get comprehensive store statistics for seller dashboard"""
     if not request.user.is_seller or not hasattr(request.user, "store"):
-        return Response({"error": "Store not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Phase 9: raised so the 404 is the standard envelope with a
+        # branchable code, instead of {"error": "Store not found"}.
+        raise NotFound("Store not found", code="store_not_found")
 
     store = request.user.store
 
@@ -139,12 +160,15 @@ def store_stats(request):
     return Response(stats)
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def store_analytics(request):
     """Get detailed analytics data for charts and graphs"""
     if not request.user.is_seller or not hasattr(request.user, "store"):
-        return Response({"error": "Store not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Same Phase 9 envelope as store_stats: one code ("store_not_found")
+        # for "this user has no store", wherever it is asked for.
+        raise NotFound("Store not found", code="store_not_found")
 
     # This endpoint returns a mock structure for now (real time-series lands
     # with the analytics phase); the optional ?range=7d|30d|90d|1y parameter

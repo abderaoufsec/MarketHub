@@ -12,8 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import api, { authAPI, cartAPI } from './api'
 
-const REFRESH_URL = 'http://api.test/api/auth/token/refresh/'
-const CSRF_URL = 'http://api.test/api/auth/csrf/'
+// The base URL (…/api/v1 since Phase 9) comes from NEXT_PUBLIC_API_URL; these
+// absolute URLs are the two calls that go around the shared axios instance.
+const REFRESH_URL = 'http://api.test/api/v1/auth/token/refresh/'
+const CSRF_URL = 'http://api.test/api/v1/auth/csrf/'
 
 let apiMock // mocks the shared `api` instance (app requests)
 let axiosMock // mocks bare axios (the csrf bootstrap + refresh calls)
@@ -121,7 +123,12 @@ describe('response interceptor — cookie session refresh', () => {
     Cookies.set('csrftoken', 'csrf-abc')
 
     apiMock.onGet('/orders/').reply(401)
-    axiosMock.onPost(REFRESH_URL).reply(401, { detail: 'Token is invalid' })
+    axiosMock.onPost(REFRESH_URL).reply(401, {
+      code: 'token_invalid',
+      message: 'Token is invalid.',
+      details: null,
+      request_id: 'req-1',
+    })
 
     // jsdom does not implement real navigation; stub the redirect target.
     const locationMock = { href: 'http://localhost/' }
@@ -136,7 +143,14 @@ describe('response interceptor — cookie session refresh', () => {
   })
 
   it('passes non-401 errors through untouched', async () => {
-    apiMock.onGet('/orders/').reply(500, { error: 'boom' })
+    // Phase 9 failure envelope: the interceptor ignores the body entirely
+    // and the caller (or lib/errors.js) is the one that interprets it.
+    apiMock.onGet('/orders/').reply(500, {
+      code: 'server_error',
+      message: 'boom',
+      details: null,
+      request_id: 'req-2',
+    })
 
     await expect(api.get('/orders/')).rejects.toMatchObject({
       response: { status: 500 },

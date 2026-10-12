@@ -16,7 +16,7 @@ REFRESH_COOKIE = "refresh_token"
 SESSION_HINT_COOKIE = "mh_session"
 
 # The refresh cookie is only ever sent to the auth endpoints that need it.
-REFRESH_COOKIE_PATH = "/api/auth"
+REFRESH_COOKIE_PATH = "/api/v1/auth"
 
 
 def _cookie_kwargs(max_age: int) -> dict:

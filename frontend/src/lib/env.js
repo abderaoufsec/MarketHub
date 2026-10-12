@@ -54,7 +54,7 @@ function optionalBool(name, fallback) {
   return fail(name, `must be a boolean (true/false), got "${value}"`)
 }
 
-/** Base URL of the Django API, e.g. `http://localhost:8000/api`. Required. */
+/** Base URL of the Django API, e.g. `http://localhost:8000/api/v1`. Required. */
 export const API_URL = requiredString('NEXT_PUBLIC_API_URL')
 
 /** Public origin of this site, used for canonical/OG tags (Phase 26). */

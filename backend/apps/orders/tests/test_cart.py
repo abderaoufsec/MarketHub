@@ -9,10 +9,10 @@ from tests.factories import CartItemFactory, ProductFactory
 
 pytestmark = pytest.mark.django_db
 
-CART_URL = "/api/orders/cart/"
-ADD_URL = "/api/orders/cart/add/"
-CLEAR_URL = "/api/orders/cart/clear/"
-REFRESH_URL = "/api/orders/cart/refresh-prices/"
+CART_URL = "/api/v1/orders/cart/"
+ADD_URL = "/api/v1/orders/cart/add/"
+CLEAR_URL = "/api/v1/orders/cart/clear/"
+REFRESH_URL = "/api/v1/orders/cart/refresh-prices/"
 
 
 def item_url(item_id):
@@ -87,6 +87,8 @@ def test_add_to_cart_rejects_more_than_stock(buyer_client, product, inventory):
 
     assert response.status_code == 400
     assert response.data["code"] == "insufficient_stock"
+    # Phase 9 envelope: the id in the body is the X-Request-ID header.
+    assert response.data["request_id"] == response["X-Request-ID"]
     assert not CartItem.objects.exists()
 
 

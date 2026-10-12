@@ -8,8 +8,8 @@ from tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
 
-PROFILE_URL = "/api/auth/profile/"
-CHANGE_PASSWORD_URL = "/api/auth/change-password/"
+PROFILE_URL = "/api/v1/auth/profile/"
+CHANGE_PASSWORD_URL = "/api/v1/auth/change-password/"
 
 
 def test_profile_requires_authentication(api_client):
@@ -64,7 +64,7 @@ def test_profile_update_rejects_invalid_phone_number(buyer_client):
     response = buyer_client.put(PROFILE_URL, {"phone_number": "not-a-phone"}, format="json")
 
     assert response.status_code == 400
-    assert "phone_number" in response.data
+    assert "phone_number" in response.data["details"]
 
 
 def test_profile_update_normalizes_phone_number(buyer_client, buyer):
@@ -85,7 +85,7 @@ def test_profile_update_cannot_take_another_accounts_verified_phone(buyer_client
     response = buyer_client.put(PROFILE_URL, {"phone_number": holder.phone_number}, format="json")
 
     assert response.status_code == 400
-    assert "phone_number" in response.data
+    assert "phone_number" in response.data["details"]
 
 
 def test_changing_the_number_invalidates_the_old_proof(buyer_client, buyer):
@@ -134,6 +134,7 @@ def test_change_password_rejects_wrong_old_password(buyer_client, buyer):
     )
 
     assert response.status_code == 400
+    assert response.data["code"] == "old_password_incorrect"
     buyer.refresh_from_db()
     assert buyer.check_password("Str0ng!Passw0rd")
 
@@ -174,7 +175,7 @@ def test_change_password_revokes_other_sessions(buyer_client, buyer):
     from rest_framework.test import APIClient
 
     replay = APIClient().post(
-        "/api/auth/token/refresh/", {"refresh": str(old_refresh)}, format="json"
+        "/api/v1/auth/token/refresh/", {"refresh": str(old_refresh)}, format="json"
     )
     assert replay.status_code == 401
     # ...and this device received a fresh cookie pair to stay logged in.

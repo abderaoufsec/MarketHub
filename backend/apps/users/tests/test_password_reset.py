@@ -24,13 +24,13 @@ from tests.helpers import last_sms_code
 
 pytestmark = pytest.mark.django_db
 
-FORGOT_URL = "/api/auth/password/forgot/"
-RESET_URL = "/api/auth/password/reset/"
-RESEND_URL = "/api/auth/verify-email/resend/"
-REGISTER_URL = "/api/auth/register/"
-LOGIN_URL = "/api/auth/login/"
-OTP_URL = "/api/auth/phone/otp/"
-PHONE_RESET_URL = "/api/auth/phone/reset/"
+FORGOT_URL = "/api/v1/auth/password/forgot/"
+RESET_URL = "/api/v1/auth/password/reset/"
+RESEND_URL = "/api/v1/auth/verify-email/resend/"
+REGISTER_URL = "/api/v1/auth/register/"
+LOGIN_URL = "/api/v1/auth/login/"
+OTP_URL = "/api/v1/auth/phone/otp/"
+PHONE_RESET_URL = "/api/v1/auth/phone/reset/"
 
 NEW_PASSWORD = "BrandNew!Pass9"
 PHONE = "0555 12 34 56"
@@ -100,7 +100,9 @@ def test_reset_password_completes_and_kills_old_sessions(api_client, buyer):
     )
     from rest_framework.test import APIClient
 
-    replay = APIClient().post("/api/auth/token/refresh/", {"refresh": old_refresh}, format="json")
+    replay = APIClient().post(
+        "/api/v1/auth/token/refresh/", {"refresh": old_refresh}, format="json"
+    )
     assert replay.status_code == 401
 
 
@@ -120,6 +122,7 @@ def test_reset_password_rejects_a_tampered_token(api_client, buyer):
     )
 
     assert response.status_code == 400
+    assert response.data["code"] == "invalid_reset_token"
     buyer.refresh_from_db()
     assert buyer.check_password("Str0ng!Passw0rd")
 

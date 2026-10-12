@@ -14,7 +14,7 @@ from tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
 
-SOCIAL_URL = "/api/auth/social/"
+SOCIAL_URL = "/api/v1/auth/social/"
 
 GOOGLE_CLAIMS = {
     "sub": "google-uid-1",
@@ -90,7 +90,7 @@ def test_google_signin_refuses_a_token_for_another_application(api_client):
         )
 
     assert response.status_code == 400
-    assert "error" in response.data
+    assert response.data["code"] == "social_token_rejected"
 
 
 @override_settings(GOOGLE_CLIENT_ID="test-google-client-id")
@@ -132,6 +132,7 @@ def test_google_signin_is_503_when_not_configured(api_client):
         )
 
     assert response.status_code == 503
+    assert response.data["code"] == "social_signin_not_configured"
 
 
 @override_settings(FACEBOOK_APP_ID="fb-app-1", FACEBOOK_APP_SECRET="fb-secret")
@@ -198,7 +199,7 @@ def test_unsupported_provider_is_rejected(api_client):
     )
 
     assert response.status_code == 400
-    assert "provider" in response.data
+    assert "provider" in response.data["details"]
 
 
 def test_provider_outage_answers_502(api_client):
@@ -216,7 +217,7 @@ def test_provider_outage_answers_502(api_client):
         )
 
     assert response.status_code == 502
-    assert "error" in response.data
+    assert response.data["code"] == "social_provider_unavailable"
 
 
 def test_disabled_account_cannot_sign_in_socially(api_client):
@@ -229,6 +230,7 @@ def test_disabled_account_cannot_sign_in_socially(api_client):
         )
 
     assert response.status_code == 403
+    assert response.data["code"] == "account_disabled"
 
 
 def test_social_login_is_audited(api_client):

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { cartAPI, ordersAPI, addressesAPI } from '../../lib/api'
+import { apiErrorMessage, parseApiError } from '../../lib/errors'
 import { cartSubtotal, formatPrice } from '../../lib/cart'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -108,10 +109,7 @@ export default function CheckoutPage() {
       })
     } catch (error) {
       console.error('Error creating address:', error)
-      const errorMsg =
-        error.response?.data?.detail ||
-        Object.values(error.response?.data || {})[0]?.[0] ||
-        'Failed to save address'
+      const errorMsg = apiErrorMessage(error, 'Failed to save address')
       setError(errorMsg)
       toast.error(errorMsg)
     }
@@ -186,18 +184,20 @@ export default function CheckoutPage() {
       router.push(`/orders/${orderId}?success=true`)
     } catch (checkoutError) {
       console.error('Checkout error:', checkoutError)
-      const data = checkoutError.response?.data
 
-      if (data?.code === 'price_changed') {
-        await applyPriceChanges(data.details || [])
+      // One read of the Phase 9 envelope: branch on `code`, then let the
+      // `details` payload drive the price-delta recovery.
+      const failure = parseApiError(checkoutError)
+
+      if (failure.code === 'price_changed') {
+        await applyPriceChanges(failure.details || [])
         return
       }
 
-      const errorMsg =
-        data?.error ||
-        data?.detail ||
-        Object.values(data || {})[0]?.[0] ||
+      const errorMsg = apiErrorMessage(
+        checkoutError,
         'Failed to process order. Please try again.'
+      )
       setError(errorMsg)
       toast.error(errorMsg)
     } finally {

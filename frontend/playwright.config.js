@@ -36,7 +36,9 @@ module.exports = defineConfig({
     {
       command: 'python manage.py runserver 127.0.0.1:8000 --noreload',
       cwd: '../backend',
-      url: `${BACKEND_URL}/api/products/`,
+      // The API is mounted at /api/v1 since Phase 9 — readiness is probed on
+      // the same prefix the app uses.
+      url: `${BACKEND_URL}/api/v1/products/`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },

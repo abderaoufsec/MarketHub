@@ -7,7 +7,7 @@ from tests.factories import AddressFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/auth/addresses/"
+LIST_URL = "/api/v1/auth/addresses/"
 
 
 def address_payload(**overrides):

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { KeyRound, AlertCircle, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authAPI } from '../../lib/api'
+import { apiErrorMessage, apiFieldError } from '../../lib/errors'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 // The link in the reset email carries ?uid=…&token=… — useSearchParams makes
@@ -51,11 +52,12 @@ function ResetPasswordForm() {
       toast.success('Password reset. You can sign in now.')
       setTimeout(() => router.push('/login'), 2500)
     } catch (error) {
-      const data = error.response?.data
       toast.error(
-        data?.error ||
-          data?.new_password?.[0] ||
-          'This reset link is invalid or has expired. Request a new one.'
+        apiFieldError(error, 'new_password') ||
+          apiErrorMessage(
+            error,
+            'This reset link is invalid or has expired. Request a new one.'
+          )
       )
     } finally {
       setLoading(false)

@@ -21,7 +21,7 @@ from tests.helpers import last_sms_code
 
 pytestmark = pytest.mark.django_db
 
-OTP_URL = "/api/auth/phone/otp/"
+OTP_URL = "/api/v1/auth/phone/otp/"
 PHONE = "0555123456"
 E164 = "+213555123456"
 
@@ -150,7 +150,10 @@ def test_register_purpose_refuses_an_already_registered_number(api_client):
     )
 
     assert response.status_code == 400
-    assert "phone_number" in response.data
+    # Envelope: the honest "number is taken" rejection keeps the field message
+    # in ``details`` and gains a code the client can branch on.
+    assert response.data["code"] == "phone_already_registered"
+    assert "phone_number" in response.data["details"]
     assert outbox == []  # nothing sent, no money spent
 
 
@@ -189,6 +192,7 @@ def test_anonymous_cannot_request_the_phone_change_purpose(api_client):
     )
 
     assert response.status_code == 401
+    assert response.data["code"] == "not_authenticated"
     assert outbox == []
 
 
@@ -198,7 +202,7 @@ def test_malformed_number_is_rejected(api_client):
     )
 
     assert response.status_code == 400
-    assert "phone_number" in response.data
+    assert "phone_number" in response.data["details"]
     assert outbox == []
 
 
@@ -233,6 +237,7 @@ def test_provider_outage_answers_503(api_client):
     )
 
     assert response.status_code == 503
+    assert response.data["code"] == "sms_delivery_unavailable"
     assert not PhoneOtp.objects.exists()
 
 
@@ -269,7 +274,7 @@ def test_verify_endpoint_roundtrip(api_client):
     from tests.helpers import last_sms_code as extract
 
     response = api_client.post(
-        "/api/auth/phone/login/",
+        "/api/v1/auth/phone/login/",
         {"phone_number": PHONE, "code": extract()},
         format="json",
     )

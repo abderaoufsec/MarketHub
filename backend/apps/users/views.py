@@ -6,9 +6,14 @@ from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
+from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import (
+    AuthenticationFailed,
+    NotAuthenticated,
+    PermissionDenied,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -19,6 +24,8 @@ from rest_framework_simplejwt.token_blacklist.models import (
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
+
+from core.exceptions import ApiError
 
 from .audit import record_auth_event
 from .authentication import CookieJWTAuthentication
@@ -98,6 +105,11 @@ def _start_session(request, user, *, method: str, **audit_details) -> Response:
 # ---------------------------------------------------------------------------
 # Registration & email verification (Phase 8: one flow, phone-first)
 # ---------------------------------------------------------------------------
+@extend_schema(
+    # The 201 body is {"message": …, "user": …} — no wrapper serializer exists.
+    request=UserRegistrationSerializer,
+    responses={201: OpenApiTypes.OBJECT},
+)
 @api_view(["POST"])
 @throttle_classes([RegisterRateThrottle])
 @permission_classes([AllowAny])
@@ -111,8 +123,9 @@ def register(request):
     phone number + OTP, or both.
     """
     serializer = UserRegistrationSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Phase 9: raise, don't hand-build — the shared handler renders the field
+    # dict as {"code": "validation_error", "details": {field: [...]}, …}.
+    serializer.is_valid(raise_exception=True)
 
     user = serializer.save()
     email_sent = bool(user.email) and send_verification_email(user)
@@ -135,6 +148,7 @@ def register(request):
     )
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})  # {"message": "Email verified successfully"}
 @api_view(["GET"])
 @throttle_classes([VerifyEmailRateThrottle])
 @permission_classes([AllowAny])
@@ -144,7 +158,9 @@ def verify_email(request, uidb64, token):
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        return Response({"error": "Invalid verification link"}, status=status.HTTP_400_BAD_REQUEST)
+        # ``from None``: the client only cares that the link is not one we
+        # issued — not that an ORM lookup or a base64 decode failed.
+        raise ApiError("Invalid verification link", code="invalid_verification_link") from None
 
     if default_token_generator.check_token(user, token):
         if not user.is_verified:
@@ -153,9 +169,15 @@ def verify_email(request, uidb64, token):
         record_auth_event(request, AuthEvent.EMAIL_VERIFIED, user=user)
         return Response({"message": "Email verified successfully"}, status=status.HTTP_200_OK)
 
-    return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+    # Same status as before (400), but a code the SPA can branch on: a typo'd
+    # link and an expired link are the same retry action for the user.
+    raise ApiError("Invalid or expired token", code="invalid_verification_token")
 
 
+@extend_schema(
+    request=ResendVerificationSerializer,
+    responses={200: OpenApiTypes.OBJECT},  # {"detail": …} — enumeration-safe reply
+)
 @api_view(["POST"])
 @throttle_classes([ResendVerificationRateThrottle])
 @permission_classes([AllowAny])
@@ -163,8 +185,7 @@ def resend_verification(request):
     """Send another verification link. Always answers 200 — the reply must not
     reveal whether an address is registered (enumeration)."""
     serializer = ResendVerificationSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     user = User.objects.filter(email=serializer.validated_data["email"]).first()
     if user and not user.is_verified:
@@ -180,6 +201,10 @@ def resend_verification(request):
 # ---------------------------------------------------------------------------
 # Password recovery by email (Phase 8)
 # ---------------------------------------------------------------------------
+@extend_schema(
+    request=ForgotPasswordSerializer,
+    responses={200: OpenApiTypes.OBJECT},  # {"detail": …} — enumeration-safe reply
+)
 @api_view(["POST"])
 @throttle_classes([ForgotPasswordRateThrottle])
 @permission_classes([AllowAny])
@@ -187,8 +212,7 @@ def forgot_password(request):
     """Request a reset link. Enumeration-safe: always 200, and an unknown
     address simply sends nothing."""
     serializer = ForgotPasswordSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     user = User.objects.filter(email=serializer.validated_data["email"]).first()
     if user:
@@ -201,6 +225,7 @@ def forgot_password(request):
     )
 
 
+@extend_schema(request=ResetPasswordSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([ForgotPasswordRateThrottle])
 @permission_classes([AllowAny])
@@ -211,24 +236,17 @@ def reset_password(request):
     security notice is sent — non-fatal, like every other send.
     """
     serializer = ResetPasswordSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     data = serializer.validated_data
     try:
         uid = force_str(urlsafe_base64_decode(data["uid"]))
         user = User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        return Response(
-            {"error": "Invalid or expired reset link"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        raise ApiError("Invalid or expired reset link", code="invalid_reset_token") from None
 
     if not default_token_generator.check_token(user, data["token"]):
-        return Response(
-            {"error": "Invalid or expired reset link"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        raise ApiError("Invalid or expired reset link", code="invalid_reset_token")
 
     user.set_password(data["new_password"])
     user.save(update_fields=["password"])
@@ -243,11 +261,24 @@ def reset_password(request):
 # Login / logout (Phase 8: email *or* phone identifier)
 # ---------------------------------------------------------------------------
 def _login_failure(request, identifier, *, reason, detail):
+    """Back off, audit, then fail with the envelope — never returns.
+
+    The audit ``reason`` (``invalid_credentials``) *is* the envelope ``code``:
+    one snake_case token for both the server log line and the client branch,
+    so the two can never drift apart. The ``return`` at the call sites only
+    marks the end of that path.
+    """
     record_login_failure(request, identifier)
     record_auth_event(request, AuthEvent.LOGIN_FAILED, email=identifier, reason=reason)
-    return Response({"error": detail}, status=status.HTTP_401_UNAUTHORIZED)
+    raise ApiError(detail, code=reason, status_code=401)
 
 
+@extend_schema(
+    # No serializer models the body (``email`` takes an address *or* a phone
+    # number) and the success payload is the cookie pair plus {"user": …}.
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.OBJECT},
+)
 @api_view(["POST"])
 @throttle_classes([LoginRateThrottle])
 @permission_classes([AllowAny])
@@ -268,9 +299,7 @@ def login(request):
     password = request.data.get("password")
 
     if not identifier or not password:
-        return Response(
-            {"error": "Please provide both email and password"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        raise ApiError("Please provide both email and password", code="missing_credentials")
 
     check_login_backoff(request, identifier)
 
@@ -311,13 +340,17 @@ def login(request):
             if user.email
             else "Please verify your phone number before logging in"
         )
-        return Response({"error": detail}, status=status.HTTP_403_FORBIDDEN)
+        # 403 as before; ``identity_not_verified`` is the token the audit log
+        # already uses for this rejection (see above), so logs and clients
+        # branch on the same word.
+        raise PermissionDenied(detail, code="identity_not_verified")
 
     clear_login_failures(request, identifier)
     method = "phone_password" if is_phone_like(identifier) else "password"
     return _start_session(request, user, method=method)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout(request):
@@ -382,6 +415,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})  # {"detail": "CSRF cookie set"}
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def csrf_token(request):
@@ -398,9 +432,25 @@ def csrf_token(request):
 # Phone OTP (Phase 8 — SMS verification, the Algerian primary identity)
 # ---------------------------------------------------------------------------
 _OTP_GENERIC_DETAIL = "If that number can receive codes, one is on its way."
-_OTP_NOT_FOUND = {"phone_number": ["This phone number is already registered."]}
+
+#: The two rejections the endpoint still gives *honestly* (everything else is
+#: the generic 200 above — see the view docstring for the enumeration rule).
+_PHONE_TAKEN = "This phone number is already registered."
+_PHONE_ALREADY_VERIFIED = "This phone number is already verified."
 
 
+def _phone_conflict(message: str, code: str) -> ApiError:
+    """A number-centric 400 in envelope form.
+
+    These used to be hand-built ``{"phone_number": [message]}`` bodies that
+    only this endpoint produced. The status (400) and the field message stay —
+    the message now lives in the envelope's ``details`` — but the client
+    branches on the stable ``code`` instead of on the body shape.
+    """
+    return ApiError(message, code=code, details={"phone_number": [message]})
+
+
+@extend_schema(request=PhoneOtpRequestSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([OtpRequestRateThrottle])
 @permission_classes([AllowAny])
@@ -422,8 +472,7 @@ def phone_otp_request(request):
     the provider is paid (SMS pumping defence).
     """
     serializer = PhoneOtpRequestSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     phone = serializer.validated_data["phone_number"]
     requested_purpose = serializer.validated_data["purpose"]
@@ -433,27 +482,24 @@ def phone_otp_request(request):
         purpose = "phone_change"
         user = request.user
         if user.phone_number == phone and user.phone_verified:
-            return Response(
-                {"phone_number": ["This phone number is already verified."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise _phone_conflict(_PHONE_ALREADY_VERIFIED, "phone_already_verified")
         if (
             User.objects.filter(phone_number=phone, phone_verified_at__isnull=False)
             .exclude(pk=user.pk)
             .exists()
         ):
-            return Response(_OTP_NOT_FOUND, status=status.HTTP_400_BAD_REQUEST)
+            raise _phone_conflict(_PHONE_TAKEN, "phone_already_registered")
         send = True
     else:
         purpose = requested_purpose
         if purpose == "phone_change":
-            return Response(
-                {"detail": "Sign in to verify the phone number on your account."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            # Same 401 + message as before; the code stays the standard
+            # "not_authenticated" so clients treat it like every other
+            # "sign in first" reply instead of inventing a per-endpoint one.
+            raise NotAuthenticated("Sign in to verify the phone number on your account.")
         if purpose == "register":
             if User.objects.filter(phone_number=phone, phone_verified_at__isnull=False).exists():
-                return Response(_OTP_NOT_FOUND, status=status.HTTP_400_BAD_REQUEST)
+                raise _phone_conflict(_PHONE_TAKEN, "phone_already_registered")
             user = None
             send = True
         else:  # login / password_reset — never confirm or deny an account.
@@ -472,17 +518,20 @@ def phone_otp_request(request):
             user=user,
             ip=request.META.get("REMOTE_ADDR") or None,
         )
-    except SmsError:
+    except SmsError as exc:
         # The user is waiting for a code that will never arrive: say so
-        # instead of pretending (503 = try again shortly).
-        return Response(
-            {"detail": "SMS delivery is temporarily unavailable. Try again shortly."},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
+        # instead of pretending (503 = try again shortly). The envelope turns
+        # the old hand-built {"detail": …} into code ``sms_delivery_unavailable``.
+        raise ApiError(
+            "SMS delivery is temporarily unavailable. Try again shortly.",
+            code="sms_delivery_unavailable",
+            status_code=503,
+        ) from exc
 
     return Response({"detail": _OTP_GENERIC_DETAIL}, status=status.HTTP_200_OK)
 
 
+@extend_schema(request=PhoneLoginSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([OtpVerifyRateThrottle])
 @permission_classes([AllowAny])
@@ -490,24 +539,26 @@ def phone_login(request):
     """Passwordless sign-in: the latest code for a verified number is the
     credential (``POST /api/auth/phone/login/``)."""
     serializer = PhoneLoginSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     data = serializer.validated_data
     try:
         row = verify_otp(phone_number=data["phone_number"], purpose="login", code=data["code"])
     except OtpError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        # Wrong/expired/missing code: ``OtpError``'s message is already safe
+        # to show, it just arrives in the envelope instead of {"error": …}.
+        raise ApiError(str(exc), code="invalid_otp") from exc
 
     user = row.user
     if user is None or not user.is_active:
-        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        raise ApiError("Invalid credentials", code="invalid_credentials", status_code=401)
 
     clear_login_failures(request, data["phone_number"])
     clear_budgets(phone=data["phone_number"])
     return _start_session(request, user, method="phone_otp")
 
 
+@extend_schema(request=PhonePasswordResetSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([OtpVerifyRateThrottle])
 @permission_classes([AllowAny])
@@ -518,8 +569,7 @@ def phone_reset_password(request):
     On success every session is revoked and a change notice is sent on every
     channel the account owns (best-effort)."""
     serializer = PhonePasswordResetSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     data = serializer.validated_data
     try:
@@ -527,11 +577,11 @@ def phone_reset_password(request):
             phone_number=data["phone_number"], purpose="password_reset", code=data["code"]
         )
     except OtpError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        raise ApiError(str(exc), code="invalid_otp") from exc
 
     user = row.user
     if user is None or not user.is_active:
-        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        raise ApiError("Invalid credentials", code="invalid_credentials", status_code=401)
 
     user.set_password(data["new_password"])
     user.save(update_fields=["password"])
@@ -546,6 +596,7 @@ def phone_reset_password(request):
     return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
 
 
+@extend_schema(request=PhoneVerifySerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([OtpVerifyRateThrottle])
 @permission_classes([IsAuthenticated])
@@ -555,8 +606,7 @@ def phone_verify(request):
     ``phone_verified_at`` — the moment the account gains its primary
     identity."""
     serializer = PhoneVerifySerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     data = serializer.validated_data
     try:
@@ -564,7 +614,7 @@ def phone_verify(request):
             phone_number=data["phone_number"], purpose="phone_change", code=data["code"]
         )
     except OtpError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        raise ApiError(str(exc), code="invalid_otp") from exc
 
     user = request.user
     user.phone_number = row.phone_number
@@ -572,7 +622,9 @@ def phone_verify(request):
     try:
         user.save(update_fields=["phone_number", "phone_verified_at"])
     except Exception:  # racing another account for the number
-        return Response(_OTP_NOT_FOUND, status=status.HTTP_400_BAD_REQUEST)
+        # ``from None``: the client is told the number is taken, not that an
+        # ORM write collided.
+        raise _phone_conflict(_PHONE_TAKEN, "phone_already_registered") from None
 
     record_auth_event(
         request, AuthEvent.PHONE_VERIFIED, user=user, phone=mask_phone(row.phone_number)
@@ -587,6 +639,19 @@ def phone_verify(request):
 # ---------------------------------------------------------------------------
 # Social login (Phase 8 — optional Google / Facebook)
 # ---------------------------------------------------------------------------
+#: ``SocialError`` carries a status but no code (``social.py`` predates the
+#: envelope), so the catch below maps each of its three statuses to a code:
+#: 400 = the provider refused *this* token or identity, 502 = the provider is
+#: unreachable/answerless, 503 = social sign-in is not deployed here (the
+#: client can hide the button rather than retry).
+_SOCIAL_ERROR_CODES = {
+    400: "social_token_rejected",
+    502: "social_provider_unavailable",
+    503: "social_signin_not_configured",
+}
+
+
+@extend_schema(request=SocialLoginSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([SocialLoginRateThrottle])
 @permission_classes([AllowAny])
@@ -598,14 +663,19 @@ def social_login(request):
     never taken for it. A provider-verified email is a verified identity, so
     the account it creates can log in immediately."""
     serializer = SocialLoginSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     data = serializer.validated_data
     try:
         profile = get_social_profile(data["provider"], data["access_token"])
     except SocialError as exc:
-        return Response({"error": str(exc)}, status=exc.status)
+        # The status (400/502/503) is part of the contract and must not move;
+        # the envelope adds the branchable code in its place of {"error": …}.
+        raise ApiError(
+            str(exc),
+            code=_SOCIAL_ERROR_CODES.get(exc.status, "social_auth_failed"),
+            status_code=exc.status,
+        ) from exc
 
     email = profile.email.lower()
     user = User.objects.filter(email=email).first()
@@ -622,10 +692,8 @@ def social_login(request):
         )
         created = True
     elif not user.is_active:
-        return Response(
-            {"error": "This account has been disabled."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        # 403 as before — same wording the password login would give.
+        raise PermissionDenied("This account has been disabled.", code="account_disabled")
 
     if not user.is_verified:
         # The provider vouched for the address (its email_verified /
@@ -645,6 +713,12 @@ def social_login(request):
 # ---------------------------------------------------------------------------
 # Profile
 # ---------------------------------------------------------------------------
+@extend_schema(responses={200: UserSerializer}, methods=["GET"])
+@extend_schema(
+    methods=["PUT"],
+    request=UserSerializer,
+    responses={200: OpenApiTypes.OBJECT},  # {"message": …, "user": …}
+)
 @api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
 def profile(request):
@@ -655,12 +729,12 @@ def profile(request):
 
     elif request.method == "PUT":
         serializer = UserSerializer(request.user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Profile updated successfully", "user": serializer.data})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Profile updated successfully", "user": serializer.data})
 
 
+@extend_schema(request=PasswordChangeSerializer, responses={200: OpenApiTypes.OBJECT})
 @api_view(["POST"])
 @throttle_classes([ChangePasswordRateThrottle])
 @permission_classes([IsAuthenticated])
@@ -671,26 +745,25 @@ def change_password(request):
     and this device receives a fresh cookie pair.
     """
     serializer = PasswordChangeSerializer(data=request.data)
-    if serializer.is_valid():
-        user = request.user
+    serializer.is_valid(raise_exception=True)
 
-        if not user.check_password(serializer.validated_data["old_password"]):
-            return Response(
-                {"error": "Old password is incorrect"}, status=status.HTTP_400_BAD_REQUEST
-            )
+    user = request.user
 
-        user.set_password(serializer.validated_data["new_password"])
-        user.save()
+    if not user.check_password(serializer.validated_data["old_password"]):
+        # 400 as before; ``old_password_incorrect`` lets the SPA re-focus the
+        # old-password field instead of parsing the sentence.
+        raise ApiError("Old password is incorrect", code="old_password_incorrect")
 
-        blacklist_all_tokens(user)
-        refresh = RefreshToken.for_user(user)
-        record_auth_event(request, AuthEvent.PASSWORD_CHANGED, user=user)
+    user.set_password(serializer.validated_data["new_password"])
+    user.save()
 
-        response = Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
-        set_auth_cookies(response, refresh.access_token, refresh)
-        return response
+    blacklist_all_tokens(user)
+    refresh = RefreshToken.for_user(user)
+    record_auth_event(request, AuthEvent.PASSWORD_CHANGED, user=user)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    response = Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+    set_auth_cookies(response, refresh.access_token, refresh)
+    return response
 
 
 class AddressListCreateView(generics.ListCreateAPIView):

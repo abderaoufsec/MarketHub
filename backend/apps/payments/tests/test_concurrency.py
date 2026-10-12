@@ -13,6 +13,7 @@ from django.db import connections
 
 from apps.payments import services as payment_services
 from apps.payments.models import Transaction
+from core.exceptions import ApiError
 from tests.factories import OrderFactory, UserFactory
 
 
@@ -34,6 +35,11 @@ def test_concurrent_payment_attempts_charge_the_order_only_once():
         try:
             barrier.wait()
             results.append(payment_services.process_simulated_payment(order))
+        except ApiError as exc:
+            # Phase 9: the losing attempt raises (already_paid) instead of
+            # returning a {"success": False} dict — recorded the same way so
+            # the count below keeps its original meaning.
+            results.append({"success": False, "code": exc.code})
         finally:
             connections.close_all()
 
@@ -46,9 +52,14 @@ def test_concurrent_payment_attempts_charge_the_order_only_once():
     order.refresh_from_db()
 
     assert Transaction.objects.filter(order=order).count() == 1
+    assert len(results) == 2, f"both attempts must report an outcome, got {results!r}"
     assert sum(1 for result in results if result["success"]) == 1, (
         f"exactly one attempt may capture the order, got {results!r}"
     )
+    # The loser is refused by the guard, not by an accident: it re-read
+    # payment_status under the row lock and found the winner's capture.
+    failures = [result for result in results if not result["success"]]
+    assert failures[0]["code"] == "already_paid"
     # The order ends up paid exactly once, in the same transaction as the
     # Transaction row that recorded it.
     assert order.payment_status == "SUCCESSFUL"

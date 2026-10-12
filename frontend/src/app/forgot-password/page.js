@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Phone, KeyRound, AlertCircle, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authAPI } from '../../lib/api'
+import { apiErrorMessage, apiFieldError } from '../../lib/errors'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 /**
@@ -45,8 +46,8 @@ export default function ForgotPasswordPage() {
       // 400 only when the address itself is malformed — anything else would
       // leak whether the account exists, so the backend does not do it.
       toast.error(
-        error.response?.data?.email?.[0] ||
-          'Please enter a valid email address.'
+        apiFieldError(error, 'email') ||
+          apiErrorMessage(error, 'Please enter a valid email address.')
       )
     } finally {
       setEmailLoading(false)
@@ -64,9 +65,9 @@ export default function ForgotPasswordPage() {
       setCodeSent(true)
       toast.success('If that number has an account, a code is on its way.')
     } catch (error) {
-      const data = error.response?.data
       toast.error(
-        data?.phone_number?.[0] || data?.detail || 'Could not send the code.'
+        apiFieldError(error, 'phone_number') ||
+          apiErrorMessage(error, 'Could not send the code.')
       )
     } finally {
       setPhoneLoading(false)
@@ -90,13 +91,13 @@ export default function ForgotPasswordPage() {
       toast.success('Password reset. You can sign in now.')
       router.push('/login')
     } catch (error) {
-      const data = error.response?.data
+      // The specific field message wins over the generic envelope one —
+      // "Password must not be the last one" beats "Invalid data.".
       const detail =
-        data?.error ||
-        data?.new_password?.[0] ||
-        data?.code?.[0] ||
-        data?.phone_number?.[0] ||
-        'That code is invalid or has expired.'
+        apiFieldError(error, 'new_password') ||
+        apiFieldError(error, 'code') ||
+        apiFieldError(error, 'phone_number') ||
+        apiErrorMessage(error, 'That code is invalid or has expired.')
       toast.error(detail)
     } finally {
       setResetLoading(false)

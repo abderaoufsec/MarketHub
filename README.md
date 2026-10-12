@@ -108,12 +108,17 @@ API is now at <http://localhost:8000> — root routes:
 
 | Prefix | App |
 |---|---|
-| `/api/auth/` | users — register, login, logout, profile, addresses |
-| `/api/stores/` | stores — public store list/detail, seller store management |
-| `/api/products/` | products — catalog, reviews, wishlist |
-| `/api/inventory/` | inventory — stock, low-stock, audit log |
-| `/api/orders/` | orders — cart, checkout, order history |
-| `/api/payments/` | payments — transactions, refunds, commissions |
+| `/api/v1/auth/` | users — register, login, logout, profile, addresses |
+| `/api/v1/stores/` | stores — public store list/detail, seller store management |
+| `/api/v1/products/` | products — catalog, reviews, wishlist |
+| `/api/v1/inventory/` | inventory — stock, low-stock, audit log |
+| `/api/v1/orders/` | orders — cart, checkout, order history |
+| `/api/v1/payments/` | payments — transactions, refunds, commissions |
+| `/api/docs/` · `/api/redoc/` | interactive OpenAPI documentation (schema: `/api/schema/`) |
+
+The whole API is versioned at `/api/v1/` (Phase 9). Failures return a single
+envelope — `{code, message, details, request_id}` — and every `code` is
+listed in **[docs/error-codes.md](docs/error-codes.md)**.
 
 > **Environment variables:** `backend/core/settings.py` reads configuration with **python-decouple**, in this order: real process environment variables → `backend/.env.local` → `backend/.env`. Copy `.env.example` to `.env.local` (see the table in `.env.example` for every variable). With `DEBUG=False` the app refuses to start until `DJANGO_SECRET_KEY` and `DB_PASSWORD` hold real values.
 
@@ -130,7 +135,7 @@ App is now at <http://localhost:3000>.
 Point it at the backend by creating `frontend/.env.local`:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
 ### 4. Verify
@@ -195,7 +200,7 @@ Dependabot opens weekly PRs for pip, npm and GitHub Actions dependencies.
 
 ### Auth
 - JWT access/refresh tokens via SimpleJWT, with rotation and blacklisting on logout.
-- **HttpOnly cookie session (Phase 7):** the JWT pair lives in `HttpOnly` + `SameSite` cookies set by the server — tokens never appear in response bodies and never touch JavaScript. Unsafe requests authenticated this way must echo the readable `csrftoken` cookie as `X-CSRFToken` (`GET /api/auth/csrf/` bootstraps it); `Authorization: Bearer` still works for API/mobile clients. A readable `mh_session` hint flag tells the SPA whether to attempt a session restore.
+- **HttpOnly cookie session (Phase 7):** the JWT pair lives in `HttpOnly` + `SameSite` cookies set by the server — tokens never appear in response bodies and never touch JavaScript. Unsafe requests authenticated this way must echo the readable `csrftoken` cookie as `X-CSRFToken` (`GET /api/v1/auth/csrf/` bootstraps it); `Authorization: Bearer` still works for API/mobile clients. A readable `mh_session` hint flag tells the SPA whether to attempt a session restore.
 - Auth endpoints are rate-limited, failed logins back off exponentially per (IP, email), password changes revoke every other session, and an `AuthEvent` audit trail records logins/failures/logout/password changes.
 - Role-based access: buyers and sellers share one `User` model with an `is_seller` flag (read-only on profile updates — sellers opt in at registration).
 - Email verification tokens on registration.
@@ -203,13 +208,13 @@ Dependabot opens weekly PRs for pip, npm and GitHub Actions dependencies.
 ### Commerce flow
 1. Seller creates a store, then products.
 2. `Inventory` rows track stock per product/variant, with an `InventoryAuditLog` trail. Stock is checked when a buyer adds to or changes the cart, and reserved under row locks at checkout.
-3. Buyer adds to cart → `POST /api/orders/checkout/` runs in **one transaction**: it splits the cart **per store**, re-validates availability and price, reserves inventory, and captures the payment. Any failure rolls the whole checkout back — no order, no reservation, no charge. Sending an `idempotency_key` makes a retried checkout return the orders it already created instead of creating more.
+3. Buyer adds to cart → `POST /api/v1/orders/checkout/` runs in **one transaction**: it splits the cart **per store**, re-validates availability and price, reserves inventory, and captures the payment. Any failure rolls the whole checkout back — no order, no reservation, no charge. Sending an `idempotency_key` makes a retried checkout return the orders it already created instead of creating more.
 4. Seller updates order status; refunds reverse the commission ledger.
 
-> A cart line whose price changed since it was added is rejected with `400` + `code: "price_changed"`. `POST /api/orders/cart/refresh-prices/` accepts the current catalogue prices (the checkout page shows a "Prices have changed" banner and calls it).
+> A cart line whose price changed since it was added is rejected with `400` + `code: "price_changed"`. `POST /api/v1/orders/cart/refresh-prices/` accepts the current catalogue prices (the checkout page shows a "Prices have changed" banner and calls it).
 
 ### Payments
-Payments are **simulated** — there is no live payment gateway, and there is exactly **one** capture path: `process_simulated_payment()`, called from inside the checkout transaction. It writes a `Transaction` plus a `PlatformCommissionLedger` entry using `PLATFORM_COMMISSION_RATE`, and locks the order row so one order can never be charged twice — not concurrently, not by a client retry. `POST /api/payments/simulate/` exists as the retry endpoint for an unpaid (`PENDING`) order and accepts an `idempotency_key` to replay a previous attempt safely.
+Payments are **simulated** — there is no live payment gateway, and there is exactly **one** capture path: `process_simulated_payment()`, called from inside the checkout transaction. It writes a `Transaction` plus a `PlatformCommissionLedger` entry using `PLATFORM_COMMISSION_RATE`, and locks the order row so one order can never be charged twice — not concurrently, not by a client retry. `POST /api/v1/payments/simulate/` exists as the retry endpoint for an unpaid (`PENDING`) order and accepts an `idempotency_key` to replay a previous attempt safely.
 
 ---
 

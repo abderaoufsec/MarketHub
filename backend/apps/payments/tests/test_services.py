@@ -1,10 +1,17 @@
-"""Payment domain services: simulated capture, commission math, refunds."""
+"""Payment domain services: simulated capture, commission math, refunds.
+
+Phase 9 of docs/todo.md: the failure contract moved from ``{"success": False,
+"error": …}`` dicts to raised ``apps.payments.exceptions``, so the tests below
+assert on the exception (code and message) instead — a raised error also rolls
+the atomic block back, which a returned dict never did.
+"""
 
 from decimal import Decimal
 
 import pytest
 
 from apps.payments import services as payment_services
+from apps.payments.exceptions import PaymentCaptureFailedError, RefundNoTransactionError
 from apps.payments.models import PlatformCommissionLedger, Transaction
 from tests.factories import OrderFactory, TransactionFactory, UserFactory
 
@@ -31,26 +38,31 @@ def test_simulated_payment_creates_transaction_and_commission(buyer):
     assert ledger.payout_status == "PENDING"
 
 
-def test_simulated_payment_failure_is_reported_not_raised(buyer, monkeypatch):
+def test_simulated_payment_failure_is_logged_and_raised_client_safe(buyer, monkeypatch):
     def explode(**kwargs):
         raise RuntimeError("gateway down")
 
     monkeypatch.setattr(Transaction, "objects", type("O", (), {"create": staticmethod(explode)}))
     order = OrderFactory(user=buyer)
 
-    result = payment_services.process_simulated_payment(order)
+    # Raised (and rolled back), not reported as {"success": False}: the real
+    # cause stays in the log, the client gets the generic code and message.
+    with pytest.raises(PaymentCaptureFailedError) as excinfo:
+        payment_services.process_simulated_payment(order)
 
-    assert result["success"] is False
-    assert "error" in result
+    assert excinfo.value.code == "payment_failed"
+    assert excinfo.value.status_code == 400
+    assert "gateway down" not in str(excinfo.value)
 
 
 def test_refund_without_successful_transaction(buyer):
     order = OrderFactory(user=buyer, payment_status="PENDING")
 
-    result = payment_services.process_refund(order)
+    with pytest.raises(RefundNoTransactionError) as excinfo:
+        payment_services.process_refund(order)
 
-    assert result["success"] is False
-    assert "No successful transaction" in result["error"]
+    assert excinfo.value.code == "no_successful_transaction"
+    assert "No successful transaction" in str(excinfo.value)
 
 
 def test_refund_creates_negative_transaction(buyer):

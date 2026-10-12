@@ -20,11 +20,11 @@ User = get_user_model()
 
 pytestmark = pytest.mark.django_db
 
-REGISTER_URL = "/api/auth/register/"
-LOGIN_URL = "/api/auth/login/"
-OTP_URL = "/api/auth/phone/otp/"
-PHONE_LOGIN_URL = "/api/auth/phone/login/"
-PHONE_VERIFY_URL = "/api/auth/phone/verify/"
+REGISTER_URL = "/api/v1/auth/register/"
+LOGIN_URL = "/api/v1/auth/login/"
+OTP_URL = "/api/v1/auth/phone/otp/"
+PHONE_LOGIN_URL = "/api/v1/auth/phone/login/"
+PHONE_VERIFY_URL = "/api/v1/auth/phone/verify/"
 
 VALID_PASSWORD = "Str0ng!Passw0rd"  # UserFactory's default raw password
 PHONE = "0555 12 34 56"
@@ -78,7 +78,7 @@ def test_phone_only_registration_without_otp_is_refused(api_client):
     response = api_client.post(REGISTER_URL, payload(), format="json")
 
     assert response.status_code == 400
-    assert "otp_code" in response.data
+    assert "otp_code" in response.data["details"]
     assert not User.objects.filter(phone_number=E164).exists()
 
 
@@ -88,7 +88,7 @@ def test_registration_with_a_wrong_otp_never_creates_the_account(api_client):
     response = api_client.post(REGISTER_URL, payload(otp_code="000000"), format="json")
 
     assert response.status_code == 400
-    assert "otp_code" in response.data
+    assert "otp_code" in response.data["details"]
     assert not User.objects.filter(phone_number=E164).exists()
 
 
@@ -116,14 +116,14 @@ def test_registration_needs_email_or_phone(api_client):
     )
 
     assert response.status_code == 400
-    assert "email" in response.data
+    assert "email" in response.data["details"]
 
 
 def test_registration_rejects_a_malformed_phone(api_client):
     response = api_client.post(REGISTER_URL, payload(phone_number="call-me-maybe"), format="json")
 
     assert response.status_code == 400
-    assert "phone_number" in response.data
+    assert "phone_number" in response.data["details"]
 
 
 def test_registration_cannot_claim_an_already_verified_number(api_client):
@@ -140,7 +140,7 @@ def test_registration_cannot_claim_an_already_verified_number(api_client):
     )
 
     assert response.status_code == 400
-    assert "phone_number" in response.data
+    assert "phone_number" in response.data["details"]
 
 
 def test_username_collisions_are_resolved_automatically(api_client):
@@ -243,7 +243,11 @@ def test_otp_login_rejects_a_wrong_code(api_client):
     )
 
     assert response.status_code == 400
-    assert "error" in response.data
+    # The OTP rejection now arrives in the envelope: one branchable code for
+    # wrong/expired/missing codes, the human sentence in ``message``.
+    assert response.data["code"] == "invalid_otp"
+    assert response.data["message"]
+    assert response.data["request_id"] == response["X-Request-ID"]
 
 
 def test_disabled_account_never_receives_a_login_code(api_client):

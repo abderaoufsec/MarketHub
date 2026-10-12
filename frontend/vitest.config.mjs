@@ -28,7 +28,7 @@ export default defineConfig({
     // env.js validates NEXT_PUBLIC_API_URL at import time (Phase 2); give the
     // unit tests a deterministic value instead of relying on .env.local.
     env: {
-      NEXT_PUBLIC_API_URL: 'http://api.test/api',
+      NEXT_PUBLIC_API_URL: 'http://api.test/api/v1',
     },
     coverage: {
       provider: 'v8',

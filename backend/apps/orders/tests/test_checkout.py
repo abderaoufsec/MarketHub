@@ -21,10 +21,10 @@ from tests.factories import (
 
 pytestmark = pytest.mark.django_db
 
-CHECKOUT_URL = "/api/orders/checkout/"
-ORDERS_URL = "/api/orders/"
-SELLER_ORDERS_URL = "/api/orders/seller/list/"
-REFRESH_URL = "/api/orders/cart/refresh-prices/"
+CHECKOUT_URL = "/api/v1/orders/checkout/"
+ORDERS_URL = "/api/v1/orders/"
+SELLER_ORDERS_URL = "/api/v1/orders/seller/list/"
+REFRESH_URL = "/api/v1/orders/cart/refresh-prices/"
 
 
 def checkout_payload(address, **overrides):
@@ -126,6 +126,9 @@ def test_checkout_rolls_back_when_stock_is_missing(buyer_client, buyer, address,
 
     assert response.status_code == 400
     assert response.data["code"] == "insufficient_stock"
+    # Phase 9 envelope: the id in the body is the X-Request-ID header, i.e.
+    # the same id the server log line carries.
+    assert response.data["request_id"] == response["X-Request-ID"]
     assert Order.objects.count() == 0
     assert OrderItem.objects.count() == 0
 
@@ -276,6 +279,50 @@ def test_different_idempotency_keys_create_different_orders(
     assert Order.objects.count() == 2
 
 
+def test_checkout_honours_the_idempotency_key_header(
+    buyer_client, buyer, address, product, inventory
+):
+    """Phase 9: the standard ``Idempotency-Key`` *header* must be replay-safe
+    too, not only the Phase 6 body field."""
+    fill_cart(buyer, product, quantity=2)
+    payload = checkout_payload(address)
+
+    first = buyer_client.post(
+        CHECKOUT_URL, payload, format="json", HTTP_IDEMPOTENCY_KEY="header-retry-1"
+    )
+    second = buyer_client.post(
+        CHECKOUT_URL, payload, format="json", HTTP_IDEMPOTENCY_KEY="header-retry-1"
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert second.data["idempotent_replay"] is True
+
+    order = Order.objects.get()
+    assert order.idempotency_key == "header-retry-1"
+    # Reserved once, charged once.
+    inventory.refresh_from_db()
+    assert inventory.stock_quantity == 8
+    assert Transaction.objects.filter(order=order).count() == 1
+
+
+def test_checkout_idempotency_key_header_wins_over_the_body_field(
+    buyer_client, buyer, address, product, inventory
+):
+    """Phase 9: when both are sent, the standard header is the canonical key."""
+    fill_cart(buyer, product)
+
+    response = buyer_client.post(
+        CHECKOUT_URL,
+        checkout_payload(address, idempotency_key="body-key"),
+        format="json",
+        HTTP_IDEMPOTENCY_KEY="header-key",
+    )
+
+    assert response.status_code == 201
+    assert Order.objects.get().idempotency_key == "header-key"
+
+
 # ---------------------------------------------------------------------------
 # Order history
 # ---------------------------------------------------------------------------
@@ -344,7 +391,7 @@ def test_seller_can_update_order_status(
     order = Order.objects.get()
 
     response = seller_client.put(
-        f"/api/orders/seller/{order.id}/update-status/",
+        f"/api/v1/orders/seller/{order.id}/update-status/",
         {"order_status": "SHIPPED", "tracking_number": "TRACK-1"},
         format="json",
     )
@@ -363,7 +410,7 @@ def test_update_order_status_rejects_invalid_value(
     order = Order.objects.get()
 
     response = seller_client.put(
-        f"/api/orders/seller/{order.id}/update-status/",
+        f"/api/v1/orders/seller/{order.id}/update-status/",
         {"order_status": "TELEPORTED"},
         format="json",
     )
@@ -377,7 +424,7 @@ def test_update_order_status_forbidden_for_buyers(buyer_client, buyer, address, 
     order = Order.objects.get()
 
     response = buyer_client.put(
-        f"/api/orders/seller/{order.id}/update-status/",
+        f"/api/v1/orders/seller/{order.id}/update-status/",
         {"order_status": "SHIPPED"},
         format="json",
     )
@@ -399,7 +446,7 @@ def test_update_order_status_scoped_to_own_store(buyer_client, buyer, address, p
     foreign_client.force_authenticate(user=foreign_store.owner)
 
     response = foreign_client.put(
-        f"/api/orders/seller/{order.id}/update-status/",
+        f"/api/v1/orders/seller/{order.id}/update-status/",
         {"order_status": "CANCELLED"},
         format="json",
     )

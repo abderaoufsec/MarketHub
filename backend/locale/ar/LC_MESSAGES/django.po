@@ -1,0 +1,279 @@
+# Arabic translations for the MarketHub API error catalogue.
+#
+# Every msgid here is a literal message raised by the backend: the envelope's
+# own sentences (core/exceptions.py, core/middleware.py) plus one entry per
+# error the apps raise. Message *codes* are deliberately not translated —
+# clients branch on those.
+#
+# Note the plural rule below: Arabic has six plural forms, unlike French's
+# two. The catalogue currently carries no plural msgids, so the rule is
+# declared for correctness rather than exercised.
+#
+# Compiled to .mo with `python manage.py compile_api_messages` (a bundled
+# pure-Python writer: GNU msgfmt is not assumed to exist). The committed .mo
+# must stay in sync; tests/test_locale.py fails if it does not.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=(n==0?0:n==1?1:n==2?2:n%100>=3&&n%100<=10?3:n%100>=11&&n%100<=99?4:5);\n"
+
+# --- the envelope itself (core/exceptions.py, core/middleware.py) ---------
+msgid "Some of the submitted values are invalid."
+msgstr "بعض القيم المرسلة غير صالحة."
+
+msgid "The request could not be processed."
+msgstr "تعذّرت معالجة الطلب."
+
+msgid "The request could not be processed. Please try again."
+msgstr "تعذّرت معالجة الطلب. يرجى المحاولة مرة أخرى."
+
+msgid "Not found."
+msgstr "غير موجود."
+
+msgid "Method not allowed."
+msgstr "الطريقة غير مسموح بها."
+
+msgid "Not acceptable."
+msgstr "غير مقبول."
+
+msgid "Conflict."
+msgstr "تعارض."
+
+msgid "Unsupported media type."
+msgstr "نوع الوسائط غير مدعوم."
+
+msgid "Too many requests. Try again later."
+msgstr "طلبات كثيرة جدًا. حاول مجددًا لاحقًا."
+
+msgid "An unexpected error occurred. Please try again."
+msgstr "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+
+msgid "An upstream service is unavailable. Try again shortly."
+msgstr "إحدى الخدمات المعتمدة غير متاحة. حاول مجددًا بعد قليل."
+
+msgid "The service is temporarily unavailable. Try again shortly."
+msgstr "الخدمة غير متاحة مؤقتًا. حاول مجددًا بعد قليل."
+
+msgid "API version not found."
+msgstr "إصدار الواجهة البرمجية غير موجود."
+
+msgid "Permission denied."
+msgstr "رُفضت الصلاحية."
+
+# --- stock DRF sentences the envelope re-renders --------------------------
+msgid "A server error occurred."
+msgstr "حدث خطأ في الخادم."
+
+msgid "Authentication credentials were not provided."
+msgstr "لم يتم تزويد بيانات المصادقة."
+
+msgid "Incorrect authentication credentials."
+msgstr "بيانات المصادقة غير صحيحة."
+
+msgid "You do not have permission to perform this action."
+msgstr "ليست لديك صلاحية تنفيذ هذا الإجراء."
+
+msgid "Request was throttled."
+msgstr "تم تقييد الطلب."
+
+msgid "Invalid input."
+msgstr "إدخال غير صالح."
+
+msgid "Malformed requests."
+msgstr "طلبات غير صالحة البنية."
+
+# --- auth (apps/users) ----------------------------------------------------
+msgid "Please provide both email and password"
+msgstr "يرجى تزويد البريد الإلكتروني وكلمة المرور معًا"
+
+msgid "Invalid credentials"
+msgstr "بيانات الاعتماد غير صالحة"
+
+msgid "This account has been disabled."
+msgstr "تم تعطيل هذا الحساب."
+
+msgid "Old password is incorrect"
+msgstr "كلمة المرور القديمة غير صحيحة"
+
+msgid "Invalid verification link"
+msgstr "رابط التحقق غير صالح"
+
+msgid "Invalid or expired token"
+msgstr "الرمز غير صالح أو منتهي الصلاحية"
+
+msgid "Invalid or expired reset link"
+msgstr "رابط إعادة التعيين غير صالح أو منتهي الصلاحية"
+
+msgid "Sign in to verify the phone number on your account."
+msgstr "سجّل الدخول للتحقق من رقم هاتفك."
+
+msgid "Only sellers can access this endpoint"
+msgstr "البائعون فقط يمكنهم الوصول إلى هذه النقطة"
+
+msgid "Only sellers can create stores"
+msgstr "البائعون فقط يمكنهم إنشاء المتاجر"
+
+msgid "You must have a store to create products"
+msgstr "يجب أن يتوفر لديك متجر لإنشاء المنتجات"
+
+# --- phone OTP (apps/users) ----------------------------------------------
+msgid "Enter a valid phone number."
+msgstr "أدخل رقم هاتف صالحًا."
+
+msgid "Invalid code."
+msgstr "الرمز غير صالح."
+
+msgid "Invalid or expired code."
+msgstr "الرمز غير صالح أو منتهي الصلاحية."
+
+msgid "SMS delivery is temporarily unavailable. Try again shortly."
+msgstr "إرسال الرسائل القصيرة غير متاح مؤقتًا. حاول مجددًا بعد قليل."
+
+msgid "SMS_API_URL is not configured"
+msgstr "‏SMS_API_URL غير مُهيّأ"
+
+msgid "This phone number is already verified on another account."
+msgstr "تم التحقق من هذا الرقم على حساب آخر بالفعل."
+
+# --- social sign-in (apps/users) -----------------------------------------
+msgid "Missing social sign-in token."
+msgstr "رمز تسجيل الدخول الاجتماعي مفقود."
+
+msgid "That sign-in token is invalid or expired."
+msgstr "ذلك الرمز غير صالح أو منتهي الصلاحية."
+
+msgid "Social provider refused the request."
+msgstr "رفض مزوّد تسجيل الدخول هذا الطلب."
+
+msgid "The social provider sent an invalid response."
+msgstr "أرسل مزوّد تسجيل الدخول استجابة غير صالحة."
+
+msgid "Could not reach the social provider."
+msgstr "تعذّر الوصول إلى مزوّد تسجيل الدخول."
+
+msgid "Unsupported social provider."
+msgstr "مزوّد تسجيل دخول غير مدعوم."
+
+msgid "Google sign-in is not configured."
+msgstr "تسجيل الدخول عبر جوجل غير مُهيّأ."
+
+msgid "That sign-in token was issued for another application."
+msgstr "صدر ذلك الرمز لتطبيق آخر."
+
+msgid "That sign-in token was not issued by Google."
+msgstr "لم يصدر ذلك الرمز من جوجل."
+
+msgid "Your Google account email address is not verified."
+msgstr "البريد الإلكتروني لحسابك على جوجل غير مُتحقَّق منه."
+
+msgid "Your Google account has no email address."
+msgstr "لا يحتوي حسابك على جوجل على بريد إلكتروني."
+
+msgid "Facebook sign-in is not configured."
+msgstr "تسجيل الدخول عبر فيسبوك غير مُهيّأ."
+
+msgid "This Facebook account has no email address. Sign up with your phone number instead."
+msgstr ""
+"لا يحتوي هذا الحساب على فيسبوك على بريد إلكتروني. سجّل باستخدام رقم هاتفك "
+"بدلًا من ذلك."
+
+# --- listings, reviews, wishlist (apps/products) -------------------------
+msgid "Product not found"
+msgstr "المنتج غير موجود"
+
+msgid "Product not found or not available"
+msgstr "المنتج غير موجود أو غير متاح"
+
+msgid "Product not in wishlist"
+msgstr "المنتج غير موجود في قائمة الأمنيات"
+
+msgid "product_id is required"
+msgstr "‏product_id مطلوب"
+
+msgid "You have already reviewed this product"
+msgstr "لقد قدّمت تعليقًا على هذا المنتج بالفعل"
+
+msgid "You have already reviewed this product. Please update your existing review."
+msgstr ""
+"لقد قدّمت تعليقًا على هذا المنتج بالفعل. يرجى تحديث تعليقك الحالي."
+
+msgid "Rating must be between 1 and 5"
+msgstr "يجب أن يكون التقييم بين 1 و5"
+
+# --- stores (apps/stores) ------------------------------------------------
+msgid "You already have a store"
+msgstr "لديك متجر بالفعل"
+
+msgid "You do not have a store yet"
+msgstr "ليس لديك متجر بعد"
+
+msgid "Store not found"
+msgstr "المتجر غير موجود"
+
+# --- inventory (apps/inventory) ------------------------------------------
+msgid "Quantity delta cannot be zero"
+msgstr "لا يمكن أن يكون فرق الكمية صفرًا"
+
+# --- cart, checkout (apps/orders) ----------------------------------------
+msgid "Cart is empty"
+msgstr "السلة فارغة"
+
+msgid "Cart item not found"
+msgstr "عنصر السلة غير موجود"
+
+msgid "Some products in your cart are no longer available."
+msgstr "بعض المنتجات في سلتك لم تعد متاحة."
+
+msgid "The price of one or more items in your cart has changed."
+msgstr "تغيّر سعر عنصر واحد أو أكثر في سلتك."
+
+msgid "Shipping address not found"
+msgstr "عنوان الشحن غير موجود"
+
+msgid "Order not found"
+msgstr "الطلب غير موجود"
+
+msgid "Invalid order status"
+msgstr "حالة الطلب غير صالحة"
+
+msgid "Payment could not be processed. Nothing was charged and no stock was taken."
+msgstr ""
+"تعذّرت معالجة الدفع. لم يُخصم أي مبلغ ولم يُخصَّص أي مخزون."
+
+# --- payments (apps/payments) --------------------------------------------
+msgid "order_id is required"
+msgstr "‏order_id مطلوب"
+
+msgid "Order has already been paid."
+msgstr "تم دفع الطلب بالفعل."
+
+msgid "Cannot process payment for cancelled order."
+msgstr "لا يمكن معالجة الدفعة لطلب مُلغى."
+
+msgid "Payment processing failed. Please try again."
+msgstr "فشلت معالجة الدفع. يرجى المحاولة مرة أخرى."
+
+msgid "An unexpected error occurred while processing the payment."
+msgstr "حدث خطأ غير متوقع أثناء معالجة الدفع."
+
+msgid "Order payment was not successful, cannot refund"
+msgstr "لم ينجح دفع الطلب، لذا لا يمكن الاسترداد"
+
+msgid "Cannot refund delivered orders. Please contact support."
+msgstr "لا يمكن استرداد الطلبات المُسلَّمة. يرجى الاتصال بالدعم."
+
+msgid "No successful transaction found for this order"
+msgstr "لا توجد معاملة ناجحة لهذا الطلب"
+
+msgid "Refund processing failed. Please contact support."
+msgstr "فشلت معالجة الاسترداد. يرجى الاتصال بالدعم."
+
+# --- idempotency (core/idempotency.py) -----------------------------------
+msgid "Idempotency-Key must be 1-64 characters of [A-Za-z0-9-._]."
+msgstr ""
+"مفتاح عدم التكرار يجب أن يتكون من 1 إلى 64 حرفًا من [A-Za-z0-9-._]."
+
+msgid "This Idempotency-Key was already used with a different payload."
+msgstr "استُخدم مفتاح عدم التكرار هذا بالفعل بمحتوى مختلف."

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../../../context/AuthContext'
 import { productsAPI } from '../../../../../lib/api'
+import { apiErrorMessage } from '../../../../../lib/errors'
 import {
   ArrowLeft,
   Save,
@@ -67,7 +68,7 @@ export default function EditProductPage() {
       console.error('Error fetching product:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to load product',
+        text: apiErrorMessage(error, 'Failed to load product'),
       })
     } finally {
       setLoading(false)
@@ -102,7 +103,7 @@ export default function EditProductPage() {
       console.error('Error updating product:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to update product',
+        text: apiErrorMessage(error, 'Failed to update product'),
       })
     } finally {
       setSaving(false)

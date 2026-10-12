@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { productsAPI } from '../../../../lib/api'
+import { apiErrorMessage } from '../../../../lib/errors'
 import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -55,7 +56,7 @@ export default function CreateProductPage() {
       console.error('Error creating product:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to create product',
+        text: apiErrorMessage(error, 'Failed to create product'),
       })
     } finally {
       setLoading(false)

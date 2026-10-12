@@ -1,10 +1,21 @@
+"""Inventory endpoints (seller-scoped).
+
+Phase 9: every failure is **raised**, never returned as a hand-built
+``{"error": …}`` dict — ``core.exceptions.api_exception_handler`` renders it
+as the ``{code, message, details, request_id}`` envelope all ``/api/`` failures
+share. Status codes are unchanged; only the body shape moved.
+"""
+
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.products.models import Product
 from apps.users.permissions import IsStoreOwner
+from core.exceptions import ApiError
 
 from .models import Inventory, InventoryAuditLog
 from .serializers import InventoryAuditLogSerializer, InventorySerializer, InventoryUpdateSerializer
@@ -39,6 +50,7 @@ class InventoryDetailView(generics.RetrieveAPIView):
         return Inventory.objects.filter(product__store=self.request.user.store)
 
 
+@extend_schema(request=InventoryUpdateSerializer, responses={200: InventorySerializer})
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsStoreOwner])
 def update_product_inventory(request, product_id):
@@ -46,11 +58,12 @@ def update_product_inventory(request, product_id):
     try:
         product = Product.objects.get(id=product_id, store=request.user.store)
     except Product.DoesNotExist:
-        return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+        # ``from None``: the DoesNotExist is an implementation detail of the
+        # lookup, not a cause the client or the error log needs to chain to.
+        raise NotFound("Product not found", code="product_not_found") from None
 
     serializer = InventoryUpdateSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
 
     # Get or create inventory
     attribute_config = request.data.get("attribute_config", {})
@@ -65,20 +78,21 @@ def update_product_inventory(request, product_id):
             serializer.validated_data["action_type"],
             serializer.validated_data.get("reason", ""),
         )
+    except ValueError as exc:
+        # ``update_inventory`` refuses to drive stock below zero and that is
+        # the only ValueError it raises, so the code says what went wrong.
+        raise ApiError(str(exc), code="insufficient_stock") from exc
 
-        return Response(InventorySerializer(updated_inventory).data, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(InventorySerializer(updated_inventory).data, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: InventorySerializer(many=True)})
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def low_stock_items(request):
     """Get products with low stock"""
     if not request.user.is_seller or not hasattr(request.user, "store"):
-        return Response(
-            {"error": "Only sellers can access this endpoint"}, status=status.HTTP_403_FORBIDDEN
-        )
+        raise PermissionDenied("Only sellers can access this endpoint", code="seller_required")
 
     # Get all inventory items for seller's products
     inventory_items = Inventory.objects.filter(product__store=request.user.store).select_related(

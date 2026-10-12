@@ -1,4 +1,4 @@
-"""Payment capture (docs/todo.md Phase 6).
+"""Payment capture (docs/todo.md Phases 6 and 9).
 
 ``process_simulated_payment`` is the **single authoritative payment path**: the
 checkout transaction calls it, and so does the standalone
@@ -7,8 +7,20 @@ re-reads ``payment_status`` under that lock, and only then writes the
 ``Transaction`` and the commission ledger — so a double click, a retried
 request or two app servers can never charge one order twice.
 
-Errors are reported, never raised, and never leak internals: the exception is
-logged server-side and the caller gets a stable, generic code.
+Phase 9 changed *how* failure is reported: the ``{"success": False,
+"error": …}`` dicts are gone, replaced by the raised errors in
+``apps/payments/exceptions.py``. Beyond the one-error-envelope contract this
+fixes two real problems. A raised error leaves ``transaction.atomic()`` the
+hard way — the block rolls back — while a returned dict *commits* whatever the
+block had managed to write. And the view no longer rewrites the message, so
+what the log says and what the client reads cannot drift apart.
+
+What is *not* an expected failure (the database exploding mid-capture) is
+still caught here, logged with its traceback and re-raised as a generic,
+client-safe ``payment_failed``: internals never leave the server.
+
+Success payloads (``{"success": True, …}``) are untouched: they are 2xx
+bodies, and both ``apps/orders/services.py`` and this app's views read them.
 """
 
 import logging
@@ -19,7 +31,15 @@ from django.conf import settings
 from django.db import transaction
 
 from apps.orders.models import Order
+from core.exceptions import ApiError
 
+from .exceptions import (
+    OrderAlreadyPaidError,
+    OrderNotPayableError,
+    PaymentCaptureFailedError,
+    RefundFailedError,
+    RefundNoTransactionError,
+)
 from .models import PlatformCommissionLedger, Transaction
 
 logger = logging.getLogger(__name__)
@@ -54,9 +74,14 @@ def process_simulated_payment(order, idempotency_key=None):
             result instead of charging again
 
     Returns:
-        dict: ``success`` plus the transaction details on capture, or a stable
-        ``reason`` (``already_paid`` / ``order_cancelled`` / ``payment_failed``)
-        with a client-safe ``error`` message
+        dict: ``success`` plus the transaction details, on capture or replay
+
+    Raises:
+        OrderAlreadyPaidError: the order is paid already — also what a losing
+            concurrent attempt sees when it acquires the row lock
+        OrderNotPayableError: the order was cancelled
+        PaymentCaptureFailedError: anything unexpected; logged with its
+            traceback, generic message for the client
     """
     try:
         with transaction.atomic():
@@ -72,19 +97,10 @@ def process_simulated_payment(order, idempotency_key=None):
                     return _replay_result(existing)
 
             if locked.payment_status == "SUCCESSFUL":
-                return {
-                    "success": False,
-                    "reason": "already_paid",
-                    "already_paid": True,
-                    "error": "Order has already been paid.",
-                }
+                raise OrderAlreadyPaidError("Order has already been paid.")
 
             if locked.order_status == "CANCELLED":
-                return {
-                    "success": False,
-                    "reason": "order_cancelled",
-                    "error": "Cannot process payment for cancelled order.",
-                }
+                raise OrderNotPayableError("Cannot process payment for cancelled order.")
 
             # Generate unique transaction ID
             transaction_id = f"SIM-{uuid.uuid4().hex[:12].upper()}"
@@ -133,10 +149,14 @@ def process_simulated_payment(order, idempotency_key=None):
                 "net_payout": float(net_payout),
             }
 
-    except Exception:
-        # Log the real cause; callers only ever see the generic code below.
+    except ApiError:
+        # The domain refusals above already carry their own code and status;
+        # the catch-all below is for everything unexpected only.
+        raise
+    except Exception as exc:
+        # Log the real cause; the client only ever sees the generic code below.
         logger.exception("Simulated payment failed for order %s", getattr(order, "id", None))
-        return {"success": False, "reason": "payment_failed", "error": "payment_failed"}
+        raise PaymentCaptureFailedError("Payment processing failed. Please try again.") from exc
 
 
 def process_refund(order):
@@ -147,7 +167,12 @@ def process_refund(order):
         order: Order instance
 
     Returns:
-        dict: Refund result
+        dict: ``success`` plus the refund transaction details
+
+    Raises:
+        RefundNoTransactionError: there is no successful transaction to refund
+        RefundFailedError: anything unexpected; logged with its traceback,
+            generic message for the client
     """
     try:
         with transaction.atomic():
@@ -159,7 +184,7 @@ def process_refund(order):
             original_transaction = locked.transactions.filter(payment_status="SUCCESSFUL").first()
 
             if not original_transaction:
-                return {"success": False, "error": "No successful transaction found for this order"}
+                raise RefundNoTransactionError("No successful transaction found for this order")
 
             # Create refund transaction
             refund_transaction_id = f"REF-{uuid.uuid4().hex[:12].upper()}"
@@ -183,6 +208,8 @@ def process_refund(order):
                 "refund_amount": float(locked.total_amount),
             }
 
-    except Exception:
+    except ApiError:
+        raise
+    except Exception as exc:
         logger.exception("Refund failed for order %s", getattr(order, "id", None))
-        return {"success": False, "error": "refund_failed"}
+        raise RefundFailedError("Refund processing failed. Please contact support.") from exc

@@ -1,0 +1,278 @@
+# French translations for the MarketHub API error catalogue.
+#
+# Every msgid here is a literal message raised by the backend: the envelope's
+# own sentences (core/exceptions.py, core/middleware.py) plus one entry per
+# error the apps raise. Message *codes* are deliberately not translated —
+# clients branch on those.
+#
+# Compiled to .mo with `python manage.py compile_api_messages` (a bundled
+# pure-Python writer: GNU msgfmt is not assumed to exist). The committed .mo
+# must stay in sync; tests/test_locale.py fails if it does not.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+# --- the envelope itself (core/exceptions.py, core/middleware.py) ---------
+msgid "Some of the submitted values are invalid."
+msgstr "Certaines des valeurs envoyées sont invalides."
+
+msgid "The request could not be processed."
+msgstr "La requête n'a pas pu être traitée."
+
+msgid "The request could not be processed. Please try again."
+msgstr "La requête n'a pas pu être traitée. Veuillez réessayer."
+
+msgid "Not found."
+msgstr "Introuvable."
+
+msgid "Method not allowed."
+msgstr "Méthode non autorisée."
+
+msgid "Not acceptable."
+msgstr "Non acceptable."
+
+msgid "Conflict."
+msgstr "Conflit."
+
+msgid "Unsupported media type."
+msgstr "Type de média non pris en charge."
+
+msgid "Too many requests. Try again later."
+msgstr "Trop de requêtes. Réessayez plus tard."
+
+msgid "An unexpected error occurred. Please try again."
+msgstr "Une erreur inattendue s'est produite. Veuillez réessayer."
+
+msgid "An upstream service is unavailable. Try again shortly."
+msgstr "Un service amont est indisponible. Réessayez dans un instant."
+
+msgid "The service is temporarily unavailable. Try again shortly."
+msgstr "Le service est temporairement indisponible. Réessayez dans un instant."
+
+msgid "API version not found."
+msgstr "Version de l'API introuvable."
+
+msgid "Permission denied."
+msgstr "Permission refusée."
+
+# --- stock DRF sentences the envelope re-renders --------------------------
+msgid "A server error occurred."
+msgstr "Une erreur serveur s'est produite."
+
+msgid "Authentication credentials were not provided."
+msgstr "Les identifiants d'authentification sont absents."
+
+msgid "Incorrect authentication credentials."
+msgstr "Les identifiants d'authentification sont incorrects."
+
+msgid "You do not have permission to perform this action."
+msgstr "Vous n'avez pas la permission d'effectuer cette action."
+
+msgid "Request was throttled."
+msgstr "La requête a été limitée."
+
+msgid "Invalid input."
+msgstr "Saisie invalide."
+
+msgid "Malformed requests."
+msgstr "Requêtes mal formées."
+
+# --- auth (apps/users) ----------------------------------------------------
+msgid "Please provide both email and password"
+msgstr "Veuillez fournir à la fois l'adresse e-mail et le mot de passe"
+
+msgid "Invalid credentials"
+msgstr "Identifiants invalides"
+
+msgid "This account has been disabled."
+msgstr "Ce compte a été désactivé."
+
+msgid "Old password is incorrect"
+msgstr "L'ancien mot de passe est incorrect"
+
+msgid "Invalid verification link"
+msgstr "Lien de vérification invalide"
+
+msgid "Invalid or expired token"
+msgstr "Jeton invalide ou expiré"
+
+msgid "Invalid or expired reset link"
+msgstr "Lien de réinitialisation invalide ou expiré"
+
+msgid "Sign in to verify the phone number on your account."
+msgstr "Connectez-vous pour vérifier le numéro de téléphone de votre compte."
+
+msgid "Only sellers can access this endpoint"
+msgstr "Seuls les vendeurs peuvent accéder à ce point d'accès"
+
+msgid "Only sellers can create stores"
+msgstr "Seuls les vendeurs peuvent créer des boutiques"
+
+msgid "You must have a store to create products"
+msgstr "Vous devez avoir une boutique pour créer des produits"
+
+# --- phone OTP (apps/users) ----------------------------------------------
+msgid "Enter a valid phone number."
+msgstr "Saisissez un numéro de téléphone valide."
+
+msgid "Invalid code."
+msgstr "Code invalide."
+
+msgid "Invalid or expired code."
+msgstr "Code invalide ou expiré."
+
+msgid "SMS delivery is temporarily unavailable. Try again shortly."
+msgstr "L'envoi de SMS est temporairement indisponible. Réessayez dans un instant."
+
+msgid "SMS_API_URL is not configured"
+msgstr "SMS_API_URL n'est pas configuré"
+
+msgid "This phone number is already verified on another account."
+msgstr "Ce numéro de téléphone est déjà vérifié sur un autre compte."
+
+# --- social sign-in (apps/users) -----------------------------------------
+msgid "Missing social sign-in token."
+msgstr "Jeton de connexion sociale manquant."
+
+msgid "That sign-in token is invalid or expired."
+msgstr "Ce jeton de connexion est invalide ou expiré."
+
+msgid "Social provider refused the request."
+msgstr "Le fournisseur de connexion a refusé la requête."
+
+msgid "The social provider sent an invalid response."
+msgstr "Le fournisseur de connexion a envoyé une réponse invalide."
+
+msgid "Could not reach the social provider."
+msgstr "Impossible de joindre le fournisseur de connexion."
+
+msgid "Unsupported social provider."
+msgstr "Fournisseur de connexion non pris en charge."
+
+msgid "Google sign-in is not configured."
+msgstr "La connexion Google n'est pas configurée."
+
+msgid "That sign-in token was issued for another application."
+msgstr "Ce jeton de connexion a été émis pour une autre application."
+
+msgid "That sign-in token was not issued by Google."
+msgstr "Ce jeton de connexion n'a pas été émis par Google."
+
+msgid "Your Google account email address is not verified."
+msgstr "L'adresse e-mail de votre compte Google n'est pas vérifiée."
+
+msgid "Your Google account has no email address."
+msgstr "Votre compte Google n'a pas d'adresse e-mail."
+
+msgid "Facebook sign-in is not configured."
+msgstr "La connexion Facebook n'est pas configurée."
+
+msgid "This Facebook account has no email address. Sign up with your phone number instead."
+msgstr ""
+"Ce compte Facebook n'a pas d'adresse e-mail. Inscrivez-vous avec votre "
+"numéro de téléphone."
+
+# --- listings, reviews, wishlist (apps/products) -------------------------
+msgid "Product not found"
+msgstr "Produit introuvable"
+
+msgid "Product not found or not available"
+msgstr "Produit introuvable ou indisponible"
+
+msgid "Product not in wishlist"
+msgstr "Le produit n'est pas dans la liste d'envies"
+
+msgid "product_id is required"
+msgstr "product_id est requis"
+
+msgid "You have already reviewed this product"
+msgstr "Vous avez déjà publié un avis sur ce produit"
+
+msgid "You have already reviewed this product. Please update your existing review."
+msgstr ""
+"Vous avez déjà publié un avis sur ce produit. Veuillez mettre à jour votre "
+"avis existant."
+
+msgid "Rating must be between 1 and 5"
+msgstr "La note doit être comprise entre 1 et 5"
+
+# --- stores (apps/stores) ------------------------------------------------
+msgid "You already have a store"
+msgstr "Vous avez déjà une boutique"
+
+msgid "You do not have a store yet"
+msgstr "Vous n'avez pas encore de boutique"
+
+msgid "Store not found"
+msgstr "Boutique introuvable"
+
+# --- inventory (apps/inventory) ------------------------------------------
+msgid "Quantity delta cannot be zero"
+msgstr "La différence de quantité ne peut pas être nulle"
+
+# --- cart, checkout (apps/orders) ----------------------------------------
+msgid "Cart is empty"
+msgstr "Le panier est vide"
+
+msgid "Cart item not found"
+msgstr "Article du panier introuvable"
+
+msgid "Some products in your cart are no longer available."
+msgstr "Certains produits de votre panier ne sont plus disponibles."
+
+msgid "The price of one or more items in your cart has changed."
+msgstr "Le prix d'un ou plusieurs articles de votre panier a changé."
+
+msgid "Shipping address not found"
+msgstr "Adresse de livraison introuvable"
+
+msgid "Order not found"
+msgstr "Commande introuvable"
+
+msgid "Invalid order status"
+msgstr "Statut de commande invalide"
+
+msgid "Payment could not be processed. Nothing was charged and no stock was taken."
+msgstr ""
+"Le paiement n'a pas pu être traité. Aucun montant n'a été débité et aucun "
+"stock n'a été réservé."
+
+# --- payments (apps/payments) --------------------------------------------
+msgid "order_id is required"
+msgstr "order_id est requis"
+
+msgid "Order has already been paid."
+msgstr "La commande a déjà été payée."
+
+msgid "Cannot process payment for cancelled order."
+msgstr "Impossible de traiter le paiement d'une commande annulée."
+
+msgid "Payment processing failed. Please try again."
+msgstr "Le traitement du paiement a échoué. Veuillez réessayer."
+
+msgid "An unexpected error occurred while processing the payment."
+msgstr "Une erreur inattendue s'est produite lors du traitement du paiement."
+
+msgid "Order payment was not successful, cannot refund"
+msgstr "Le paiement de la commande a échoué, remboursement impossible"
+
+msgid "Cannot refund delivered orders. Please contact support."
+msgstr "Impossible de rembourser une commande livrée. Veuillez contacter le support."
+
+msgid "No successful transaction found for this order"
+msgstr "Aucune transaction réussie trouvée pour cette commande"
+
+msgid "Refund processing failed. Please contact support."
+msgstr "Le traitement du remboursement a échoué. Veuillez contacter le support."
+
+# --- idempotency (core/idempotency.py) -----------------------------------
+msgid "Idempotency-Key must be 1-64 characters of [A-Za-z0-9-._]."
+msgstr ""
+"La clé d'idempotence doit comporter de 1 à 64 caractères parmi "
+"[A-Za-z0-9-._]."
+
+msgid "This Idempotency-Key was already used with a different payload."
+msgstr "Cette clé d'idempotence a déjà été utilisée avec un contenu différent."

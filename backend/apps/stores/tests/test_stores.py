@@ -6,10 +6,10 @@ from tests.factories import InventoryFactory, ProductFactory, StoreFactory
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/stores/"
-CREATE_URL = "/api/stores/seller/create/"
-MY_STORE_URL = "/api/stores/seller/my-store/"
-STATS_URL = "/api/stores/seller/stats/"
+LIST_URL = "/api/v1/stores/"
+CREATE_URL = "/api/v1/stores/seller/create/"
+MY_STORE_URL = "/api/v1/stores/seller/my-store/"
+STATS_URL = "/api/v1/stores/seller/stats/"
 
 
 def store_payload(**overrides):
@@ -80,11 +80,21 @@ def test_seller_creates_store(seller_client, seller):
 
 
 def test_create_store_twice_is_rejected(seller_client):
-    seller_client.post(CREATE_URL, store_payload(), format="json")
+    from apps.stores.models import Store
+
+    first = seller_client.post(CREATE_URL, store_payload(), format="json")
+    assert first.status_code == 201
 
     response = seller_client.post(CREATE_URL, store_payload(), format="json")
 
     assert response.status_code == 400
+    # Phase 9 envelope: the duplicate create is refused with a branchable code,
+    # and refused means *no second store* — Store.owner is a OneToOne, so the
+    # database enforces it too (the listing-create view needs IdempotentPostMixin;
+    # this one cannot double-create without it).
+    assert response.data["code"] == "store_exists"
+    assert response.data["request_id"] == response["X-Request-ID"]
+    assert Store.objects.count() == 1
 
 
 def test_create_store_rejects_unknown_category(seller_client):
@@ -93,6 +103,9 @@ def test_create_store_rejects_unknown_category(seller_client):
     )
 
     assert response.status_code == 400
+    # Field errors arrive in the envelope's details, keyed by field name.
+    assert response.data["code"] == "validation_error"
+    assert "category" in response.data["details"]
 
 
 def test_my_store_round_trip(seller_client, store):
@@ -111,6 +124,8 @@ def test_my_store_404_for_seller_without_store(seller_client):
     response = seller_client.get(MY_STORE_URL)
 
     assert response.status_code == 404
+    assert response.data["code"] == "store_not_found"
+    assert response.data["request_id"] == response["X-Request-ID"]
 
 
 def test_my_store_403_for_non_seller(buyer_client):
@@ -139,6 +154,7 @@ def test_store_stats_requires_store(buyer_client):
     response = buyer_client.get(STATS_URL)
 
     assert response.status_code == 404
+    assert response.data["code"] == "store_not_found"
 
 
 # ---------------------------------------------------------------------------

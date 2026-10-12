@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
+import { apiErrorMessage } from '../../lib/errors'
 import {
   User,
   Mail,
@@ -64,17 +65,16 @@ export default function ProfilePage() {
       } else {
         setMessage({
           type: 'error',
-          text:
-            typeof result.error === 'string'
-              ? result.error
-              : result.error?.detail || 'Failed to update profile',
+          // AuthContext failures are Phase 9 envelopes — `message` is the
+          // text to show (already seeded with this action's fallback).
+          text: apiErrorMessage(result.error, 'Failed to update profile'),
         })
       }
     } catch (error) {
       console.error('Error updating profile:', error)
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to update profile',
+        text: apiErrorMessage(error, 'Failed to update profile'),
       })
     } finally {
       setLoading(false)

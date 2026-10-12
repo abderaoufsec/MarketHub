@@ -171,3 +171,58 @@ describe('email sign-up (unchanged Phase 1 contract)', () => {
     expect(mocks.register).not.toHaveBeenCalled()
   })
 })
+
+describe('server validation failures (Phase 9 envelope)', () => {
+  // AuthContext hands the page the parsed envelope; a validation_error keeps
+  // the serializer messages in `details` and they belong under the inputs.
+  it('renders the field messages from `details` under the inputs', async () => {
+    mocks.register.mockResolvedValue({
+      success: false,
+      error: {
+        status: 400,
+        code: 'validation_error',
+        message: 'Fix the form.',
+        details: { email: ['A user with that email already exists.'] },
+        requestId: 'req-9',
+      },
+    })
+
+    render(<RegisterPage />)
+    fill({ email: 'taken@example.com' })
+
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('A user with that email already exists.')
+      ).toBeInTheDocument()
+    )
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      'A user with that email already exists.'
+    )
+  })
+
+  it('shows the envelope message when the failure has no field messages', async () => {
+    mocks.register.mockResolvedValue({
+      success: false,
+      error: {
+        status: 429,
+        code: 'throttled',
+        message: 'Too many attempts. Try again in a minute.',
+        details: { wait: 60 },
+        requestId: 'req-10',
+      },
+    })
+
+    render(<RegisterPage />)
+    fill({ email: 'newbie@example.com' })
+
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Too many attempts. Try again in a minute.')
+      ).toBeInTheDocument()
+    )
+  })
+})

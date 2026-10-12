@@ -37,7 +37,7 @@ def other_seller_client(db):
 # ---------------------------------------------------------------------------
 def test_buyer_cannot_update_a_listing(buyer_client, product):
     response = buyer_client.put(
-        f"/api/products/seller/{product.id}/",
+        f"/api/v1/products/seller/{product.id}/",
         {"name": "Hijacked", "description": "x", "base_price": "1.00", "category": "phones"},
         format="json",
     )
@@ -46,7 +46,7 @@ def test_buyer_cannot_update_a_listing(buyer_client, product):
 
 
 def test_buyer_cannot_delete_a_listing(buyer_client, product):
-    response = buyer_client.delete(f"/api/products/seller/{product.id}/")
+    response = buyer_client.delete(f"/api/v1/products/seller/{product.id}/")
 
     assert response.status_code == 403
     product.refresh_from_db()
@@ -55,7 +55,7 @@ def test_buyer_cannot_delete_a_listing(buyer_client, product):
 
 def test_other_seller_cannot_update_a_listing(other_seller_client, product):
     response = other_seller_client.put(
-        f"/api/products/seller/{product.id}/",
+        f"/api/v1/products/seller/{product.id}/",
         {"name": "Hijacked", "description": "x", "base_price": "1.00", "category": "phones"},
         format="json",
     )
@@ -64,7 +64,7 @@ def test_other_seller_cannot_update_a_listing(other_seller_client, product):
 
 
 def test_other_seller_cannot_delete_a_listing(other_seller_client, product):
-    response = other_seller_client.delete(f"/api/products/seller/{product.id}/")
+    response = other_seller_client.delete(f"/api/v1/products/seller/{product.id}/")
 
     assert response.status_code == 404
 
@@ -74,7 +74,7 @@ def test_other_seller_cannot_delete_a_listing(other_seller_client, product):
 # ---------------------------------------------------------------------------
 def test_buyer_cannot_update_order_status(buyer_client, order):
     response = buyer_client.put(
-        f"/api/orders/seller/{order.id}/update-status/",
+        f"/api/v1/orders/seller/{order.id}/update-status/",
         {"order_status": "SHIPPED"},
         format="json",
     )
@@ -86,7 +86,7 @@ def test_buyer_cannot_update_order_status(buyer_client, order):
 
 def test_other_store_cannot_update_the_order(other_seller_client, order):
     response = other_seller_client.put(
-        f"/api/orders/seller/{order.id}/update-status/",
+        f"/api/v1/orders/seller/{order.id}/update-status/",
         {"order_status": "SHIPPED"},
         format="json",
     )
@@ -98,7 +98,7 @@ def test_other_store_cannot_update_the_order(other_seller_client, order):
 
 def test_buyer_cannot_see_another_users_order(buyer_client, order):
     # OrderFactory builds an order for someone else by default.
-    response = buyer_client.get(f"/api/orders/{order.id}/")
+    response = buyer_client.get(f"/api/v1/orders/{order.id}/")
 
     assert response.status_code == 404
 
@@ -108,7 +108,7 @@ def test_buyer_cannot_see_another_users_order(buyer_client, order):
 # ---------------------------------------------------------------------------
 def test_buyer_cannot_update_inventory(buyer_client, product):
     response = buyer_client.post(
-        f"/api/inventory/product/{product.id}/update/",
+        f"/api/v1/inventory/product/{product.id}/update/",
         {"quantity_delta": 5, "action_type": "ADD"},
         format="json",
     )
@@ -118,7 +118,7 @@ def test_buyer_cannot_update_inventory(buyer_client, product):
 
 def test_other_store_cannot_update_inventory(other_seller_client, product):
     response = other_seller_client.post(
-        f"/api/inventory/product/{product.id}/update/",
+        f"/api/v1/inventory/product/{product.id}/update/",
         {"quantity_delta": 5, "action_type": "ADD"},
         format="json",
     )
@@ -130,13 +130,15 @@ def test_other_store_cannot_update_inventory(other_seller_client, product):
 # Payments
 # ---------------------------------------------------------------------------
 def test_other_buyer_cannot_refund_a_foreign_order(buyer_client, order):
-    response = buyer_client.post(f"/api/payments/refund/{order.id}/")
+    response = buyer_client.post(f"/api/v1/payments/refund/{order.id}/")
 
     assert response.status_code in (403, 404)
 
 
 def test_other_buyer_cannot_pay_a_foreign_order(buyer_client, order):
-    response = buyer_client.post("/api/payments/simulate/", {"order_id": order.id}, format="json")
+    response = buyer_client.post(
+        "/api/v1/payments/simulate/", {"order_id": order.id}, format="json"
+    )
 
     assert response.status_code == 404
 
@@ -144,8 +146,8 @@ def test_other_buyer_cannot_pay_a_foreign_order(buyer_client, order):
 def test_anonymous_cannot_pay_or_refund(order):
     client = APIClient()
 
-    pay = client.post("/api/payments/simulate/", {"order_id": order.id}, format="json")
-    refund = client.post(f"/api/payments/refund/{order.id}/")
+    pay = client.post("/api/v1/payments/simulate/", {"order_id": order.id}, format="json")
+    refund = client.post(f"/api/v1/payments/refund/{order.id}/")
 
     assert pay.status_code == 401
     assert refund.status_code == 401
@@ -158,7 +160,7 @@ def test_other_buyer_cannot_update_a_cart_item(buyer_client):
     other_item = CartItemFactory(cart__user=UserFactory())
 
     response = buyer_client.put(
-        f"/api/orders/cart/items/{other_item.id}/",
+        f"/api/v1/orders/cart/items/{other_item.id}/",
         {"quantity": 99},
         format="json",
     )
@@ -169,11 +171,11 @@ def test_other_buyer_cannot_update_a_cart_item(buyer_client):
 def test_anonymous_write_endpoints_demand_auth(order, product):
     client = APIClient()
     urls = [
-        ("put", f"/api/products/seller/{product.id}/"),
-        ("delete", f"/api/products/seller/{product.id}/"),
-        ("put", f"/api/orders/seller/{order.id}/update-status/"),
-        ("post", f"/api/inventory/product/{product.id}/update/"),
-        ("post", "/api/orders/checkout/"),
+        ("put", f"/api/v1/products/seller/{product.id}/"),
+        ("delete", f"/api/v1/products/seller/{product.id}/"),
+        ("put", f"/api/v1/orders/seller/{order.id}/update-status/"),
+        ("post", f"/api/v1/inventory/product/{product.id}/update/"),
+        ("post", "/api/v1/orders/checkout/"),
     ]
     for method, url in urls:
         response = getattr(client, method)(url, {}, format="json")

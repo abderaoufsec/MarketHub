@@ -2,10 +2,22 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { authAPI } from '../lib/api'
+import { apiErrorMessage, parseApiError } from '../lib/errors'
 import Cookies from 'js-cookie'
 import { useRouter, usePathname } from 'next/navigation'
 
 const AuthContext = createContext()
+
+/**
+ * Every failure leaves the context as the Phase 9 envelope
+ * (`{status, code, message, details, requestId}`) instead of the raw body, so
+ * callers branch on `code` and display `message`. The call-site `fallback`
+ * seeds that message when the server — or the network — said nothing usable.
+ */
+const failure = (error, fallback) => ({
+  success: false,
+  error: { ...parseApiError(error), message: apiErrorMessage(error, fallback) },
+})
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -52,10 +64,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData)
       return { success: true, user: userData }
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Login failed',
-      }
+      return failure(error, 'Login failed')
     }
   }
 
@@ -64,10 +73,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(data)
       return { success: true, data: response.data }
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data || 'Registration failed',
-      }
+      return failure(error, 'Registration failed')
     }
   }
 
@@ -92,10 +98,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData)
       return { success: true, user: userData }
     } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data || 'Update failed',
-      }
+      return failure(error, 'Update failed')
     }
   }
 

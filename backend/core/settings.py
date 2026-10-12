@@ -101,11 +101,16 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third party apps
     "rest_framework",
+    "drf_spectacular",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     # Local apps
+    # "core" is the project config package: installing it puts its shared
+    # helpers (and their management commands, e.g. compile_api_messages) on
+    # Django's path. It defines no models, so it contributes no migrations.
+    "core",
     "apps.users",
     "apps.stores",
     "apps.products",
@@ -117,7 +122,15 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    # Phase 9: the request id + the error envelope. It must wrap the whole
+    # stack so a failure raised in *any* inner middleware still carries the
+    # contract, and so the id exists before the view (or the exception
+    # handler) runs.
+    "core.middleware.ApiContractMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # After Session, before Common — the documented placement. Without it
+    # Accept-Language is ignored and every response would speak LANGUAGE_CODE.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -310,11 +323,20 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    # Phase 9 — one error shape for every failure the DRF views raise
+    # (core/exceptions.py renders {code, message, details, request_id}).
+    "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+    # Phase 9 — routes live under /api/v1/ (core/versioning.py).
+    "VERSIONING_CLASS": "core.versioning.PathVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ("v1",),
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    # Phase 9 — OpenAPI generation (drf-spectacular renders /api/docs/).
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Phase 7 throttling: strict rates on the auth endpoints, a scoped
     # anti-scraping rate on endpoints that expose phone numbers. Only views
     # that opt in (throttle_classes) are throttled — there is deliberately no
@@ -368,6 +390,39 @@ CORS_ALLOWED_ORIGINS = env_list(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000,http://127.0.0.1:3000",
 )
+# Cross-origin clients can only read response headers listed here. These are
+# the Phase 9 contract: the correlation id, the throttle hint, the API version.
+CORS_EXPOSE_HEADERS = env_list(
+    "CORS_EXPOSE_HEADERS",
+    # Idempotency-Replayed lets a browser client tell "created" from
+    # "replayed" on the endpoints that take an Idempotency-Key.
+    default="X-Request-ID, Retry-After, X-API-Version, Idempotency-Replayed, Location",
+)
+
+# ---------------------------------------------------------------------------
+# OpenAPI (Phase 9) — /api/docs/ (Swagger UI), /api/redoc/, /api/schema/
+# ---------------------------------------------------------------------------
+SPECTACULAR_SETTINGS = {
+    "TITLE": "MarketHub API",
+    "DESCRIPTION": (
+        "MarketHub is a classifieds/marketplace for Algeria.\n\n"
+        "Every endpoint under `/api/v1/` answers a failure with the same envelope:\n\n"
+        "```json\n"
+        '{"code": "insufficient_stock", "message": "...", "details": null, "request_id": "..."}\n'
+        "```\n\n"
+        "`code` is stable and machine-readable (catalogue: `docs/error-codes.md`), "
+        "`message` is translated according to `Accept-Language`, `details` carries "
+        "field errors or structured extras, and `request_id` matches the "
+        "`X-Request-ID` response header."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    # One request schema per operation keeps the "Try it out" panel usable.
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    # Tags come from the URL (core/schema.py) so no route can ship untagged.
+    "POSTPROCESSING_HOOKS": ["core.schema.tag_operations"],
+}
 
 CORS_ALLOW_CREDENTIALS = True
 

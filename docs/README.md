@@ -8,6 +8,7 @@ Everything beyond the code lives here.
 |---|---|
 | [`product.md`](product.md) | **Product document** — positioning, personas, launch scope, adopted decisions, legal notes. *(Phase 0)* |
 | [`todo.md`](todo.md) | **The 29-phase roadmap** — current status, per-phase tasks, acceptance criteria, and suggested sequencing. |
+| [`error-codes.md`](error-codes.md) | **The API error reference** — the response envelope, every `code` the API can emit with its HTTP status, idempotency and versioning. *(Phase 9)* |
 
 ## Reading order
 
@@ -37,7 +38,7 @@ Each phase carries concrete tasks and a **"Done when"** acceptance criterion.
 
 These documents are scheduled as their phases land:
 
-- `api.md` — API reference and error-code catalogue *(Phase 9)*
+- `api.md` — endpoint-by-endpoint API reference (the error catalogue has landed as [`error-codes.md`](error-codes.md)) *(Phase 9)*
 - `architecture.md` — system design and data flow *(Phase 27)*
 - `deployment.md` — hosting, environment variables, and release process *(Phase 27)*
 - `moderation-playbook.md` — trust & safety operations *(Phase 27)*

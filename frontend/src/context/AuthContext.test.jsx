@@ -21,6 +21,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { authAPI } from '../lib/api'
+import { apiFieldErrors } from '../lib/errors'
 import { AuthProvider, useAuth } from './AuthContext'
 /** Probe component that exposes the context value to assertions. */
 let latestAuth
@@ -128,9 +129,17 @@ describe('login', () => {
     )
   })
 
-  it('returns the backend error message on failure', async () => {
+  it('returns the Phase 9 envelope on failure', async () => {
     authAPI.login.mockRejectedValue({
-      response: { data: { error: 'Invalid credentials' } },
+      response: {
+        status: 401,
+        data: {
+          code: 'invalid_credentials',
+          message: 'Invalid credentials.',
+          details: null,
+          request_id: 'req-1',
+        },
+      },
     })
     renderAuth()
     await waitFor(() =>
@@ -139,7 +148,17 @@ describe('login', () => {
 
     const result = await latestAuth.login('buyer@example.com', 'wrong')
 
-    expect(result).toEqual({ success: false, error: 'Invalid credentials' })
+    // Callers display `error.message` and can branch on `error.code`.
+    expect(result).toEqual({
+      success: false,
+      error: {
+        status: 401,
+        code: 'invalid_credentials',
+        message: 'Invalid credentials.',
+        details: null,
+        requestId: 'req-1',
+      },
+    })
     expect(screen.getByTestId('user')).toHaveTextContent('anonymous')
   })
 
@@ -153,7 +172,9 @@ describe('login', () => {
     const result = await latestAuth.login('buyer@example.com', 'pw')
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe('Login failed')
+    expect(result.error.code).toBe('network_error')
+    // The call-site fallback seeds `message`, so it is display-ready.
+    expect(result.error.message).toBe('Login failed')
   })
 })
 
@@ -213,7 +234,17 @@ describe('register', () => {
 
   it('returns field errors from the serializer', async () => {
     const fieldErrors = { email: ['A user with that email already exists.'] }
-    authAPI.register.mockRejectedValue({ response: { data: fieldErrors } })
+    authAPI.register.mockRejectedValue({
+      response: {
+        status: 400,
+        data: {
+          code: 'validation_error',
+          message: 'Fix the form.',
+          details: fieldErrors,
+          request_id: 'req-2',
+        },
+      },
+    })
     renderAuth()
     await waitFor(() =>
       expect(screen.getByTestId('loading')).toHaveTextContent('false')
@@ -222,7 +253,11 @@ describe('register', () => {
     const result = await latestAuth.register({ email: USER.email })
 
     expect(result.success).toBe(false)
-    expect(result.error).toEqual(fieldErrors)
+    // The envelope keeps the field messages in `details`…
+    expect(result.error.code).toBe('validation_error')
+    expect(result.error.message).toBe('Fix the form.')
+    // …which is what the register page renders via apiFieldErrors().
+    expect(apiFieldErrors(result.error)).toEqual(fieldErrors)
   })
 })
 

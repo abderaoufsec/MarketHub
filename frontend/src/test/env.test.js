@@ -8,7 +8,7 @@ import env, { API_URL, SITE_NAME } from '../lib/env'
 describe('env config', () => {
   it('exposes the API URL from the environment', () => {
     // vitest.config.mjs sets test.env.NEXT_PUBLIC_API_URL
-    expect(API_URL).toBe('http://api.test/api')
+    expect(API_URL).toBe('http://api.test/api/v1')
     expect(env.API_URL).toBe(API_URL)
   })
 

@@ -7,9 +7,9 @@ from tests.factories import InventoryFactory, ProductFactory
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/inventory/"
-LOW_STOCK_URL = "/api/inventory/low-stock/"
-AUDIT_URL = "/api/inventory/audit-log/"
+LIST_URL = "/api/v1/inventory/"
+LOW_STOCK_URL = "/api/v1/inventory/low-stock/"
+AUDIT_URL = "/api/v1/inventory/audit-log/"
 
 
 def update_payload(**overrides):
@@ -19,7 +19,7 @@ def update_payload(**overrides):
 
 
 def update_url(product):
-    return f"/api/inventory/product/{product.id}/update/"
+    return f"/api/v1/inventory/product/{product.id}/update/"
 
 
 def test_inventory_list_requires_auth(api_client):
@@ -67,7 +67,11 @@ def test_update_inventory_rejects_insufficient_stock(seller_client, product):
     )
 
     assert response.status_code == 400
-    assert "Insufficient stock" in str(response.data)
+    # Phase 9 envelope: the service's ValueError text is the message, and the
+    # request id ties the failure to the server log line.
+    assert response.data["code"] == "insufficient_stock"
+    assert "Insufficient stock" in response.data["message"]
+    assert response.data["request_id"] == response["X-Request-ID"]
 
 
 def test_update_inventory_rejects_zero_delta(seller_client, product):

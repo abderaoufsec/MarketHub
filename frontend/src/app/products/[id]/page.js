@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { productsAPI, cartAPI, reviewsAPI, wishlistAPI } from '../../../lib/api'
+import { apiErrorMessage } from '../../../lib/errors'
 import { useAuth } from '../../../context/AuthContext'
 import {
   ShoppingCart,
@@ -128,7 +129,7 @@ export default function ProductDetailPage() {
     } catch (error) {
       setCartMessage({
         type: 'error',
-        text: error.response?.data?.error || 'Failed to add to cart',
+        text: apiErrorMessage(error, 'Failed to add to cart'),
       })
       setTimeout(() => setCartMessage(null), 3000)
     } finally {

@@ -3,6 +3,7 @@
 import pytest
 from django.test import override_settings
 
+from apps.products.models import ProductReview
 from tests.factories import (
     InventoryFactory,
     ProductFactory,
@@ -13,15 +14,15 @@ from tests.factories import (
 
 pytestmark = pytest.mark.django_db
 
-LIST_URL = "/api/products/"
-FEATURED_URL = "/api/products/featured/"
-SEARCH_URL = "/api/products/search/"
-SELLER_LIST_URL = "/api/products/seller/list/"
-SELLER_CREATE_URL = "/api/products/seller/create/"
-REVIEWS_CREATE_URL = "/api/products/reviews/create/"
-MY_REVIEWS_URL = "/api/products/reviews/my-reviews/"
-WISHLIST_URL = "/api/products/wishlist/"
-WISHLIST_ADD_URL = "/api/products/wishlist/add/"
+LIST_URL = "/api/v1/products/"
+FEATURED_URL = "/api/v1/products/featured/"
+SEARCH_URL = "/api/v1/products/search/"
+SELLER_LIST_URL = "/api/v1/products/seller/list/"
+SELLER_CREATE_URL = "/api/v1/products/seller/create/"
+REVIEWS_CREATE_URL = "/api/v1/products/reviews/create/"
+MY_REVIEWS_URL = "/api/v1/products/reviews/my-reviews/"
+WISHLIST_URL = "/api/v1/products/wishlist/"
+WISHLIST_ADD_URL = "/api/v1/products/wishlist/add/"
 
 
 def product_payload(**overrides):
@@ -219,7 +220,48 @@ def test_free_plan_quota_blocks_extra_products(seller_client, store):
     response = seller_client.post(SELLER_CREATE_URL, product_payload(), format="json")
 
     assert response.status_code == 400
-    assert "limit" in str(response.data).lower()
+    # The quota rejection is a plain serializer ValidationError, so the Phase 9
+    # envelope carries it: the quota sentence itself is the human message.
+    assert response.data["code"] == "validation_error"
+    assert "limit" in response.data["message"].lower()
+    assert response.data["request_id"] == response["X-Request-ID"]
+
+
+# ---------------------------------------------------------------------------
+# Listing-create idempotency (Phase 9): a retried POST with the same
+# Idempotency-Key must not publish a second listing.
+# ---------------------------------------------------------------------------
+def test_listing_create_replays_first_response_for_same_idempotency_key(
+    seller_client, seller, store
+):
+    payload = product_payload()
+    headers = {"HTTP_IDEMPOTENCY_KEY": "listing-retry-1"}
+
+    first = seller_client.post(SELLER_CREATE_URL, payload, format="json", **headers)
+    retry = seller_client.post(SELLER_CREATE_URL, payload, format="json", **headers)
+
+    assert first.status_code == 201
+    assert "Idempotency-Replayed" not in first
+    assert retry.status_code == 201
+    assert retry["Idempotency-Replayed"] == "true"
+    assert retry.data == first.data, "a replay must return the original body verbatim"
+    assert seller.store.products.count() == 1
+
+
+def test_listing_idempotency_key_rejected_when_payload_differs(seller_client, seller, store):
+    headers = {"HTTP_IDEMPOTENCY_KEY": "listing-retry-2"}
+
+    first = seller_client.post(SELLER_CREATE_URL, product_payload(), format="json", **headers)
+    assert first.status_code == 201
+
+    retry = seller_client.post(
+        SELLER_CREATE_URL, product_payload(name="Renamed listing"), format="json", **headers
+    )
+
+    assert retry.status_code == 409
+    assert retry.data["code"] == "idempotency_key_conflict"
+    assert retry.data["request_id"] == retry["X-Request-ID"]
+    assert seller.store.products.count() == 1, "the conflicting retry must create nothing"
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +287,14 @@ def test_create_review_and_duplicate_guard(buyer_client, product, buyer):
 
     duplicate = buyer_client.post(REVIEWS_CREATE_URL, payload, format="json")
     assert duplicate.status_code == 400
+    # Phase 9 envelope: the old hand-rolled {"error": …, "review_id": …} body
+    # is now a branchable code with the id in structured details.
+    assert duplicate.data["code"] == "already_reviewed"
+    assert (
+        duplicate.data["details"]["review_id"]
+        == ProductReview.objects.get(product=product, user=buyer).id
+    )
+    assert duplicate.data["request_id"] == duplicate["X-Request-ID"]
 
     check = buyer_client.get(f"{LIST_URL}{product.id}/check-review/")
     assert check.data["has_reviewed"] is True
@@ -258,6 +308,8 @@ def test_create_review_rejects_bad_rating(buyer_client, product):
     )
 
     assert response.status_code == 400
+    assert response.data["code"] == "validation_error"
+    assert "rating" in response.data["details"]
 
 
 def test_my_reviews_lists_own_reviews(buyer_client, product, buyer):
@@ -346,12 +398,24 @@ def test_wishlist_add_requires_product(buyer_client):
     response = buyer_client.post(WISHLIST_ADD_URL, {}, format="json")
 
     assert response.status_code == 400
+    assert response.data["code"] == "product_id_required"
+    assert response.data["request_id"] == response["X-Request-ID"]
 
 
 def test_wishlist_add_unknown_product_404(buyer_client):
     response = buyer_client.post(WISHLIST_ADD_URL, {"product_id": 999999}, format="json")
 
     assert response.status_code == 404
+    assert response.data["code"] == "product_not_found"
+
+
+def test_wishlist_remove_not_wishlisted_404(buyer_client, product):
+    """Removing a product that was never wishlisted is the other hand-built
+    404 this slice converted; it now answers with the envelope too."""
+    response = buyer_client.delete(f"{LIST_URL}wishlist/remove/{product.id}/")
+
+    assert response.status_code == 404
+    assert response.data["code"] == "not_in_wishlist"
 
 
 def test_wishlist_is_per_user(buyer_client, product, buyer):

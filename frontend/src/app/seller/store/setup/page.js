@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { storesAPI } from '../../../../lib/api'
+import { apiErrorMessage, apiFieldError } from '../../../../lib/errors'
 import { Store, Save, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -70,31 +71,14 @@ export default function StoreSetupPage() {
       }, 2000)
     } catch (error) {
       console.error('Error creating store:', error)
-      console.error('Error response:', error.response) // Debug log
 
-      let errorMsg = 'Failed to create store'
-
-      if (error.response?.data) {
-        if (error.response.data.detail) {
-          errorMsg = error.response.data.detail
-        } else if (error.response.data.store_name) {
-          errorMsg = Array.isArray(error.response.data.store_name)
-            ? error.response.data.store_name[0]
-            : error.response.data.store_name
-        } else if (error.response.data.category) {
-          errorMsg = Array.isArray(error.response.data.category)
-            ? error.response.data.category[0]
-            : error.response.data.category
-        } else if (error.response.data.error) {
-          errorMsg = error.response.data.error
-        } else if (typeof error.response.data === 'string') {
-          errorMsg = error.response.data
-        } else if (error.response.data.non_field_errors) {
-          errorMsg = Array.isArray(error.response.data.non_field_errors)
-            ? error.response.data.non_field_errors[0]
-            : error.response.data.non_field_errors
-        }
-      }
+      // Serializer field messages win over the generic envelope one — the
+      // seller needs to know *which* attribute the store was rejected for.
+      const errorMsg =
+        apiFieldError(error, 'store_name') ||
+        apiFieldError(error, 'category') ||
+        apiFieldError(error, 'non_field_errors') ||
+        apiErrorMessage(error, 'Failed to create store')
 
       setMessage({ type: 'error', text: errorMsg })
       toast.error(errorMsg)

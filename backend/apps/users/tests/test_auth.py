@@ -13,11 +13,11 @@ User = get_user_model()
 
 pytestmark = pytest.mark.django_db
 
-REGISTER_URL = "/api/auth/register/"
-LOGIN_URL = "/api/auth/login/"
-LOGOUT_URL = "/api/auth/logout/"
-REFRESH_URL = "/api/auth/token/refresh/"
-PROFILE_URL = "/api/auth/profile/"
+REGISTER_URL = "/api/v1/auth/register/"
+LOGIN_URL = "/api/v1/auth/login/"
+LOGOUT_URL = "/api/v1/auth/logout/"
+REFRESH_URL = "/api/v1/auth/token/refresh/"
+PROFILE_URL = "/api/v1/auth/profile/"
 
 VALID_PASSWORD = "S3cure!Passw0rd"
 
@@ -67,7 +67,8 @@ def test_register_rejects_duplicate_email(api_client):
     )
 
     assert response.status_code == 400
-    assert "email" in response.data
+    # Envelope: the field dict moved from the top level into ``details``.
+    assert "email" in response.data["details"]
 
 
 def test_register_rejects_weak_password(api_client):
@@ -78,7 +79,7 @@ def test_register_rejects_weak_password(api_client):
     )
 
     assert response.status_code == 400
-    assert "password" in response.data
+    assert "password" in response.data["details"]
 
 
 def test_registration_sends_exactly_one_verification_email(api_client):
@@ -127,7 +128,7 @@ def test_cookie_session_can_call_profile(api_client):
     )
     assert login.status_code == 200
 
-    profile = api_client.get("/api/auth/profile/")
+    profile = api_client.get("/api/v1/auth/profile/")
 
     assert profile.status_code == 200
     assert profile.data["email"] == "cookie@example.com"
@@ -141,9 +142,9 @@ def test_bearer_header_still_authenticates_without_csrf(api_client):
     token = str(RefreshToken.for_user(user).access_token)
 
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-    profile = api_client.get("/api/auth/profile/")
+    profile = api_client.get("/api/v1/auth/profile/")
     write = api_client.put(
-        "/api/auth/profile/", {"first_name": "B"}, format="json"
+        "/api/v1/auth/profile/", {"first_name": "B"}, format="json"
     )  # no X-CSRFToken: bearer requests are exempt
 
     assert profile.status_code == 200
@@ -160,6 +161,7 @@ def test_login_rejected_for_unverified_user(api_client):
     )
 
     assert response.status_code == 403
+    assert response.data["code"] == "identity_not_verified"
 
 
 def test_login_rejects_wrong_password(api_client):
@@ -172,12 +174,14 @@ def test_login_rejects_wrong_password(api_client):
     )
 
     assert response.status_code == 401
+    assert response.data["code"] == "invalid_credentials"
 
 
 def test_login_requires_credentials(api_client):
     response = api_client.post(LOGIN_URL, {"email": "someone@example.com"}, format="json")
 
     assert response.status_code == 400
+    assert response.data["code"] == "missing_credentials"
 
 
 def test_logout_blacklists_refresh_token(api_client):
@@ -209,7 +213,7 @@ def test_logout_clears_the_session_cookies(api_client):
     assert response.cookies["refresh_token"].value == ""
     assert response.cookies["mh_session"].value == ""
     # and the session is gone
-    assert api_client.get("/api/auth/profile/").status_code == 401
+    assert api_client.get("/api/v1/auth/profile/").status_code == 401
 
 
 def test_logout_without_session_is_rejected(api_client):
@@ -236,7 +240,7 @@ def test_cookie_refresh_rotates_the_pair_without_a_body(api_client):
     assert api_client.cookies["access_token"].value
     assert api_client.cookies["access_token"].value != first_access
     # The rotated pair keeps working against a protected endpoint.
-    assert api_client.get("/api/auth/profile/").status_code == 200
+    assert api_client.get("/api/v1/auth/profile/").status_code == 200
 
 
 def test_cookie_refresh_without_session_is_rejected(api_client):
@@ -263,7 +267,9 @@ def test_cookie_authenticated_write_requires_csrf():
         HTTP_ORIGIN="http://testserver",
     )
     assert rejected.status_code == 403
-    assert "CSRF" in str(rejected.data.get("detail", ""))
+    # Envelope: the reason is the human ``message``; ``detail`` is gone.
+    assert "CSRF" in str(rejected.data["message"])
+    assert rejected.data["request_id"] == rejected["X-Request-ID"]
 
     # 2. same request with the double-submit header -> accepted
     accepted = client.put(
@@ -277,7 +283,7 @@ def test_cookie_authenticated_write_requires_csrf():
 
 
 def test_csrf_endpoint_sets_the_cookie(api_client):
-    response = api_client.get("/api/auth/csrf/")
+    response = api_client.get("/api/v1/auth/csrf/")
 
     assert response.status_code == 200
     assert "csrftoken" in response.cookies
@@ -422,7 +428,7 @@ def test_registration_is_audited(api_client):
 def _verification_url(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    return f"/api/auth/verify-email/{uid}/{token}/"
+    return f"/api/v1/auth/verify-email/{uid}/{token}/"
 
 
 def test_verify_email_marks_user_verified(api_client):
@@ -439,9 +445,11 @@ def test_verify_email_rejects_invalid_token(api_client):
     user = UserFactory(is_verified=False)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-    response = api_client.get(f"/api/auth/verify-email/{uid}/not-a-real-token/")
+    response = api_client.get(f"/api/v1/auth/verify-email/{uid}/not-a-real-token/")
 
     assert response.status_code == 400
+    assert response.data["code"] == "invalid_verification_token"
+    assert response.data["request_id"] == response["X-Request-ID"]
     user.refresh_from_db()
     assert user.is_verified is False
 
@@ -449,6 +457,7 @@ def test_verify_email_rejects_invalid_token(api_client):
 def test_verify_email_rejects_unknown_uid(api_client):
     uid = urlsafe_base64_encode(force_bytes(999999))
 
-    response = api_client.get(f"/api/auth/verify-email/{uid}/whatever/")
+    response = api_client.get(f"/api/v1/auth/verify-email/{uid}/whatever/")
 
     assert response.status_code == 400
+    assert response.data["code"] == "invalid_verification_link"

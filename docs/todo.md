@@ -260,17 +260,19 @@ which does not exist, so both rejections came back as **500** — now
 
 ---
 
-## Phase 9 — Consistent API contract & OpenAPI docs
+## Phase 9 — Consistent API contract & OpenAPI docs ✅
 **Goal:** one error shape, machine-readable docs.
 
-- [ ] Custom `EXCEPTION_HANDLER`: `{code, message, details, request_id}`.
-- [ ] Replace hand-rolled `{'error': …}` dicts; translate messages (ar/fr/en) via `Accept-Language`.
-- [ ] `drf-spectacular` at `/api/docs/` and `/api/redoc/`; tag all routes.
-- [ ] `Idempotency-Key` support on money-moving and listing-create endpoints.
-- [ ] API versioning (`/api/v1/`) **before** a mobile app depends on it.
-- [ ] Error-code reference in `docs/`.
+- [x] Custom `EXCEPTION_HANDLER`: `{code, message, details, request_id}`. — *`core/exceptions.py` owns the envelope: `ApiError` (with a `.code` clients branch on), `build_error_body()` as the single writer, and `api_exception_handler` as the DRF `EXCEPTION_HANDLER`. DRF never sees Django's own failures — URL-resolution 404s, 405s, uncaught 500s — so `core/middleware.py::ApiContractMiddleware` covers those (`process_exception` plus a rewrite of any non-JSON ≥400 under `/api/`). It also mirrors DRF's `Http404`/`PermissionDenied` rebinding, which happens *inside* DRF's handler and would otherwise leave ours reading `.detail` off an object that has none.*
+- [x] Replace hand-rolled `{'error': …}` dicts; translate messages (ar/fr/en) via `Accept-Language`. — *Every app converted: `OrderDomainError` now subclasses `ApiError` (and `as_response_body()` is gone), and `payments/services.py`'s `{"success": False, "error": …}` contract became raised exceptions — which also means a failed capture now rolls the transaction back instead of committing half of it. `LocaleMiddleware` added, because `Accept-Language` was previously ignored outright; `build_error_body()` applies `gettext()` at envelope-build time against `backend/locale/{fr,ar}`. DRF's own stock strings were already translated; these are the project's.*
+- [x] `drf-spectacular` at `/api/docs/` and `/api/redoc/`; tag all routes. — *`SPECTACULAR_SETTINGS` + `DEFAULT_SCHEMA_CLASS`, routes mounted in `core/urls.py`. Tags come from the first URL segment via a `POSTPROCESSING_HOOKS` hook (`core/schema.py`) rather than per-view decorators, so a new route cannot arrive untagged. `apps/users/schema.py` registers `BearerAuth` **and** `CookieAuth` as alternatives (the cookie path is the SPA's). Function views gained `@extend_schema` for their request bodies — above `@api_view`, the order that actually takes effect.*
+- [x] `Idempotency-Key` support on money-moving and listing-create endpoints. — *`core/idempotency.py`: `idempotency_key()` prefers the header over the body field for checkout and `payments/simulate/` (existing replay service reused), and `IdempotentPostMixin` gives `payments/refund/` and `products/seller/create/` a 24-hour replay — same key + same payload replays the original response with `Idempotency-Replayed: true`; same key + different payload is a 409 `idempotency_key_conflict`. A retried refund cannot pay out twice.*
+- [x] API versioning (`/api/v1/`) **before** a mobile app depends on it. — *Hard cut to `/api/v1/`, no unversioned alias left behind (an old `/api/…` path gets the normal 404 envelope rather than a redirect or an HTML page). `core/versioning.py::PathVersioning` reports `v1` and refuses anything else with a 404 instead of the assertion DRF would turn into a 500. `X-API-Version` is set on every API response.*
+- [x] Error-code reference in `docs/`. — *`docs/error-codes.md`: the envelope, every `code` with its HTTP status, what `details` carries, the idempotency and versioning rules, and how stable each part is.*
 
-**Done when:** `/api/docs/` lists every route; 400/401/403/404/429/500 share one shape.
+**Also here:** the catalogue is compiled with a bundled pure-Python `.po` → `.mo` writer (`core/mofile.py`, `manage.py compile_api_messages`), because GNU `msgfmt` is not assumed to exist on a contributor's machine. `tests/test_locale.py` re-compiles the catalogues and fails if a committed `.mo` no longer matches its `.po`, or if a message raised by the backend has no translation — so a new error cannot ship English-only to fr/ar. `tests/test_error_codes_doc.py` ratchets the reference doc against the source in both directions.
+
+**Done when:** `/api/docs/` lists every route; 400/401/403/404/429/500 share one shape. ✅ **Completed 2026-10-12** — backend `348 passed + 1 xfail`, coverage 87.7%; `manage.py spectacular` reports **61 paths / 73 operations, 0 errors**, every operation tagged and every mutating one carrying a request body. New suites: `tests/test_api_contract.py` (the envelope asserted from outside, through real middleware and the real handler — including `Accept-Language`, `X-Request-ID` echo, schema-vs-URL completeness and the versioned prefix), `tests/test_locale.py`, `tests/test_error_codes_doc.py`. Frontend: one error reader (`src/lib/errors.js`) behind every failure branch, and the base URL moved to `/api/v1`.
 
 ---
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { reviewsAPI } from '../../lib/api'
+import { apiErrorMessage } from '../../lib/errors'
 import { Star, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -53,11 +54,7 @@ export default function ReviewModal({
       onClose()
     } catch (error) {
       console.error('Error submitting review:', error)
-      const errorMsg =
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        'Failed to submit review'
-      toast.error(errorMsg)
+      toast.error(apiErrorMessage(error, 'Failed to submit review'))
     } finally {
       setSubmitting(false)
     }

@@ -116,7 +116,15 @@ describe('placing an order', () => {
 
   it('sends a stable idempotency key across retries of the same attempt', async () => {
     mocks.checkout.mockRejectedValueOnce({
-      response: { data: { error: 'network down' } },
+      response: {
+        status: 502,
+        data: {
+          code: 'http_502',
+          message: 'network down',
+          details: null,
+          request_id: 'req-1',
+        },
+      },
     })
     mocks.checkout.mockResolvedValueOnce({
       data: { orders: [{ id: 42, payment_status: 'SUCCESSFUL' }] },
@@ -134,11 +142,14 @@ describe('placing an order', () => {
 })
 
 describe('when the price changed while checking out', () => {
+  // Phase 9 failure envelope: the branch is on `code`, the deltas travel in
+  // `details`.
   const rejection = {
     response: {
+      status: 409,
       data: {
         code: 'price_changed',
-        error: 'The price of one or more items in your cart has changed.',
+        message: 'The price of one or more items in your cart has changed.',
         details: [
           {
             product_id: 7,
@@ -147,6 +158,7 @@ describe('when the price changed while checking out', () => {
             new_price: '150.00',
           },
         ],
+        request_id: 'req-2',
       },
     },
   }
@@ -180,10 +192,13 @@ describe('when a line cannot be reserved', () => {
   it('shows the backend message and places nothing', async () => {
     mocks.checkout.mockRejectedValue({
       response: {
+        status: 409,
         data: {
           code: 'insufficient_stock',
-          error:
+          message:
             'Insufficient stock for E2E Test Phone. Available: 1, Required: 2',
+          details: null,
+          request_id: 'req-3',
         },
       },
     })

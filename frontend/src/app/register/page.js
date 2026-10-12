@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 import { authAPI } from '../../lib/api'
 import {
+  apiErrorMessage,
+  apiFieldError,
+  apiFieldErrors,
+} from '../../lib/errors'
+import {
   Mail,
   Lock,
   User,
@@ -81,9 +86,11 @@ function RegisterForm() {
       setOtpCode('')
       toast.success(res?.detail || 'Verification code sent by SMS')
     } catch (err) {
-      const detail = err?.response?.data?.detail
+      // Field-level message first ("This number was already requested."),
+      // then the envelope message, then this page's fallback.
       const msg =
-        typeof detail === 'string' ? detail : 'Could not send the SMS code'
+        apiFieldError(err, 'phone_number') ||
+        apiErrorMessage(err, 'Could not send the SMS code')
       setErrors({ phone_number: msg })
       toast.error(msg)
     } finally {
@@ -168,24 +175,20 @@ function RegisterForm() {
           router.push('/login')
         }, 3000)
       } else {
-        // Handle different error formats
-        if (typeof result.error === 'string') {
-          setErrors({ general: result.error })
-          toast.error(result.error)
-        } else if (result.error && typeof result.error === 'object') {
-          // Handle field-specific errors
-          const errorMessages = Object.entries(result.error).map(
-            ([key, value]) => {
-              if (Array.isArray(value)) {
-                return value[0]
-              }
-              return value
-            }
+        // The envelope carries serializer messages in `details` when the
+        // failure was a validation_error — render them inline, one toast per
+        // field; anything else falls back to the general message.
+        const fieldErrors = apiFieldErrors(result.error)
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors)
+          Object.values(fieldErrors).forEach((messages) =>
+            toast.error(messages[0])
           )
-          setErrors(result.error)
-          errorMessages.forEach((msg) => toast.error(msg))
         } else {
-          const errorMsg = 'Registration failed. Please try again.'
+          const errorMsg = apiErrorMessage(
+            result.error,
+            'Registration failed. Please try again.'
+          )
           setErrors({ general: errorMsg })
           toast.error(errorMsg)
         }

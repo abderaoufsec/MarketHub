@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 import { authAPI } from '../../lib/api'
+import { apiErrorMessage, apiFieldError } from '../../lib/errors'
 import { Mail, Lock, Phone, KeyRound, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -50,8 +51,11 @@ export default function LoginPage() {
           }
         }, 500)
       } else {
-        setError(result.error)
-        toast.error(result.error || 'Login failed')
+        // AuthContext failures are Phase 9 envelopes: `message` is the text
+        // to show (already seeded with this page's fallback).
+        const message = apiErrorMessage(result.error, 'Login failed')
+        setError(message)
+        toast.error(message)
       }
     } catch (err) {
       const errorMessage = 'An unexpected error occurred'
@@ -74,9 +78,11 @@ export default function LoginPage() {
       setCodeSent(true)
       toast.success('Code sent. It expires in 5 minutes.')
     } catch (err) {
-      const data = err.response?.data
+      // Field-level message first ("This phone number is already
+      // registered."), then the envelope message, then this page's fallback.
       const detail =
-        data?.phone_number?.[0] || data?.detail || 'Could not send the code.'
+        apiFieldError(err, 'phone_number') ||
+        apiErrorMessage(err, 'Could not send the code.')
       setError(detail)
       toast.error(detail)
     } finally {
@@ -108,9 +114,10 @@ export default function LoginPage() {
         }
       }, 500)
     } catch (err) {
-      const data = err.response?.data
-      const detail =
-        data?.error || 'That code is invalid or has expired. Try again.'
+      const detail = apiErrorMessage(
+        err,
+        'That code is invalid or has expired. Try again.'
+      )
       setError(detail)
       toast.error(detail)
     } finally {

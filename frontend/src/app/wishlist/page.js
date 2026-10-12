@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { wishlistAPI, cartAPI } from '../../lib/api'
+import { apiErrorMessage } from '../../lib/errors'
 import { useAuth } from '../../context/AuthContext'
 import { Heart, ShoppingCart, Trash2, Package } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -74,7 +75,7 @@ export default function WishlistPage() {
       toast.success('Added to cart!')
     } catch (error) {
       console.error('Error adding to cart:', error)
-      const errorMsg = error.response?.data?.error || 'Failed to add to cart'
+      const errorMsg = apiErrorMessage(error, 'Failed to add to cart')
       toast.error(errorMsg)
     } finally {
       setAddingToCartIds((prev) => {
