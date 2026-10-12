@@ -119,17 +119,17 @@ def test_audit_log_lists_and_filters(seller_client, product, inventory):
 
     listed = seller_client.get(AUDIT_URL)
     assert listed.status_code == 200
-    assert listed.data["count"] == 1
+    assert len(listed.data["results"]) == 1
 
     filtered = seller_client.get(AUDIT_URL, {"product_id": product.id})
-    assert filtered.data["count"] == 1
+    assert len(filtered.data["results"]) == 1
 
     other = seller_client.get(AUDIT_URL, {"product_id": 999999})
-    assert other.data["count"] == 0
+    assert other.data["results"] == []
 
 
 def test_audit_log_empty_for_buyer(buyer_client, inventory):
     response = buyer_client.get(AUDIT_URL)
 
     assert response.status_code == 200
-    assert response.data["count"] == 0
+    assert response.data["results"] == []

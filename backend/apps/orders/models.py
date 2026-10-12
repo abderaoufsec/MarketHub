@@ -95,6 +95,11 @@ class Order(models.Model):
             models.Index(fields=["-order_date"]),
             models.Index(fields=["order_status"]),
             models.Index(fields=["payment_status"]),
+            # The two order lists: a buyer's history and a seller's store
+            # feed, both "mine, newest first". The bare -order_date index
+            # above only serves the unfiltered (admin) case.
+            models.Index(fields=["user", "-order_date"], name="orders_user_newest"),
+            models.Index(fields=["store", "-order_date"], name="orders_store_newest"),
         ]
 
     def __str__(self):

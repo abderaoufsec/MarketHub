@@ -120,6 +120,14 @@ The whole API is versioned at `/api/v1/` (Phase 9). Failures return a single
 envelope — `{code, message, details, request_id}` — and every `code` is
 listed in **[docs/error-codes.md](docs/error-codes.md)**.
 
+List endpoints are paginated (Phase 10). The endless feeds — the catalogue,
+search, stores, reviews, the wishlist, the inventory audit log — are **keyset
+paginated**: follow `next` for the next page and pass `?page_size=` (max 100)
+to change how much comes back. Those pages carry no `count`, because counting
+a feed is an O(n) scan of everything before the last row. Endpoints where
+people jump around instead (order history, transactions, a seller's
+inventory) keep `?page=`.
+
 > **Environment variables:** `backend/core/settings.py` reads configuration with **python-decouple**, in this order: real process environment variables → `backend/.env.local` → `backend/.env`. Copy `.env.example` to `.env.local` (see the table in `.env.example` for every variable). With `DEBUG=False` the app refuses to start until `DJANGO_SECRET_KEY` and `DB_PASSWORD` hold real values.
 
 ### 3. Frontend

@@ -12,3 +12,8 @@ coverage>=7.4
 ruff>=0.6
 pip-audit>=2.7
 pre-commit>=4.0
+
+# Query performance (Phase 10 of docs/todo.md)
+# The SQL panel behind DEBUG_TOOLBAR=1 in core/settings.py. The backend
+# starts the same whether or not it is installed — see that block.
+django-debug-toolbar>=5.0

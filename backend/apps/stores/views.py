@@ -1,4 +1,4 @@
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, F, Q, Sum
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -6,12 +6,27 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.orders.models import OrderItem
 from apps.users.permissions import IsSeller
 from apps.users.throttles import RevealPhoneRateThrottle
 from core.exceptions import ApiError
+from core.pagination import FeedCursorPagination
 
 from .models import Store
 from .serializers import StoreCreateSerializer, StoreSerializer
+
+
+def _stores_with_product_counts():
+    """Stores with their owner and their product count in the same query.
+
+    The embedded ``owner`` payload and the per-row product count were each
+    their own query, so a page of stores cost two queries per row.
+    """
+    return (
+        Store.objects.filter(is_active=True)
+        .select_related("owner")
+        .annotate(product_count=Count("products", distinct=True))
+    )
 
 
 class StoreListView(generics.ListAPIView):
@@ -22,23 +37,29 @@ class StoreListView(generics.ListAPIView):
     aggressively on Ouedkniss-style sites (Phase 7 anti-scraping).
     """
 
-    queryset = Store.objects.filter(is_active=True)
     serializer_class = StoreSerializer
     permission_classes = [AllowAny]
     throttle_classes = [RevealPhoneRateThrottle]
     filterset_fields = ["category"]
     search_fields = ["store_name", "description"]
     ordering_fields = ["created_at", "store_name"]
+    ordering = ["-created_at"]
+    pagination_class = FeedCursorPagination
+
+    def get_queryset(self):
+        return _stores_with_product_counts()
 
 
 class StoreDetailView(generics.RetrieveAPIView):
     """Public view of a single store (owner contact data → reveal-phone throttle)"""
 
-    queryset = Store.objects.filter(is_active=True)
     serializer_class = StoreSerializer
     permission_classes = [AllowAny]
     throttle_classes = [RevealPhoneRateThrottle]
     lookup_field = "store_slug"
+
+    def get_queryset(self):
+        return _stores_with_product_counts()
 
 
 @extend_schema(request=StoreCreateSerializer, responses={201: StoreSerializer})
@@ -107,24 +128,21 @@ def store_stats(request):
     # Get all products for this store
     products = store.products.all()
 
-    # Calculate total revenue from successful orders
-    total_revenue = (
-        store.orders.filter(payment_status="SUCCESSFUL").aggregate(total=Sum("total_amount"))[
-            "total"
-        ]
-        or 0
+    # One aggregate per pair of metrics instead of one per metric: revenue
+    # and average order value read the same rows, and so do the two product
+    # counts.
+    financials = store.orders.filter(payment_status="SUCCESSFUL").aggregate(
+        total=Sum("total_amount"), avg=Avg("total_amount")
+    )
+    product_counts = products.aggregate(
+        total=Count("id"), active=Count("id", filter=Q(is_available=True))
     )
 
-    # Calculate average order value
-    avg_order_value = (
-        store.orders.filter(payment_status="SUCCESSFUL").aggregate(avg=Avg("total_amount"))["avg"]
-        or 0
+    # Low stock, counted in SQL. This used to be a Python loop over every
+    # product in the store, and each iteration ran its own SUM of inventory.
+    low_stock_products = (
+        products.with_stock().filter(total_stock__lte=F("low_stock_threshold")).count()
     )
-
-    # Count low stock products
-    low_stock_products = [
-        product.id for product in products if getattr(product, "is_low_stock", False)
-    ]
 
     # Get order statistics by status
     order_stats = store.orders.values("order_status").annotate(count=Count("id"))
@@ -136,9 +154,9 @@ def store_stats(request):
 
     stats = {
         # Product stats
-        "total_products": products.count(),
-        "active_products": products.filter(is_available=True).count(),
-        "low_stock_products": len(low_stock_products),
+        "total_products": product_counts["total"],
+        "active_products": product_counts["active"],
+        "low_stock_products": low_stock_products,
         # Order stats
         "total_orders": store.orders.count(),
         "pending_orders": order_status_dict.get("PENDING", 0),
@@ -147,14 +165,14 @@ def store_stats(request):
         "completed_orders": order_status_dict.get("COMPLETED", 0),
         "cancelled_orders": order_status_dict.get("CANCELLED", 0),
         # Financial stats
-        "total_revenue": float(total_revenue),
-        "average_order_value": float(avg_order_value),
+        "total_revenue": float(financials["total"] or 0),
+        "average_order_value": float(financials["avg"] or 0),
         "successful_payments": payment_status_dict.get("SUCCESSFUL", 0),
         "pending_payments": payment_status_dict.get("PENDING", 0),
         "failed_payments": payment_status_dict.get("FAILED", 0),
         # Additional metrics
         "conversion_rate": 3.2,  # This would be calculated based on views vs orders
-        "total_views": products.count() * 87,  # Mock data - implement proper view tracking
+        "total_views": product_counts["total"] * 87,  # Mock data - implement proper view tracking
     }
 
     return Response(stats)
@@ -164,23 +182,55 @@ def store_stats(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def store_analytics(request):
-    """Get detailed analytics data for charts and graphs"""
+    """Get detailed analytics data for charts and graphs
+
+    Previously defined but never routed, so it could not be reached at all
+    (docs/todo.md Phase 10). The two series a dashboard can draw today are
+    computed from real rows; the two time-series stay empty until the
+    analytics phase ships view tracking and order history bucketing — an
+    empty array is a fact, a fabricated one is a lie with a date on it.
+    """
     if not request.user.is_seller or not hasattr(request.user, "store"):
         # Same Phase 9 envelope as store_stats: one code ("store_not_found")
         # for "this user has no store", wherever it is asked for.
-        raise NotFound("Store not found", code="store_not_found")
+        raise NotFound("You do not have a store yet", code="store_not_found")
 
-    # This endpoint returns a mock structure for now (real time-series lands
-    # with the analytics phase); the optional ?range=7d|30d|90d|1y parameter
-    # is accepted but not yet used to slice the data.
+    store = request.user.store
 
-    # This would contain time-series data for charts
-    # For now, returning mock structure that frontend can use
+    # Units sold and revenue per product, from the paid order lines only.
+    sales_by_product = (
+        OrderItem.objects.filter(order__store=store, order__payment_status="SUCCESSFUL")
+        .values("product_id", "product__name")
+        .annotate(units=Sum("quantity"), revenue=Sum(F("quantity") * F("unit_price_at_purchase")))
+        .order_by("-units")[:5]
+    )
+    top_products = [
+        {
+            "product_id": row["product_id"],
+            "name": row["product__name"],
+            "sales": row["units"],
+            "revenue": float(row["revenue"] or 0),
+        }
+        for row in sales_by_product
+    ]
+
+    category_totals = list(
+        store.products.values("category").annotate(products=Count("id")).order_by("-products")
+    )
+    grand_total = sum(row["products"] for row in category_totals)
+    category_breakdown = [
+        {
+            "category": row["category"],
+            "percentage": round(row["products"] * 100 / grand_total, 1),
+        }
+        for row in category_totals
+    ]
+
     analytics = {
-        "revenue_trend": [],  # Array of {date, amount}
-        "orders_trend": [],  # Array of {date, count}
-        "top_products": [],  # Array of {product_id, name, sales, revenue}
-        "category_breakdown": [],  # Array of {category, percentage}
+        "revenue_trend": [],  # Array of {date, amount} — analytics phase
+        "orders_trend": [],  # Array of {date, count} — analytics phase
+        "top_products": top_products,
+        "category_breakdown": category_breakdown,
     }
 
     return Response(analytics)

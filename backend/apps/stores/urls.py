@@ -10,4 +10,5 @@ urlpatterns = [
     path("seller/create/", views.create_store, name="store-create"),
     path("seller/my-store/", views.my_store, name="my-store"),
     path("seller/stats/", views.store_stats, name="store-stats"),
+    path("seller/analytics/", views.store_analytics, name="store-analytics"),
 ]

@@ -10,6 +10,7 @@ as the ``{code, message, details, request_id}`` envelope all ``/api/`` failures
 share. Status codes are unchanged; only the body shape moved.
 """
 
+from django.db.models import Prefetch, prefetch_related_objects
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,7 +18,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.products.models import Product
+from apps.products.models import nested_product_queryset
 from apps.users.permissions import IsStoreOwner
 from core.exceptions import ApiError
 from core.idempotency import idempotency_key
@@ -33,6 +34,37 @@ from .serializers import (
     UpdateCartItemSerializer,
 )
 from .services import place_order, refresh_cart_prices, stock_error_for
+
+
+def _cart_with_products(user):
+    """The buyer's cart with its nested products annotated.
+
+    A cart line embeds the full product payload, so without the ``Prefetch``
+    each line re-reads its product and re-aggregates stock and rating one
+    query at a time — five queries per line instead of three for the whole
+    cart.
+    """
+    return Cart.objects.prefetch_related(
+        Prefetch("items__product", queryset=nested_product_queryset(user))
+    ).get_or_create(user=user)[0]
+
+
+def _annotated_product(product_id, user):
+    """One product, annotated exactly as the nested serializer needs.
+
+    Reads the same fields the catalogue does, so it needs the same
+    annotations; used for the single-line responses where there is no list
+    to put a ``Prefetch`` on.
+    """
+    return nested_product_queryset(user).filter(id=product_id).first()
+
+
+def _orders_for_render(orders, user):
+    """Populate the item caches of already-fetched orders before serializing."""
+    prefetch_related_objects(
+        orders, Prefetch("items__product", queryset=nested_product_queryset(user))
+    )
+    return orders
 
 
 def _ensure_sellable(product, quantity, attributes):
@@ -54,8 +86,7 @@ def _ensure_sellable(product, quantity, attributes):
 @permission_classes([IsAuthenticated])
 def get_cart(request):
     """Get user's cart"""
-    cart, _created = Cart.objects.get_or_create(user=request.user)
-    serializer = CartSerializer(cart)
+    serializer = CartSerializer(_cart_with_products(request.user))
     return Response(serializer.data)
 
 
@@ -74,10 +105,9 @@ def add_to_cart(request):
 
     # The serializer already validated existence + availability; re-read with
     # the same filter so a product deleted mid-request answers 400, not 500.
-    product = Product.objects.filter(
-        id=serializer.validated_data["product_id"], is_available=True
-    ).first()
-    if product is None:
+    # Annotated rather than bare: the 201/200 body embeds the full product.
+    product = _annotated_product(serializer.validated_data["product_id"], request.user)
+    if product is None or not product.is_available:
         raise ProductUnavailableError("Product not found or not available")
 
     quantity = serializer.validated_data["quantity"]
@@ -94,6 +124,9 @@ def add_to_cart(request):
     if existing is not None:
         existing.quantity = desired_quantity
         existing.save(update_fields=["quantity", "updated_at"])
+        # Hand the serializer the annotated instance instead of making it
+        # re-read the row we already have.
+        existing.product = product
         return Response(CartItemSerializer(existing).data, status=status.HTTP_200_OK)
 
     cart_item = CartItem.objects.create(
@@ -130,6 +163,8 @@ def update_cart_item(request, item_id):
     cart_item.quantity = quantity
     cart_item.save(update_fields=["quantity", "updated_at"])
 
+    # Same reason as add_to_cart: the response body embeds the product.
+    cart_item.product = _annotated_product(cart_item.product_id, request.user) or cart_item.product
     return Response(CartItemSerializer(cart_item).data)
 
 
@@ -172,9 +207,12 @@ def update_cart_prices(request):
     Checkout refuses to charge a stale price (docs/todo.md Phase 6); this is
     the recovery endpoint the "price changed" UI calls before retrying.
     """
-    cart, _created = Cart.objects.get_or_create(user=request.user)
+    cart = _cart_with_products(request.user)  # also creates the cart if the buyer has none yet
     updated = refresh_cart_prices(request.user)
-    cart.refresh_from_db()
+    # Re-read rather than ``cart.refresh_from_db()``: that drops the prefetch
+    # cache the nested products came from, which would put the N+1 straight
+    # back into the response we are about to build.
+    cart = _cart_with_products(request.user)
     return Response(
         {"updated": updated, "cart": CartSerializer(cart).data},
         status=status.HTTP_200_OK,
@@ -213,7 +251,7 @@ def checkout(request):
     return Response(
         {
             "message": "Order(s) placed successfully",
-            "orders": OrderSerializer(orders, many=True).data,
+            "orders": OrderSerializer(_orders_for_render(orders, request.user), many=True).data,
             "idempotent_replay": is_replay,
         },
         status=status.HTTP_201_CREATED,
@@ -229,7 +267,9 @@ class OrderListView(generics.ListAPIView):
     def get_queryset(self):
         return (
             Order.objects.filter(user=self.request.user)
-            .prefetch_related("items", "items__product")
+            .prefetch_related(
+                Prefetch("items__product", queryset=nested_product_queryset(self.request.user))
+            )
             .select_related("store", "shipping_address")
         )
 
@@ -243,7 +283,9 @@ class OrderDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         return (
             Order.objects.filter(user=self.request.user)
-            .prefetch_related("items", "items__product")
+            .prefetch_related(
+                Prefetch("items__product", queryset=nested_product_queryset(self.request.user))
+            )
             .select_related("store", "shipping_address")
         )
 
@@ -260,7 +302,9 @@ class SellerOrderListView(generics.ListAPIView):
 
         return (
             Order.objects.filter(store=self.request.user.store)
-            .prefetch_related("items", "items__product")
+            .prefetch_related(
+                Prefetch("items__product", queryset=nested_product_queryset(self.request.user))
+            )
             .select_related("shipping_address")
         )
 
@@ -288,4 +332,4 @@ def update_order_status(request, order_id):
 
     order.save()
 
-    return Response(OrderSerializer(order).data)
+    return Response(OrderSerializer(_orders_for_render([order], request.user)[0]).data)

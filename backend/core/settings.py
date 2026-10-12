@@ -321,6 +321,9 @@ REST_FRAMEWORK = {
         "apps.users.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly",),
+    # Page numbers, which is what an order history or an audit trail needs
+    # (people jump to page 3). The endless feeds opt into keyset pagination
+    # per view instead — see core/pagination.py (Phase 10).
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     # Phase 9 — one error shape for every failure the DRF views raise
@@ -382,6 +385,21 @@ CACHES = {
         "LOCATION": env_str("CACHE_LOCATION", "markethub"),
     }
 }
+
+# ---------------------------------------------------------------------------
+# django-debug-toolbar (Phase 10) — opt-in, dev-only
+# ---------------------------------------------------------------------------
+# The SQL panel is how the query ceilings in tests/test_query_performance.py
+# get *explained*: it lists every query a request made, with timings and the
+# stack trace that issued each one. Off unless asked for (DEBUG_TOOLBAR=1) and
+# even then it only renders when DEBUG is on and the request comes from
+# INTERNAL_IPS, so tests, CI and production never import it — the app starts
+# the same whether or not the package is installed.
+# Install with: pip install -r requirements-dev.txt
+if DEBUG and env_bool("DEBUG_TOOLBAR", default=False):
+    INSTALLED_APPS += ["debug_toolbar"]
+    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware", *MIDDLEWARE]
+    INTERNAL_IPS = ["127.0.0.1", "localhost"]
 
 # ---------------------------------------------------------------------------
 # CORS Settings

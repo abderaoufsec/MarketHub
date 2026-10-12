@@ -45,7 +45,10 @@ def test_product_list_is_public(api_client, product, inventory):
     response = api_client.get(LIST_URL)
 
     assert response.status_code == 200
-    assert response.data["count"] == 1
+    # Cursor-paginated (Phase 10), so pages carry no ``count`` — GitHub and
+    # Stripe style. The page envelope itself is asserted in
+    # tests/test_query_performance.py.
+    assert len(response.data["results"]) == 1
     result = response.data["results"][0]
     assert result["name"] == product.name
     assert result["store_name"] == product.store.store_name
@@ -81,7 +84,7 @@ def test_product_list_hides_unavailable_and_inactive_store(api_client, store):
 
     response = api_client.get(LIST_URL)
 
-    assert response.data["count"] == 0
+    assert response.data["results"] == []
 
 
 def test_product_detail_includes_images_and_reviews(api_client, product, buyer):
@@ -123,10 +126,12 @@ def test_search_by_query_category_and_price(api_client, store):
     ProductFactory(store=store, name="Desk Lamp", category="home", base_price=2000)
 
     response = api_client.get(SEARCH_URL, {"q": "galaxy", "category": "phones"})
-    assert {p["name"] for p in response.data} == {"Galaxy S24", "Galaxy A15"}
+    # Cursor-paginated like the catalogue (Phase 10): search used to return
+    # every match in one unpaginated response.
+    assert {p["name"] for p in response.data["results"]} == {"Galaxy S24", "Galaxy A15"}
 
     priced = api_client.get(SEARCH_URL, {"min_price": 20000})
-    assert [p["name"] for p in priced.data] == ["Galaxy S24"]
+    assert [p["name"] for p in priced.data["results"]] == ["Galaxy S24"]
 
 
 def test_search_in_stock_filter(api_client, store):
@@ -136,7 +141,7 @@ def test_search_in_stock_filter(api_client, store):
 
     response = api_client.get(SEARCH_URL, {"in_stock": "true"})
 
-    assert [p["name"] for p in response.data] == ["Has stock"]
+    assert [p["name"] for p in response.data["results"]] == ["Has stock"]
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +281,7 @@ def test_review_list_shows_only_approved(buyer_client, product, buyer):
     response = buyer_client.get(f"{LIST_URL}{product.id}/reviews/")
 
     assert response.status_code == 200
-    assert response.data["count"] == 1
+    assert len(response.data["results"]) == 1
 
 
 def test_create_review_and_duplicate_guard(buyer_client, product, buyer):
@@ -320,7 +325,7 @@ def test_my_reviews_lists_own_reviews(buyer_client, product, buyer):
     listed = buyer_client.get(MY_REVIEWS_URL)
 
     assert listed.status_code == 200
-    assert listed.data["count"] == 1
+    assert len(listed.data["results"]) == 1
 
 
 def test_owner_can_delete_own_review(buyer_client, product, buyer):
@@ -385,7 +390,7 @@ def test_wishlist_flow(buyer_client, product):
     assert check.data["is_wishlisted"] is True
 
     listed = buyer_client.get(WISHLIST_URL)
-    assert listed.data["count"] == 1
+    assert len(listed.data["results"]) == 1
 
     removed = buyer_client.delete(f"{LIST_URL}wishlist/remove/{product.id}/")
     assert removed.status_code == 200
@@ -424,4 +429,4 @@ def test_wishlist_is_per_user(buyer_client, product, buyer):
     response = buyer_client.get(WISHLIST_URL)
 
     assert response.status_code == 200
-    assert response.data["count"] == 0
+    assert response.data["results"] == []

@@ -41,8 +41,12 @@ class Store(models.Model):
         db_table = "stores"
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["store_slug"]),
-            models.Index(fields=["category"]),
+            # The two real filters, each paired with the ordering every store
+            # list uses. ``store_slug`` is dropped here: SlugField already
+            # carries db_index=True, so this was a second index on the same
+            # column that every store write had to maintain.
+            models.Index(fields=["is_active", "-created_at"], name="stores_active_newest"),
+            models.Index(fields=["category", "-created_at"], name="stores_category_newest"),
         ]
 
     def __str__(self):

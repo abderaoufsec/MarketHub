@@ -29,7 +29,8 @@ def test_store_list_is_public(api_client, store):
     response = api_client.get(LIST_URL)
 
     assert response.status_code == 200
-    assert response.data["count"] == 1
+    # Cursor-paginated (Phase 10): no ``count`` on a feed page.
+    assert len(response.data["results"]) == 1
     assert response.data["results"][0]["store_slug"] == store.store_slug
 
 

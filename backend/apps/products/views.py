@@ -10,9 +10,11 @@ from rest_framework.response import Response
 from apps.users.permissions import IsListingOwner, IsStoreOwner
 from core.exceptions import ApiError
 from core.idempotency import IdempotentPostMixin
+from core.pagination import FeedCursorPagination, WishlistCursorPagination
 
 from .models import Product, ProductReview, Wishlist
 from .serializers import (
+    PaginatedProductListSerializer,
     ProductCreateUpdateSerializer,
     ProductListSerializer,
     ProductReviewCreateSerializer,
@@ -32,12 +34,17 @@ class ProductListView(generics.ListAPIView):
     search_fields = ["name", "description", "category"]
     ordering_fields = ["created_at", "base_price", "name"]
     ordering = ["-created_at"]
+    #: The catalogue is the feed people scroll, and it is the endpoint that
+    #: has to survive 100k+ rows — keyset, not offset (core.pagination).
+    pagination_class = FeedCursorPagination
 
     def get_queryset(self):
         queryset = (
             Product.objects.filter(is_available=True, store__is_active=True)
             .select_related("store")
             .prefetch_related("images")
+            .with_catalog_stats()
+            .for_user(self.request.user)
         )
 
         # Custom price range filter
@@ -65,6 +72,8 @@ class ProductDetailView(generics.RetrieveAPIView):
             .get_queryset()
             .select_related("store")
             .prefetch_related("images", "attributes", "reviews__user")
+            .with_catalog_stats()
+            .for_user(self.request.user)
         )
 
 
@@ -77,6 +86,8 @@ def featured_products(request):
         Product.objects.filter(is_available=True, store__is_active=True)
         .select_related("store")
         .prefetch_related("images")
+        .with_catalog_stats()
+        .for_user(request.user)
         .order_by("-created_at")[:12]
     )
 
@@ -94,8 +105,12 @@ class SellerProductListView(generics.ListAPIView):
         if not self.request.user.is_seller or not hasattr(self.request.user, "store"):
             return Product.objects.none()
 
-        return Product.objects.filter(store=self.request.user.store).prefetch_related(
-            "images", "attributes", "inventory"
+        return (
+            Product.objects.filter(store=self.request.user.store)
+            .select_related("store")
+            .prefetch_related("images", "attributes", "inventory")
+            .with_catalog_stats()
+            .for_user(self.request.user)
         )
 
 
@@ -139,7 +154,13 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         if not self.request.user.is_seller or not hasattr(self.request.user, "store"):
             return Product.objects.none()
 
-        return Product.objects.filter(store=self.request.user.store)
+        return (
+            Product.objects.filter(store=self.request.user.store)
+            .select_related("store")
+            .prefetch_related("images", "attributes")
+            .with_catalog_stats()
+            .for_user(self.request.user)
+        )
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -147,11 +168,16 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         return ProductCreateUpdateSerializer
 
 
-@extend_schema(responses={200: ProductListSerializer(many=True)})
+@extend_schema(responses={200: PaginatedProductListSerializer})
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def search_products(request):
-    """Advanced product search"""
+    """Advanced product search
+
+    Paginated like the catalogue: without it this endpoint returned the whole
+    matching catalogue in one response, which is exactly the failure mode
+    Phase 10 exists to remove.
+    """
     query = request.query_params.get("q", "")
     category = request.query_params.get("category")
     min_price = request.query_params.get("min_price")
@@ -162,6 +188,8 @@ def search_products(request):
         Product.objects.filter(is_available=True, store__is_active=True)
         .select_related("store")
         .prefetch_related("images")
+        .with_catalog_stats()
+        .for_user(request.user)
     )
 
     if query:
@@ -181,20 +209,31 @@ def search_products(request):
         products = products.filter(base_price__lte=max_price)
 
     if in_stock:
-        products = products.filter(id__in=[p.id for p in products if p.total_stock > 0])
+        # Filter on the annotation rather than materialising the whole
+        # queryset to pick ids out of it in Python: the old list
+        # comprehension ran one SUM per candidate row — one query per product
+        # in the catalogue — and then re-queried to filter on the ids.
+        products = products.filter(total_stock__gt=0)
 
-    serializer = ProductListSerializer(products, many=True, context={"request": request})
-    return Response(serializer.data)
+    paginator = FeedCursorPagination()
+    page = paginator.paginate_queryset(products, request)
+    serializer = ProductListSerializer(page, many=True, context={"request": request})
+    return paginator.get_paginated_response(serializer.data)
 
 
 # ==================== PRODUCT REVIEWS ====================
 
 
 class ProductReviewListView(generics.ListAPIView):
-    """List all reviews for a product"""
+    """List all reviews for a product
+
+    Keyset-paginated: a popular product accumulates reviews forever and this
+    is an endless scroll, not a table with a page 7 you jump back to.
+    """
 
     serializer_class = ProductReviewSerializer
     permission_classes = [AllowAny]
+    pagination_class = FeedCursorPagination
 
     def get_queryset(self):
         product_id = self.kwargs.get("product_id")
@@ -250,6 +289,7 @@ class UserReviewsListView(generics.ListAPIView):
 
     serializer_class = ProductReviewSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = FeedCursorPagination
 
     def get_queryset(self):
         return (
@@ -279,6 +319,7 @@ class WishlistListView(generics.ListAPIView):
 
     serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = WishlistCursorPagination
 
     def get_queryset(self):
         return (

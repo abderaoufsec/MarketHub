@@ -6,6 +6,7 @@ as the ``{code, message, details, request_id}`` envelope all ``/api/`` failures
 share. Status codes are unchanged; only the body shape moved.
 """
 
+from django.db.models import F
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -16,6 +17,7 @@ from rest_framework.response import Response
 from apps.products.models import Product
 from apps.users.permissions import IsStoreOwner
 from core.exceptions import ApiError
+from core.pagination import AuditCursorPagination
 
 from .models import Inventory, InventoryAuditLog
 from .serializers import InventoryAuditLogSerializer, InventorySerializer, InventoryUpdateSerializer
@@ -99,18 +101,28 @@ def low_stock_items(request):
         "product"
     )
 
-    # Filter low stock items
-    low_stock = [item for item in inventory_items if item.is_low_stock]
+    # Filter low stock items — in SQL. This used to materialise every
+    # inventory row the store had and test ``is_low_stock`` one at a time.
+    # The predicate is the one the ``is_low_stock`` property implements:
+    # more than zero left, but at or under the product's own threshold.
+    low_stock = inventory_items.filter(
+        stock_quantity__gt=0, stock_quantity__lte=F("product__low_stock_threshold")
+    )
 
     serializer = InventorySerializer(low_stock, many=True)
     return Response(serializer.data)
 
 
 class InventoryAuditLogListView(generics.ListAPIView):
-    """List inventory audit logs for seller's products"""
+    """List inventory audit logs for seller's products
+
+    Keyset-paginated: the log grows with every stock change and is scrolled
+    from the newest entry backwards.
+    """
 
     serializer_class = InventoryAuditLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = AuditCursorPagination
 
     def get_queryset(self):
         if not self.request.user.is_seller or not hasattr(self.request.user, "store"):

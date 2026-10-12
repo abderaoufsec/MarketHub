@@ -29,8 +29,17 @@ class StoreSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "store_slug", "created_at", "updated_at"]
 
-    def get_product_count(self, obj):
-        """Safely get product count"""
+    def get_product_count(self, obj) -> int:
+        """The ``product_count`` annotation when the queryset carries one.
+
+        The list and detail views annotate it, so a page of stores counts
+        products once instead of once per row; the fallback keeps the
+        single-store responses (create, ``my_store``) correct without
+        demanding the annotation everywhere.
+        """
+        annotated = obj.__dict__.get("product_count")
+        if annotated is not None:
+            return annotated
         try:
             return obj.products.count()
         except Exception:
