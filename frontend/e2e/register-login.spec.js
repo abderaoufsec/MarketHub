@@ -2,7 +2,8 @@
 // Registration creates an *unverified* account (login rejects it with 403),
 // so the journey registers a fresh user to prove the flow works end-to-end,
 // then logs in with the pre-verified account seeded by `manage.py seed_e2e`.
-const { test, expect } = require('@playwright/test')
+// The shared fixture pins `mh_locale=en` (Phase 11: default UI is French).
+const { test, expect } = require('./fixtures')
 
 const BUYER = {
   email: 'e2e-buyer@example.com',

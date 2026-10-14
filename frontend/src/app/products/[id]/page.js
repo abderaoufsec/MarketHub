@@ -18,8 +18,14 @@ import {
 import Link from 'next/link'
 import ReviewModal from '../../../components/product/ReviewModal'
 import toast from 'react-hot-toast'
+import { useLocale, useTranslations } from 'next-intl'
+import { intlLocale } from '../../../i18n/config'
+import { usePrice } from '../../../lib/currency'
 
 export default function ProductDetailPage() {
+  const t = useTranslations('products')
+  const locale = useLocale()
+  const price = usePrice()
   const params = useParams()
   const router = useRouter()
   const { isAuthenticated, isSeller } = useAuth()
@@ -88,15 +94,15 @@ export default function ProductDetailPage() {
       if (isWishlisted) {
         await wishlistAPI.remove(params.id)
         setIsWishlisted(false)
-        toast.success('Removed from wishlist')
+        toast.success(t('removedFromWishlist'))
       } else {
         await wishlistAPI.add(params.id)
         setIsWishlisted(true)
-        toast.success('Added to wishlist')
+        toast.success(t('addedToWishlist'))
       }
     } catch (error) {
       console.error('Error toggling wishlist:', error)
-      toast.error('Failed to update wishlist')
+      toast.error(t('wishlistError'))
     } finally {
       setWishlistLoading(false)
     }
@@ -111,7 +117,7 @@ export default function ProductDetailPage() {
     if (isSeller) {
       setCartMessage({
         type: 'error',
-        text: 'Sellers cannot add products to cart',
+        text: t('sellerCannotCart'),
       })
       setTimeout(() => setCartMessage(null), 3000)
       return
@@ -124,12 +130,12 @@ export default function ProductDetailPage() {
         quantity,
         selected_attributes: selectedAttributes,
       })
-      setCartMessage({ type: 'success', text: 'Product added to cart!' })
+      setCartMessage({ type: 'success', text: t('addedToCart') })
       setTimeout(() => setCartMessage(null), 3000)
     } catch (error) {
       setCartMessage({
         type: 'error',
-        text: apiErrorMessage(error, 'Failed to add to cart'),
+        text: apiErrorMessage(error, t('addToCartError')),
       })
       setTimeout(() => setCartMessage(null), 3000)
     } finally {
@@ -162,12 +168,12 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8 text-center">
-        <p className="text-gray-500 text-lg">Product not found</p>
+        <p className="text-gray-500 text-lg">{t('notFound')}</p>
         <Link
           href="/products"
           className="text-primary hover:text-secondary mt-4 inline-block"
         >
-          Back to Products
+          {t('backToProducts')}
         </Link>
       </div>
     )
@@ -182,11 +188,11 @@ export default function ProductDetailPage() {
       {/* Breadcrumb */}
       <nav className="mb-4 text-sm">
         <Link href="/" className="text-gray-500 hover:text-primary">
-          Home
+          {t('breadcrumb.home')}
         </Link>
         <span className="mx-2 text-gray-400">/</span>
         <Link href="/products" className="text-gray-500 hover:text-primary">
-          Products
+          {t('breadcrumb.products')}
         </Link>
         <span className="mx-2 text-gray-400">/</span>
         <span className="text-gray-900">{product.name}</span>
@@ -201,9 +207,9 @@ export default function ProductDetailPage() {
           }`}
         >
           {cartMessage.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <CheckCircle className="h-5 w-5 me-2 flex-shrink-0" />
           ) : (
-            <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <AlertCircle className="h-5 w-5 me-2 flex-shrink-0" />
           )}
           <span>{cartMessage.text}</span>
         </div>
@@ -258,7 +264,7 @@ export default function ProductDetailPage() {
             href={`/stores/${product.store?.store_slug}`}
             className="flex items-center text-gray-600 hover:text-primary mb-4 w-fit"
           >
-            <Store className="h-4 w-4 mr-1" />
+            <Store className="h-4 w-4 me-1" />
             <span className="text-sm">{product.store?.store_name}</span>
           </Link>
 
@@ -275,12 +281,11 @@ export default function ProductDetailPage() {
                   }`}
                 />
               ))}
-              <span className="ml-2 text-sm text-gray-600">
+              <span className="ms-2 text-sm text-gray-600">
                 {product.average_rating
                   ? product.average_rating.toFixed(1)
-                  : '0.0'}
-                ({product.review_count || 0}{' '}
-                {product.review_count === 1 ? 'review' : 'reviews'})
+                  : '0.0'}{' '}
+                ({t('reviewCount', { n: product.review_count || 0 })})
               </span>
             </div>
           </div>
@@ -292,11 +297,11 @@ export default function ProductDetailPage() {
           )}
 
           <div className="text-4xl font-bold text-primary mb-6">
-            ${parseFloat(product.base_price).toFixed(2)}
+            {price(product.base_price)}
           </div>
 
           <div className="mb-6 pb-6 border-b">
-            <h2 className="text-lg font-semibold mb-2">Description</h2>
+            <h2 className="text-lg font-semibold mb-2">{t('description')}</h2>
             <p className="text-gray-600 whitespace-pre-wrap">
               {product.description}
             </p>
@@ -304,7 +309,7 @@ export default function ProductDetailPage() {
 
           {product.attributes && product.attributes.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Options</h3>
+              <h3 className="text-lg font-semibold mb-3">{t('options')}</h3>
               <div className="space-y-4">
                 {product.attributes.map((attr) => (
                   <div key={attr.id}>
@@ -321,7 +326,9 @@ export default function ProductDetailPage() {
                       }
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
                     >
-                      <option value="">Select {attr.attribute_name}</option>
+                      <option value="">
+                        {t('selectAttribute', { name: attr.attribute_name })}
+                      </option>
                       <option value={attr.attribute_value}>
                         {attr.attribute_value}
                       </option>
@@ -334,7 +341,7 @@ export default function ProductDetailPage() {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Quantity
+              {t('quantity')}
             </label>
             <input
               type="number"
@@ -359,7 +366,7 @@ export default function ProductDetailPage() {
                 product.is_available ? 'text-green-600' : 'text-red-600'
               }
             >
-              {product.is_available ? 'In Stock' : 'Out of Stock'}
+              {product.is_available ? t('inStock') : t('outOfStock')}
             </span>
           </div>
 
@@ -370,7 +377,7 @@ export default function ProductDetailPage() {
               className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-5 w-5" />
-              {addingToCart ? 'Adding...' : 'Add to Cart'}
+              {addingToCart ? t('adding') : t('addToCart')}
             </button>
             <button
               onClick={toggleWishlist}
@@ -380,7 +387,9 @@ export default function ProductDetailPage() {
                   ? 'border-red-500 text-red-500 hover:bg-red-50'
                   : 'border-gray-300 hover:border-primary hover:text-primary'
               }`}
-              title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              title={
+                isWishlisted ? t('removeFromWishlist') : t('addToWishlist')
+              }
             >
               <Heart
                 className={`h-6 w-6 ${isWishlisted ? 'fill-red-500' : ''}`}
@@ -395,38 +404,40 @@ export default function ProductDetailPage() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 mb-4"
             >
               <MessageSquare className="h-5 w-5" />
-              {userReview ? 'Edit Your Review' : 'Write a Review'}
+              {userReview ? t('editYourReview') : t('writeReview')}
             </button>
           )}
 
           {isSeller && (
             <p className="text-sm text-gray-500 text-center">
-              Sellers cannot purchase products
+              {t('sellersCannotPurchase')}
             </p>
           )}
 
           {/* Additional Info */}
           <div className="mt-8 pt-6 border-t">
-            <h3 className="text-lg font-semibold mb-3">Product Information</h3>
+            <h3 className="text-lg font-semibold mb-3">
+              {t('productInformation')}
+            </h3>
             <dl className="space-y-2 text-sm">
               <div className="flex">
-                <dt className="text-gray-600 w-32">SKU:</dt>
+                <dt className="text-gray-600 w-32">{t('sku')}</dt>
                 <dd className="text-gray-900 font-medium">{product.id}</dd>
               </div>
               <div className="flex">
-                <dt className="text-gray-600 w-32">Category:</dt>
+                <dt className="text-gray-600 w-32">{t('categoryInfoLabel')}</dt>
                 <dd className="text-gray-900 font-medium">
-                  {product.category || 'General'}
+                  {product.category || t('general')}
                 </dd>
               </div>
               <div className="flex">
-                <dt className="text-gray-600 w-32">Availability:</dt>
+                <dt className="text-gray-600 w-32">{t('availability')}</dt>
                 <dd
                   className={`font-medium ${
                     product.is_available ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
-                  {product.is_available ? 'In Stock' : 'Out of Stock'}
+                  {product.is_available ? t('inStock') : t('outOfStock')}
                 </dd>
               </div>
             </dl>
@@ -437,7 +448,7 @@ export default function ProductDetailPage() {
       {/* Reviews Section */}
       <div className="mt-16 border-t pt-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Customer Reviews ({product.review_count || 0})
+          {t('customerReviews', { n: product.review_count || 0 })}
         </h2>
 
         {product.reviews && product.reviews.length > 0 ? (
@@ -464,7 +475,9 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
                     <p className="text-xs text-gray-500">
-                      {new Date(review.created_at).toLocaleDateString()}
+                      {new Intl.DateTimeFormat(intlLocale(locale), {
+                        dateStyle: 'medium',
+                      }).format(new Date(review.created_at))}
                     </p>
                   </div>
                 </div>
@@ -477,10 +490,8 @@ export default function ProductDetailPage() {
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 mb-2">No reviews yet</p>
-            <p className="text-sm text-gray-500">
-              Be the first to review this product
-            </p>
+            <p className="text-gray-600 mb-2">{t('noReviews')}</p>
+            <p className="text-sm text-gray-500">{t('beFirst')}</p>
           </div>
         )}
       </div>
@@ -488,13 +499,13 @@ export default function ProductDetailPage() {
       {/* Related Products Section */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          More from this store
+          {t('moreFromStore')}
         </h2>
         <Link
           href={`/stores/${product.store?.store_slug}`}
           className="text-primary hover:text-secondary"
         >
-          View all products from {product.store?.store_name} →
+          {t('viewAllFrom', { store: product.store?.store_name })} →
         </Link>
       </div>
 

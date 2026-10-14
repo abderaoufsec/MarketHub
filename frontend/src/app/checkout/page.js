@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { cartAPI, ordersAPI, addressesAPI } from '../../lib/api'
 import { apiErrorMessage, parseApiError } from '../../lib/errors'
-import { cartSubtotal, formatPrice } from '../../lib/cart'
+import { cartSubtotal, lineTotal } from '../../lib/cart'
+import { usePrice } from '../../lib/currency'
 import { useAuth } from '../../context/AuthContext'
+import LocationPicker from '../../components/common/LocationPicker'
 import {
   CreditCard,
   MapPin,
@@ -26,6 +29,9 @@ const newIdempotencyKey = () =>
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const t = useTranslations('checkout')
+  // Locale-aware DZD formatter (Phase 11) — replaces the old `$` hard-coding.
+  const formatPrice = usePrice()
   const { isAuthenticated } = useAuth()
   const [cart, setCart] = useState(null)
   const [addresses, setAddresses] = useState([])
@@ -40,10 +46,10 @@ export default function CheckoutPage() {
   const [shippingInfo, setShippingInfo] = useState({
     address_line1: '',
     address_line2: '',
-    city: '',
-    state_province: '',
-    postal_code: '',
-    country: '',
+    // Phase 11: the free-text city/state/postal trio is gone — an address is
+    // a street line plus a wilaya and an optional commune.
+    wilaya_id: null,
+    commune_id: null,
     is_default: false,
   })
 
@@ -65,7 +71,7 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Error fetching cart:', error)
-      setError('Failed to load cart')
+      setError(t('errors.loadCart'))
     } finally {
       setLoading(false)
     }
@@ -94,22 +100,20 @@ export default function CheckoutPage() {
 
     try {
       const response = await addressesAPI.create(shippingInfo)
-      toast.success('Address saved successfully')
+      toast.success(t('addressSaved'))
       await fetchAddresses()
       setSelectedAddressId(response.data.id)
       setShowNewAddressForm(false)
       setShippingInfo({
         address_line1: '',
         address_line2: '',
-        city: '',
-        state_province: '',
-        postal_code: '',
-        country: '',
+        wilaya_id: null,
+        commune_id: null,
         is_default: false,
       })
     } catch (error) {
       console.error('Error creating address:', error)
-      const errorMsg = apiErrorMessage(error, 'Failed to save address')
+      const errorMsg = apiErrorMessage(error, t('errors.saveAddress'))
       setError(errorMsg)
       toast.error(errorMsg)
     }
@@ -127,8 +131,11 @@ export default function CheckoutPage() {
     }
     const message =
       changes.length === 1
-        ? `${changes[0].product_name} is now ${formatPrice(changes[0].new_price)}. Review your total and place the order again.`
-        : 'Some prices changed while you were checking out. Review your total and place the order again.'
+        ? t('priceChanges.toastOne', {
+            name: changes[0].product_name,
+            price: formatPrice(changes[0].new_price),
+          })
+        : t('priceChanges.toastMany')
     toast.error(message, { duration: 6000 })
   }
 
@@ -140,7 +147,7 @@ export default function CheckoutPage() {
     try {
       // Validate cart has items
       if (!cart?.items || cart.items.length === 0) {
-        setError('Your cart is empty')
+        setError(t('errors.emptyCart'))
         return
       }
 
@@ -148,15 +155,9 @@ export default function CheckoutPage() {
       let addressId = selectedAddressId
 
       if (showNewAddressForm && !addressId) {
-        // Validate required fields
-        if (
-          !shippingInfo.address_line1 ||
-          !shippingInfo.city ||
-          !shippingInfo.state_province ||
-          !shippingInfo.postal_code ||
-          !shippingInfo.country
-        ) {
-          setError('Please fill in all required address fields')
+        // Validate required fields — street line + wilaya (commune optional).
+        if (!shippingInfo.address_line1 || !shippingInfo.wilaya_id) {
+          setError(t('errors.requiredAddressFields'))
           return
         }
 
@@ -165,7 +166,7 @@ export default function CheckoutPage() {
       }
 
       if (!addressId) {
-        setError('Please select or create a shipping address')
+        setError(t('errors.selectAddress'))
         return
       }
 
@@ -180,7 +181,7 @@ export default function CheckoutPage() {
 
       const orderId = response.data.orders?.[0]?.id
 
-      toast.success('Order placed — payment confirmed!')
+      toast.success(t('orderPlaced'))
       router.push(`/orders/${orderId}?success=true`)
     } catch (checkoutError) {
       console.error('Checkout error:', checkoutError)
@@ -194,10 +195,7 @@ export default function CheckoutPage() {
         return
       }
 
-      const errorMsg = apiErrorMessage(
-        checkoutError,
-        'Failed to process order. Please try again.'
-      )
+      const errorMsg = apiErrorMessage(checkoutError, t('errors.processOrder'))
       setError(errorMsg)
       toast.error(errorMsg)
     } finally {
@@ -231,23 +229,23 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">{t('title')}</h1>
 
       {priceChanges.length > 0 && (
         <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg">
           <p className="font-semibold flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            Prices have changed
+            <AlertCircle className="h-5 w-5 me-2" />
+            {t('priceChanges.title')}
           </p>
-          <p className="text-sm mt-1">
-            Nothing was ordered. Your cart now shows the current prices — review
-            the total and place the order again.
-          </p>
+          <p className="text-sm mt-1">{t('priceChanges.description')}</p>
           <ul className="mt-2 space-y-1 text-sm">
             {priceChanges.map((change) => (
               <li key={change.product_id}>
-                {change.product_name}: was {formatPrice(change.old_price)}, now{' '}
-                <strong>{formatPrice(change.new_price)}</strong>
+                {t('priceChanges.line', {
+                  name: change.product_name,
+                  oldPrice: formatPrice(change.old_price),
+                  newPrice: formatPrice(change.new_price),
+                })}
               </li>
             ))}
           </ul>
@@ -256,7 +254,7 @@ export default function CheckoutPage() {
 
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
-          <AlertCircle className="h-5 w-5 mr-2" />
+          <AlertCircle className="h-5 w-5 me-2" />
           <span>{error}</span>
         </div>
       )}
@@ -271,8 +269,8 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  Shipping Address
+                  <MapPin className="h-5 w-5 me-2" />
+                  {t('shippingAddress')}
                 </h2>
                 {!showNewAddressForm && (
                   <button
@@ -281,7 +279,7 @@ export default function CheckoutPage() {
                     className="flex items-center gap-2 text-sm text-primary hover:text-secondary"
                   >
                     <Plus className="h-4 w-4" />
-                    Add New Address
+                    {t('addNewAddress')}
                   </button>
                 )}
               </div>
@@ -317,7 +315,7 @@ export default function CheckoutPage() {
                               </span>
                               {address.is_default && (
                                 <span className="px-2 py-0.5 text-xs bg-primary text-white rounded">
-                                  Default
+                                  {t('defaultBadge')}
                                 </span>
                               )}
                             </div>
@@ -327,11 +325,9 @@ export default function CheckoutPage() {
                               </p>
                             )}
                             <p className="text-sm text-gray-600">
-                              {address.city}, {address.state_province}{' '}
-                              {address.postal_code}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {address.country}
+                              {[address.commune?.name, address.wilaya?.name]
+                                .filter(Boolean)
+                                .join(', ')}
                             </p>
                           </div>
                           {selectedAddressId === address.id && (
@@ -342,7 +338,7 @@ export default function CheckoutPage() {
                     ))
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      <p>No saved addresses. Please add a shipping address.</p>
+                      <p>{t('noAddresses')}</p>
                     </div>
                   )}
                 </div>
@@ -351,7 +347,8 @@ export default function CheckoutPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address Line 1 *
+                      {t('addressForm.addressLine1')}
+                      <span className="text-red-500"> *</span>
                     </label>
                     <input
                       type="text"
@@ -360,12 +357,12 @@ export default function CheckoutPage() {
                       value={shippingInfo.address_line1}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-                      placeholder="Street address"
+                      placeholder={t('addressForm.streetPlaceholder')}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address Line 2
+                      {t('addressForm.addressLine2')}
                     </label>
                     <input
                       type="text"
@@ -373,62 +370,24 @@ export default function CheckoutPage() {
                       value={shippingInfo.address_line2}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-                      placeholder="Apartment, suite, etc. (optional)"
+                      placeholder={t('addressForm.addressLine2Placeholder')}
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
+                    {/* Phase 11: wilaya → commune picker instead of free-text
+                        city/province/postal/country. */}
+                    <div className="md:col-span-2">
+                      <LocationPicker
+                        wilayaId={shippingInfo.wilaya_id}
+                        communeId={shippingInfo.commune_id}
+                        onChange={({ wilayaId, communeId }) =>
+                          setShippingInfo((prev) => ({
+                            ...prev,
+                            wilaya_id: wilayaId,
+                            commune_id: communeId,
+                          }))
+                        }
                         required
-                        value={shippingInfo.city}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        State/Province *
-                      </label>
-                      <input
-                        type="text"
-                        name="state_province"
-                        required
-                        value={shippingInfo.state_province}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Postal Code *
-                      </label>
-                      <input
-                        type="text"
-                        name="postal_code"
-                        required
-                        value={shippingInfo.postal_code}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Country *
-                      </label>
-                      <input
-                        type="text"
-                        name="country"
-                        required
-                        value={shippingInfo.country}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
                       />
                     </div>
                   </div>
@@ -443,14 +402,14 @@ export default function CheckoutPage() {
                     />
                     <label
                       htmlFor="is_default"
-                      className="ml-2 text-sm text-gray-700"
+                      className="ms-2 text-sm text-gray-700"
                     >
-                      Set as default address
+                      {t('addressForm.setAsDefault')}
                     </label>
                   </div>
                   <div className="flex gap-3">
                     <button type="submit" className="btn-primary flex-1">
-                      Save Address
+                      {t('addressForm.save')}
                     </button>
                     <button
                       type="button"
@@ -459,16 +418,14 @@ export default function CheckoutPage() {
                         setShippingInfo({
                           address_line1: '',
                           address_line2: '',
-                          city: '',
-                          state_province: '',
-                          postal_code: '',
-                          country: '',
+                          wilaya_id: null,
+                          commune_id: null,
                           is_default: false,
                         })
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
-                      Cancel
+                      {t('addressForm.cancel')}
                     </button>
                   </div>
                 </div>
@@ -479,8 +436,8 @@ export default function CheckoutPage() {
             {!showNewAddressForm && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Payment Method
+                  <CreditCard className="h-5 w-5 me-2" />
+                  {t('payment.title')}
                 </h2>
 
                 <div className="space-y-3 mb-4">
@@ -494,15 +451,16 @@ export default function CheckoutPage() {
                       className="h-4 w-4 text-primary"
                     />
                     <CreditCard className="h-5 w-5 mx-3 text-primary" />
-                    <span className="font-medium">Credit/Debit Card</span>
+                    <span className="font-medium">
+                      {t('payment.creditCard')}
+                    </span>
                   </label>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
                   <p className="text-sm">
-                    <strong>🔒 Simulated Payment:</strong> This is a demo
-                    payment system. No real payment will be processed. Placing
-                    the order charges it and confirms it in one step.
+                    <strong>{t('payment.simulatedTitle')}</strong>{' '}
+                    {t('payment.simulatedBody')}
                   </p>
                 </div>
               </div>
@@ -514,8 +472,8 @@ export default function CheckoutPage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Package className="h-5 w-5 mr-2" />
-                  Order Summary
+                  <Package className="h-5 w-5 me-2" />
+                  {t('summary.title')}
                 </h2>
 
                 <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
@@ -534,18 +492,14 @@ export default function CheckoutPage() {
                           {item.product?.name}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Qty: {item.quantity} × $
-                          {parseFloat(item.price_at_time_of_addition).toFixed(
-                            2
-                          )}
+                          {t('summary.lineQuantity', {
+                            qty: item.quantity,
+                            price: formatPrice(item.price_at_time_of_addition),
+                          })}
                         </p>
                       </div>
                       <p className="text-sm font-semibold">
-                        $
-                        {(
-                          parseFloat(item.price_at_time_of_addition) *
-                          item.quantity
-                        ).toFixed(2)}
+                        {formatPrice(lineTotal(item))}
                       </p>
                     </div>
                   ))}
@@ -553,26 +507,30 @@ export default function CheckoutPage() {
 
                 <div className="border-t pt-4 space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-600">
+                      {t('summary.subtotal')}
+                    </span>
                     <span className="font-semibold">
-                      ${getTotal().toFixed(2)}
+                      {formatPrice(getTotal())}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Shipping</span>
-                    <span className="font-semibold">Free</span>
+                    <span className="text-gray-600">
+                      {t('summary.shipping')}
+                    </span>
+                    <span className="font-semibold">{t('summary.free')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="font-semibold">$0.00</span>
+                    <span className="text-gray-600">{t('summary.tax')}</span>
+                    <span className="font-semibold">{formatPrice(0)}</span>
                   </div>
                 </div>
 
                 <div className="border-t pt-4 mb-6">
                   <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
+                    <span>{t('summary.total')}</span>
                     <span className="text-primary">
-                      ${getTotal().toFixed(2)}
+                      {formatPrice(getTotal())}
                     </span>
                   </div>
                 </div>
@@ -585,16 +543,15 @@ export default function CheckoutPage() {
                   {processing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing Order…
+                      {t('summary.processing')}
                     </>
                   ) : (
-                    'Place Order & Pay'
+                    t('summary.placeOrder')
                   )}
                 </button>
 
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  By placing your order, you agree to our Terms of Service and
-                  Privacy Policy.
+                  {t('summary.termsNote')}
                 </p>
               </div>
             </div>

@@ -1,3 +1,10 @@
+const createNextIntlPlugin = require('next-intl/plugin')
+
+// Phase 11: registers src/i18n/request.js with next-intl's React Server
+// layer (locale + messages for server renders; no i18n routing — the locale
+// lives in the mh_locale cookie, see the request config's docstring).
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.js')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -26,4 +33,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withNextIntl(nextConfig)

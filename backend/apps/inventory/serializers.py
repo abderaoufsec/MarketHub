@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from core.i18n import choice_label
+
 from .models import Inventory, InventoryAuditLog
 
 
@@ -30,6 +32,7 @@ class InventoryAuditLogSerializer(serializers.ModelSerializer):
     """Serializer for InventoryAuditLog model"""
 
     product_name = serializers.CharField(source="product.name", read_only=True)
+    action_type_label = serializers.SerializerMethodField()
 
     class Meta:
         model = InventoryAuditLog
@@ -40,12 +43,16 @@ class InventoryAuditLogSerializer(serializers.ModelSerializer):
             "inventory",
             "quantity_delta",
             "action_type",
+            "action_type_label",
             "reason",
             "previous_quantity",
             "new_quantity",
             "timestamp",
         ]
         read_only_fields = ["id", "timestamp"]
+
+    def get_action_type_label(self, obj) -> str:
+        return choice_label(InventoryAuditLog.ACTION_CHOICES, obj.action_type)
 
 
 class InventoryUpdateSerializer(serializers.Serializer):

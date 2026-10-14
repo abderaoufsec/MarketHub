@@ -1,0 +1,707 @@
+{
+  "common": {
+    "nav": {
+      "products": "Products",
+      "stores": "Stores",
+      "dashboard": "Dashboard",
+      "wishlist": "Wishlist",
+      "cart": "Cart",
+      "profile": "Profile",
+      "orders": "Orders",
+      "login": "Login",
+      "register": "Register",
+      "logout": "Logout",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "footer": {
+      "tagline": "Your trusted online marketplace connecting buyers and sellers.",
+      "quickLinks": "Quick Links",
+      "forSellers": "For Sellers",
+      "contact": "Contact",
+      "aboutUs": "About Us",
+      "becomeSeller": "Become a Seller",
+      "sellerDashboard": "Seller Dashboard",
+      "sellerHelp": "Seller Help",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "rights": "© {year} MarketHub. All rights reserved."
+    },
+    "preferences": {
+      "language": "Language",
+      "priceDisplay": "Price display",
+      "priceStandard": "Standard (DZD)",
+      "priceMillions": "Millions (centimes)",
+      "title": "Preferences"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "back": "Back",
+      "search": "Search",
+      "loading": "Loading…",
+      "retry": "Retry"
+    },
+    "states": {
+      "error": "Something went wrong. Please try again.",
+      "notFound": "This page could not be found.",
+      "empty": "Nothing here yet."
+    }
+  },
+  "geography": {
+    "wilaya": "Wilaya",
+    "commune": "Commune",
+    "selectWilaya": "Select a wilaya",
+    "selectCommune": "Select a commune",
+    "loadingWilayas": "Loading wilayas…",
+    "loadingCommunes": "Loading communes…",
+    "communeNeedsWilaya": "Choose a wilaya first",
+    "loadError": "Could not load location data. Please retry."
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in to your account",
+      "noAccount": "Or <link>create a new account</link>",
+      "modePassword": "Password",
+      "modeSms": "SMS code",
+      "emailOrPhoneLabel": "Email or phone number",
+      "emailPlaceholder": "Email address",
+      "phoneHint": "Phone sign-in works with a verified Algerian number (+213…).",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot your password?",
+      "signingIn": "Signing in...",
+      "signIn": "Sign in",
+      "phoneLabel": "Phone number",
+      "codeLabel": "Verification code",
+      "sentTo": "Sent to {phone}.",
+      "changeNumber": "Change number",
+      "working": "Working...",
+      "signInWithCode": "Sign in with code",
+      "sendSmsCode": "Send SMS code",
+      "otpHint": "No password needed — the code signs you in.",
+      "welcomeBack": "Welcome back, {name}!",
+      "friend": "friend",
+      "loginFailed": "Login failed",
+      "unexpectedError": "An unexpected error occurred",
+      "codeSent": "Code sent. It expires in 5 minutes.",
+      "sendCodeFailed": "Could not send the code.",
+      "invalidCode": "That code is invalid or has expired. Try again."
+    },
+    "register": {
+      "title": "Create your account",
+      "titleSeller": "Create your seller account",
+      "haveAccount": "Already have an account? <link>Sign in</link>",
+      "firstNameLabel": "First Name",
+      "lastNameLabel": "Last Name",
+      "emailLabel": "Email address <hint>(Optional if you use a phone)</hint>",
+      "emailPlaceholder": "Email address",
+      "usernameLabel": "Username",
+      "phoneLabel": "Phone Number <hint>(Optional)</hint>",
+      "phonePlaceholder": "Phone number",
+      "otpHint": "Verify the number by SMS — required when signing up without an email address.",
+      "otpSend": "Send code",
+      "otpSending": "Sending...",
+      "otpResend": "Resend code",
+      "smsCodeLabel": "SMS code",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Password (min. 8 characters)",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "asSeller": "Register as a seller",
+      "creating": "Creating account...",
+      "createAccount": "Create account",
+      "terms": "By creating an account, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>",
+      "successTitle": "Registration Successful!",
+      "redirecting": "Redirecting to login page...",
+      "checkEmail": "Please check your email to verify your account.",
+      "phoneVerified": "Your phone number has been verified. You can now sign in.",
+      "created": "Account created successfully! {message}",
+      "enterPhoneFirst": "Enter a phone number first",
+      "otpSent": "Verification code sent by SMS",
+      "otpSendFailed": "Could not send the SMS code",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "needEmailOrPhone": "Provide an email address or a phone number",
+      "enterOtp": "Enter the SMS code sent to your phone",
+      "passwordTooShort": "Password must be at least 8 characters long",
+      "failed": "Registration failed. Please try again.",
+      "unexpectedError": "An unexpected error occurred. Please try again."
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "remembered": "Remembered it? <link>Back to sign in</link>",
+      "modeEmail": "By email",
+      "modeSms": "By SMS code",
+      "checkInbox": "Check your inbox",
+      "emailSent": "If an account exists for <mail>{email}</mail>, a reset link is on its way. The link expires in 24 hours.",
+      "backToSignIn": "Back to sign in",
+      "emailLabel": "Email address",
+      "sendResetLink": "Send reset link",
+      "phoneLabel": "Phone number",
+      "phoneHint": "The number you registered with, in Algerian format.",
+      "otpNotice": "We sent a 6-digit code to that number. It expires in 5 minutes.",
+      "codeLabel": "Verification code",
+      "newPasswordLabel": "New password",
+      "passwordPlaceholder": "Password (min. 8 characters)",
+      "confirmPasswordLabel": "Confirm new password",
+      "confirmPasswordPlaceholder": "Repeat the new password",
+      "resetPassword": "Reset password",
+      "sendSmsCode": "Send SMS code",
+      "changeNumber": "Use a different number",
+      "noAccount": "No account yet? <link>Create one</link>",
+      "invalidEmail": "Please enter a valid email address.",
+      "codeSent": "If that number has an account, a code is on its way.",
+      "sendCodeFailed": "Could not send the code.",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "resetDone": "Password reset. You can sign in now.",
+      "invalidCode": "That code is invalid or has expired."
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "subtitle": "This link works once and expires in 24 hours.",
+      "missingTitle": "Missing reset link",
+      "missingBody": "This page must be opened from the link in your email — it does not contain the reset token.",
+      "requestNewLink": "Request a new link",
+      "doneTitle": "Password updated",
+      "doneBody": "Every other session was signed out for safety. Redirecting you to sign in…",
+      "newPasswordLabel": "New password",
+      "passwordPlaceholder": "Password (min. 8 characters)",
+      "confirmPasswordLabel": "Confirm new password",
+      "confirmPasswordPlaceholder": "Repeat the new password",
+      "submit": "Set new password",
+      "linkExpired": "Link expired? <link>Request a new one</link>",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "resetDone": "Password reset. You can sign in now.",
+      "invalidLink": "This reset link is invalid or has expired. Request a new one."
+    },
+    "verify": {
+      "verifyingTitle": "Verifying your email…",
+      "verifyingBody": "One moment while we confirm your address.",
+      "verifiedTitle": "Email verified!",
+      "verifiedMessage": "Your email address is verified — you can sign in now.",
+      "signIn": "Sign in",
+      "failedTitle": "Verification failed",
+      "invalidLink": "This verification link is invalid or has expired.",
+      "resentMessage": "If that account still needs verification, a new link is on its way.",
+      "emailPlaceholder": "Your email address",
+      "resend": "Resend verification email",
+      "backToSignIn": "Back to sign in"
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": {
+      "title": "Your cart is empty",
+      "text": "Start shopping to add items to your cart",
+      "browseProducts": "Browse Products"
+    },
+    "item": {
+      "unitPrice": "{price} each",
+      "decreaseQuantity": "Decrease quantity",
+      "increaseQuantity": "Increase quantity",
+      "remove": "Remove"
+    },
+    "summary": {
+      "title": "Order Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "free": "Free",
+      "estimatedTax": "Estimated Tax",
+      "total": "Total",
+      "checkout": "Proceed to Checkout",
+      "continueShopping": "Continue Shopping"
+    }
+  },
+  "checkout": {
+    "title": "Checkout",
+    "shippingAddress": "Shipping Address",
+    "addNewAddress": "Add New Address",
+    "defaultBadge": "Default",
+    "noAddresses": "No saved addresses. Please add a shipping address.",
+    "addressSaved": "Address saved successfully",
+    "orderPlaced": "Order placed — payment confirmed!",
+    "addressForm": {
+      "addressLine1": "Address Line 1",
+      "streetPlaceholder": "Street address",
+      "addressLine2": "Address Line 2",
+      "addressLine2Placeholder": "Apartment, suite, etc. (optional)",
+      "setAsDefault": "Set as default address",
+      "save": "Save Address",
+      "cancel": "Cancel"
+    },
+    "payment": {
+      "title": "Payment Method",
+      "creditCard": "Credit/Debit Card",
+      "simulatedTitle": "🔒 Simulated Payment:",
+      "simulatedBody": "This is a demo payment system. No real payment will be processed. Placing the order charges it and confirms it in one step."
+    },
+    "summary": {
+      "title": "Order Summary",
+      "lineQuantity": "Qty: {qty} × {price}",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "free": "Free",
+      "tax": "Tax",
+      "total": "Total",
+      "processing": "Processing Order…",
+      "placeOrder": "Place Order & Pay",
+      "termsNote": "By placing your order, you agree to our Terms of Service and Privacy Policy."
+    },
+    "priceChanges": {
+      "title": "Prices have changed",
+      "description": "Nothing was ordered. Your cart now shows the current prices — review the total and place the order again.",
+      "line": "{name}: was {oldPrice}, now {newPrice}",
+      "toastOne": "{name} is now {price}. Review your total and place the order again.",
+      "toastMany": "Some prices changed while you were checking out. Review your total and place the order again."
+    },
+    "errors": {
+      "loadCart": "Failed to load cart",
+      "saveAddress": "Failed to save address",
+      "emptyCart": "Your cart is empty",
+      "requiredAddressFields": "Please fill in all required address fields",
+      "selectAddress": "Please select or create a shipping address",
+      "processOrder": "Failed to process order. Please try again."
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Welcome to <brand>MarketHub</brand>",
+      "subtitle": "Your trusted online marketplace connecting buyers and sellers. Discover unique products or start selling today.",
+      "browseProducts": "Browse Products",
+      "becomeSeller": "Become a Seller"
+    },
+    "features": {
+      "title": "Why Choose MarketHub?",
+      "subtitle": "Experience the difference with our professional marketplace platform",
+      "selection": {
+        "title": "Wide Selection",
+        "description": "Browse thousands of products from verified sellers across multiple categories."
+      },
+      "security": {
+        "title": "Secure Shopping",
+        "description": "Shop with confidence knowing your transactions are protected and secure."
+      },
+      "selling": {
+        "title": "Easy Selling",
+        "description": "Start your online store quickly and manage your products with ease."
+      }
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "subtitle": "Join thousands of buyers and sellers on MarketHub today.",
+      "createAccount": "Create Your Account"
+    }
+  },
+  "orders": {
+    "title": "My Orders",
+    "subtitle": "Track and manage your orders",
+    "empty": {
+      "title": "No orders yet",
+      "text": "Start shopping to see your orders here",
+      "browseProducts": "Browse Products"
+    },
+    "orderNumber": "Order #{id}",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "soldBy": "Sold by:",
+    "viewDetails": "View Details",
+    "detail": {
+      "backToOrders": "Back to Orders",
+      "notFound": "Order not found",
+      "placedOn": "Placed on {date}",
+      "items": "Order Items",
+      "product": "Product",
+      "quantity": "Quantity: {count}",
+      "each": "each",
+      "shippingAddress": "Shipping Address",
+      "noShippingAddress": "No shipping address provided",
+      "summary": "Order Summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "standardShipping": "Standard",
+      "total": "Total",
+      "payment": "Payment",
+      "statusTitle": "Order Status",
+      "status": {
+        "PENDING": "Pending",
+        "PROCESSING": "Processing",
+        "SHIPPED": "Shipped",
+        "DELIVERED": "Delivered"
+      }
+    }
+  },
+  "products": {
+    "outOfStock": "Out of Stock",
+    "inStock": "In Stock",
+    "defaultStoreName": "MarketHub Store",
+    "title": "Browse Products",
+    "searchPlaceholder": "Search products...",
+    "filters": "Filters",
+    "categoryLabel": "Category",
+    "allCategories": "All Categories",
+    "categories": {
+      "electronics": "Electronics",
+      "clothing": "Clothing",
+      "home": "Home & Garden",
+      "sports": "Sports & Outdoors",
+      "books": "Books",
+      "toys": "Toys & Games"
+    },
+    "minPrice": "Min Price",
+    "maxPrice": "Max Price",
+    "inStockOnly": "In Stock Only",
+    "noResultsToast": "No products found matching your criteria",
+    "loadError": "Failed to load products. Please try again.",
+    "empty": {
+      "title": "No products found",
+      "clearFilters": "Clear filters"
+    },
+    "notFound": "Product not found",
+    "backToProducts": "Back to Products",
+    "breadcrumb": {
+      "home": "Home",
+      "products": "Products"
+    },
+    "addedToWishlist": "Added to wishlist",
+    "removedFromWishlist": "Removed from wishlist",
+    "wishlistError": "Failed to update wishlist",
+    "sellerCannotCart": "Sellers cannot add products to cart",
+    "addedToCart": "Product added to cart!",
+    "addToCartError": "Failed to add to cart",
+    "reviewCount": "{n, plural, one {# review} other {# reviews}}",
+    "description": "Description",
+    "options": "Options",
+    "selectAttribute": "Select {name}",
+    "quantity": "Quantity",
+    "adding": "Adding...",
+    "addToCart": "Add to Cart",
+    "removeFromWishlist": "Remove from Wishlist",
+    "addToWishlist": "Add to Wishlist",
+    "editYourReview": "Edit Your Review",
+    "writeReview": "Write a Review",
+    "sellersCannotPurchase": "Sellers cannot purchase products",
+    "productInformation": "Product Information",
+    "sku": "SKU:",
+    "categoryInfoLabel": "Category:",
+    "general": "General",
+    "availability": "Availability:",
+    "customerReviews": "Customer Reviews ({n})",
+    "noReviews": "No reviews yet",
+    "beFirst": "Be the first to review this product",
+    "moreFromStore": "More from this store",
+    "viewAllFrom": "View all products from {store}",
+    "editReview": "Edit Review",
+    "close": "Close",
+    "yourRating": "Your Rating *",
+    "ratings": {
+      "poor": "Poor",
+      "fair": "Fair",
+      "good": "Good",
+      "veryGood": "Very Good",
+      "excellent": "Excellent"
+    },
+    "yourReview": "Your Review *",
+    "commentPlaceholder": "Share your experience with this product...",
+    "minCharacters": "Minimum 10 characters",
+    "submitting": "Submitting...",
+    "updateReview": "Update Review",
+    "submitReview": "Submit Review",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "selectRating": "Please select a rating",
+    "writeComment": "Please write a review",
+    "updateSuccess": "Review updated successfully!",
+    "submitSuccess": "Review submitted successfully!",
+    "submitError": "Failed to submit review",
+    "deleteConfirm": "Are you sure you want to delete your review?",
+    "deleteSuccess": "Review deleted successfully!",
+    "deleteError": "Failed to delete review"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account information",
+    "sellerAccount": "Seller Account",
+    "personalInfo": "Personal Information",
+    "updateSuccess": "Profile updated successfully!",
+    "updateFailed": "Failed to update profile",
+    "fields": {
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Yacine",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Bensalem",
+      "email": "Email Address",
+      "emailLocked": "Email cannot be changed",
+      "phone": "Phone Number",
+      "phonePlaceholder": "+213 5XX XX XX XX",
+      "preferredLanguage": "Preferred language",
+      "preferredLanguageHint": "Used for the language of your emails and SMS notifications."
+    },
+    "save": {
+      "saving": "Saving…",
+      "submit": "Save Changes"
+    },
+    "security": {
+      "title": "Security",
+      "changePassword": "Change Password",
+      "changePasswordText": "Update your account password",
+      "change": "Change"
+    },
+    "actions": {
+      "title": "Account Actions",
+      "sellerDashboard": "Go to Seller Dashboard",
+      "sellerDashboardText": "Manage your store and products",
+      "orderHistory": "View Order History",
+      "orderHistoryText": "Check your past purchases"
+    }
+  },
+  "seller": {
+    "dashboard": {
+      "subtitle": "Seller Dashboard",
+      "notifications": "Notifications",
+      "storeSettings": "Store settings",
+      "newProduct": "New Product",
+      "tabs": {
+        "overview": "Overview",
+        "products": "Products",
+        "orders": "Orders"
+      },
+      "range": {
+        "label": "Date range",
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "last90": "Last 90 days",
+        "lastYear": "Last year"
+      },
+      "welcome": {
+        "title": "Welcome to MarketHub!",
+        "body": "You need to set up your store before you can start selling.",
+        "cta": "Set Up Your Store"
+      },
+      "alerts": {
+        "lowStock": "{count, plural, one {# product is running low on stock} other {# products are running low on stock}}",
+        "viewItems": "View Items →",
+        "pending": "{count, plural, one {# order pending fulfillment} other {# orders pending fulfillment}}",
+        "processOrders": "Process Orders →"
+      },
+      "stats": {
+        "revenue": "Total Revenue",
+        "orders": "Total Orders",
+        "listed": "Products Listed",
+        "avgOrder": "Avg Order Value",
+        "vsPrevious": "vs previous period"
+      },
+      "recentOrders": {
+        "title": "Recent Orders",
+        "pendingCount": "{count} pending fulfillment",
+        "search": "Search orders",
+        "filter": "Filter orders",
+        "viewAll": "View All",
+        "empty": "No orders yet. Orders will appear here when customers purchase your products.",
+        "viewDetails": "View Details →"
+      },
+      "recentProducts": {
+        "title": "Recent Products",
+        "subtitle": "Your latest listings",
+        "empty": "No products yet.",
+        "add": "Add Product",
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "view": "View",
+        "viewAll": "View All Products →"
+      },
+      "performance": {
+        "title": "Store Performance",
+        "active": "Active products",
+        "views": "Store Views",
+        "engagement": "Engagement rate",
+        "stockAlerts": "Stock Alerts",
+        "viewLowStock": "View low stock items →"
+      }
+    },
+    "products": {
+      "heading": "My Products",
+      "subtitle": "Manage your product listings",
+      "addNew": "Add New Product",
+      "searchPlaceholder": "Search products...",
+      "filters": {
+        "all": "All Products",
+        "available": "Available",
+        "outOfStock": "Out of Stock"
+      },
+      "emptyState": {
+        "noResults": "No products found",
+        "noneYet": "No products yet",
+        "noResultsHint": "Try adjusting your search terms",
+        "startHint": "Start by adding your first product",
+        "addFirst": "Add Your First Product"
+      },
+      "card": {
+        "price": "Price:",
+        "category": "Category:",
+        "viewPublic": "View Public",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "deleteConfirm": "Are you sure you want to delete this product?",
+      "deleteError": "Failed to delete product"
+    },
+    "create": {
+      "back": "Back to Products",
+      "title": "Add New Product",
+      "cancel": "Cancel",
+      "created": "Product created successfully!",
+      "createError": "Failed to create product",
+      "form": {
+        "name": "Product Name",
+        "namePlaceholder": "Enter product name",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe your product in detail",
+        "price": "Price (DZD)",
+        "category": "Category",
+        "categoryPlaceholder": "e.g., Electronics, Clothing, etc.",
+        "lowStock": "Low Stock Threshold",
+        "lowStockHint": "You'll receive an alert when stock falls below this number",
+        "availability": "Make this product available for purchase immediately",
+        "requiredError": "Please fill in all required fields",
+        "submit": "Create Product",
+        "submitting": "Creating..."
+      }
+    },
+    "edit": {
+      "back": "Back to Products",
+      "title": "Edit Product",
+      "loading": "Loading product...",
+      "cancel": "Cancel",
+      "updated": "Product updated successfully!",
+      "loadError": "Failed to load product",
+      "updateError": "Failed to update product",
+      "form": {
+        "name": "Product Name",
+        "namePlaceholder": "Enter product name",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe your product in detail",
+        "price": "Price (DZD)",
+        "category": "Category",
+        "categoryPlaceholder": "e.g., Electronics, Clothing, etc.",
+        "lowStock": "Low Stock Threshold",
+        "lowStockHint": "You'll receive an alert when stock falls below this number",
+        "availability": "Product is available for purchase",
+        "requiredError": "Please fill in all required fields",
+        "submit": "Save Changes",
+        "submitting": "Saving..."
+      }
+    },
+    "orders": {
+      "title": "Orders",
+      "subtitle": "Manage customer orders",
+      "filterLabel": "Filter by status",
+      "filterAll": "All Orders",
+      "statuses": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+      },
+      "empty": {
+        "title": "No orders found",
+        "body": "Orders will appear here when customers purchase your products"
+      },
+      "number": "Order #{id}",
+      "itemsCount": "{count, plural, one {# item} other {# items}}",
+      "itemsTitle": "Order Items:",
+      "unknownProduct": "Product",
+      "shippingTitle": "Shipping Address:"
+    },
+    "storeSetup": {
+      "title": "Create Your Store",
+      "subtitle": "Set up your storefront to start selling on MarketHub",
+      "created": "Store created successfully!",
+      "createError": "Failed to create store",
+      "form": {
+        "name": "Store Name",
+        "namePlaceholder": "Enter your store name (min. 3 characters)",
+        "nameHint": "This will be your store's public name",
+        "description": "Store Description",
+        "descriptionPlaceholder": "Tell customers about your store and what you sell (min. 20 characters)",
+        "descriptionCount": "{count}/20 characters minimum",
+        "category": "Store Category",
+        "categoryPlaceholder": "Select a category",
+        "submit": "Create Store",
+        "submitting": "Creating Store..."
+      },
+      "categories": {
+        "electronics": "Electronics",
+        "fashion": "Clothing & Fashion",
+        "home": "Home & Garden",
+        "books": "Books & Media",
+        "sports": "Sports & Outdoors",
+        "toys": "Toys & Games",
+        "beauty": "Beauty & Health",
+        "food": "Food & Beverages",
+        "other": "Other"
+      },
+      "next": {
+        "title": "What's Next?",
+        "step1": "• Add products to your store",
+        "step2": "• Set up inventory tracking",
+        "step3": "• Start receiving orders"
+      },
+      "validation": {
+        "required": "Please fill in all required fields",
+        "nameMin": "Store name must be at least 3 characters long",
+        "descriptionMin": "Store description must be at least 20 characters long"
+      }
+    }
+  },
+  "stores": {
+    "title": "Browse Stores",
+    "subtitle": "Discover unique products from verified sellers",
+    "searchPlaceholder": "Search stores by name, category, or description...",
+    "noStoresFound": "No stores found",
+    "noStoresAvailable": "No stores available",
+    "tryAdjustingSearch": "Try adjusting your search terms",
+    "checkBackLater": "Check back later for new stores",
+    "clearSearch": "Clear Search",
+    "resultsCount": "Showing {n, plural, one {# store} other {# stores}}",
+    "logoAlt": "{store} logo",
+    "defaultDescription": "A trusted seller on MarketHub",
+    "products": "Products",
+    "active": "Active",
+    "inactive": "Inactive",
+    "notFound": "Store not found",
+    "browseAllStores": "Browse All Stores",
+    "backToStores": "Back to Stores",
+    "activeStore": "Active Store",
+    "joined": "Joined {date}",
+    "productsCount": "{n, plural, one {# product} other {# products}}",
+    "productsHeading": "Products",
+    "browseAllFrom": "Browse all products from {store}",
+    "noProductsYet": "No products yet",
+    "noProductsBody": "This store hasn't listed any products yet. Check back later!"
+  },
+  "wishlist": {
+    "title": "My Wishlist",
+    "itemCount": "{n, plural, one {# item} other {# items}}",
+    "clearWishlist": "Clear Wishlist",
+    "clearConfirm": "Are you sure you want to clear your entire wishlist?",
+    "clearedToast": "Wishlist cleared",
+    "clearError": "Failed to clear wishlist",
+    "emptyTitle": "Your wishlist is empty",
+    "emptyBody": "Add items you love to your wishlist. Review them anytime and easily move them to your cart.",
+    "startShopping": "Start Shopping",
+    "outOfStock": "Out of Stock",
+    "removeItem": "Remove from wishlist",
+    "removedToast": "Removed from wishlist",
+    "removeError": "Failed to remove item",
+    "productUnavailable": "This product is currently unavailable",
+    "addToCart": "Add to Cart",
+    "adding": "Adding...",
+    "addedToCartToast": "Added to cart!",
+    "addToCartError": "Failed to add to cart",
+    "viewProduct": "View product",
+    "loadError": "Failed to load wishlist"
+  }
+}

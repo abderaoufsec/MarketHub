@@ -270,7 +270,14 @@ class OrderListView(generics.ListAPIView):
             .prefetch_related(
                 Prefetch("items__product", queryset=nested_product_queryset(self.request.user))
             )
-            .select_related("store", "shipping_address")
+            # shipping_address nests its wilaya/commune (Phase 11) — joining
+            # them (including the commune's own wilaya, which the serializer
+            # reads for its code) keeps the feed at its query-count ceiling.
+            .select_related(
+                "store",
+                "shipping_address__wilaya",
+                "shipping_address__commune__wilaya",
+            )
         )
 
 
@@ -286,7 +293,14 @@ class OrderDetailView(generics.RetrieveAPIView):
             .prefetch_related(
                 Prefetch("items__product", queryset=nested_product_queryset(self.request.user))
             )
-            .select_related("store", "shipping_address")
+            # shipping_address nests its wilaya/commune (Phase 11) — joining
+            # them (including the commune's own wilaya, which the serializer
+            # reads for its code) keeps the feed at its query-count ceiling.
+            .select_related(
+                "store",
+                "shipping_address__wilaya",
+                "shipping_address__commune__wilaya",
+            )
         )
 
 
@@ -305,7 +319,10 @@ class SellerOrderListView(generics.ListAPIView):
             .prefetch_related(
                 Prefetch("items__product", queryset=nested_product_queryset(self.request.user))
             )
-            .select_related("shipping_address")
+            .select_related(
+                "shipping_address__wilaya",
+                "shipping_address__commune__wilaya",
+            )
         )
 
 

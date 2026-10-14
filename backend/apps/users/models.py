@@ -62,6 +62,13 @@ class User(AbstractUser):
     )
     profile_picture = models.URLField(blank=True, null=True, help_text="Profile picture URL")
     bio = models.TextField(blank=True, null=True, help_text="User biography")
+    preferred_language = models.CharField(
+        max_length=5,
+        choices=[("ar", "العربية"), ("fr", "Français"), ("en", "English")],
+        default="fr",
+        blank=True,
+        help_text="Language for emails, SMS and translated labels.",
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username", "first_name", "last_name"]
@@ -104,15 +111,34 @@ class User(AbstractUser):
 class Address(models.Model):
     """
     Model to store shipping and billing addresses for users.
+
+    Phase 11 (docs/todo.md): the free-text ``city`` / ``state_province`` /
+    ``postal_code`` trio is gone. An Algerian address is a street line plus a
+    **Wilaya** and (optionally) a **Commune** — that is how the country and
+    the delivery carriers index locations, and free text could never follow
+    the 48 → 58 → 69 wilaya reforms. Both FKs are nullable *at the database
+    level* so legacy rows survive the data migration even when their old text
+    could not be matched; the API requires a wilaya on every new write.
     """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="addresses")
     address_line1 = models.CharField(max_length=255)
     address_line2 = models.CharField(max_length=255, blank=True, null=True)
-    city = models.CharField(max_length=100)
-    state_province = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20)
-    country = models.CharField(max_length=100)
+    wilaya = models.ForeignKey(
+        "geography.Wilaya",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="addresses",
+    )
+    commune = models.ForeignKey(
+        "geography.Commune",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="addresses",
+    )
+    country = models.CharField(max_length=100, default="DZ", blank=True)
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -123,7 +149,16 @@ class Address(models.Model):
         ordering = ["-is_default", "-created_at"]
 
     def __str__(self):
-        return f"{self.user} - {self.city}, {self.country}"
+        return f"{self.user} - {self.location_display}"
+
+    @property
+    def location_display(self) -> str:
+        """Commune (wilaya), falling back gracefully for legacy rows."""
+        if self.commune and self.wilaya:
+            return f"{self.commune.name_fr}, {self.wilaya.name_fr}"
+        if self.wilaya:
+            return self.wilaya.name_fr
+        return self.country
 
     def save(self, *args, **kwargs):
         # Ensure only one default address per user

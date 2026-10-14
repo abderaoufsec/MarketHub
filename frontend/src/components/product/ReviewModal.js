@@ -5,6 +5,16 @@ import { reviewsAPI } from '../../lib/api'
 import { apiErrorMessage } from '../../lib/errors'
 import { Star, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslations } from 'next-intl'
+import { usePrice } from '../../lib/currency'
+
+const RATING_LABEL_KEYS = {
+  1: 'poor',
+  2: 'fair',
+  3: 'good',
+  4: 'veryGood',
+  5: 'excellent',
+}
 
 export default function ReviewModal({
   isOpen,
@@ -13,6 +23,8 @@ export default function ReviewModal({
   existingReview,
   onReviewSubmitted,
 }) {
+  const t = useTranslations('products')
+  const price = usePrice()
   const [rating, setRating] = useState(existingReview?.rating || 0)
   const [comment, setComment] = useState(existingReview?.comment || '')
   const [hoveredRating, setHoveredRating] = useState(0)
@@ -24,12 +36,12 @@ export default function ReviewModal({
     e.preventDefault()
 
     if (rating === 0) {
-      toast.error('Please select a rating')
+      toast.error(t('selectRating'))
       return
     }
 
     if (!comment.trim()) {
-      toast.error('Please write a review')
+      toast.error(t('writeComment'))
       return
     }
 
@@ -43,37 +55,37 @@ export default function ReviewModal({
           comment,
           product: product.id,
         })
-        toast.success('Review updated successfully!')
+        toast.success(t('updateSuccess'))
       } else {
         // Create new review
         await reviewsAPI.create({ product: product.id, rating, comment })
-        toast.success('Review submitted successfully!')
+        toast.success(t('submitSuccess'))
       }
 
       onReviewSubmitted()
       onClose()
     } catch (error) {
       console.error('Error submitting review:', error)
-      toast.error(apiErrorMessage(error, 'Failed to submit review'))
+      toast.error(apiErrorMessage(error, t('submitError')))
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete your review?')) {
+    if (!window.confirm(t('deleteConfirm'))) {
       return
     }
 
     setSubmitting(true)
     try {
       await reviewsAPI.delete(existingReview.id)
-      toast.success('Review deleted successfully!')
+      toast.success(t('deleteSuccess'))
       onReviewSubmitted()
       onClose()
     } catch (error) {
       console.error('Error deleting review:', error)
-      toast.error('Failed to delete review')
+      toast.error(t('deleteError'))
     } finally {
       setSubmitting(false)
     }
@@ -86,11 +98,12 @@ export default function ReviewModal({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
-              {existingReview ? 'Edit Review' : 'Write a Review'}
+              {existingReview ? t('editReview') : t('writeReview')}
             </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
+              aria-label={t('close')}
             >
               <X className="h-6 w-6" />
             </button>
@@ -106,7 +119,7 @@ export default function ReviewModal({
             <div>
               <h3 className="font-semibold text-gray-900">{product.name}</h3>
               <p className="text-sm text-gray-600">
-                ${parseFloat(product.base_price).toFixed(2)}
+                {price(product.base_price)}
               </p>
             </div>
           </div>
@@ -115,7 +128,7 @@ export default function ReviewModal({
             {/* Rating */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Your Rating *
+                {t('yourRating')}
               </label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -139,11 +152,7 @@ export default function ReviewModal({
               </div>
               {rating > 0 && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {rating === 1 && 'Poor'}
-                  {rating === 2 && 'Fair'}
-                  {rating === 3 && 'Good'}
-                  {rating === 4 && 'Very Good'}
-                  {rating === 5 && 'Excellent'}
+                  {t(`ratings.${RATING_LABEL_KEYS[rating]}`)}
                 </p>
               )}
             </div>
@@ -151,19 +160,17 @@ export default function ReviewModal({
             {/* Comment */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Your Review *
+                {t('yourReview')}
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={6}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-primary focus:border-primary"
-                placeholder="Share your experience with this product..."
+                placeholder={t('commentPlaceholder')}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Minimum 10 characters
-              </p>
+              <p className="text-xs text-gray-500 mt-1">{t('minCharacters')}</p>
             </div>
 
             {/* Actions */}
@@ -176,10 +183,10 @@ export default function ReviewModal({
                 className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting
-                  ? 'Submitting...'
+                  ? t('submitting')
                   : existingReview
-                    ? 'Update Review'
-                    : 'Submit Review'}
+                    ? t('updateReview')
+                    : t('submitReview')}
               </button>
 
               {existingReview && (
@@ -189,7 +196,7 @@ export default function ReviewModal({
                   disabled={submitting}
                   className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
                 >
-                  Delete
+                  {t('delete')}
                 </button>
               )}
 
@@ -198,7 +205,7 @@ export default function ReviewModal({
                 onClick={onClose}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </form>

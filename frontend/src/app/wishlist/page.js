@@ -7,8 +7,12 @@ import { apiErrorMessage } from '../../lib/errors'
 import { useAuth } from '../../context/AuthContext'
 import { Heart, ShoppingCart, Trash2, Package } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslations } from 'next-intl'
+import { usePrice } from '../../lib/currency'
 
 export default function WishlistPage() {
+  const t = useTranslations('wishlist')
+  const price = usePrice()
   const router = useRouter()
   const { isAuthenticated } = useAuth()
   const [wishlist, setWishlist] = useState([])
@@ -34,7 +38,7 @@ export default function WishlistPage() {
       setWishlist(wishlistData)
     } catch (error) {
       console.error('Error fetching wishlist:', error)
-      toast.error('Failed to load wishlist')
+      toast.error(t('loadError'))
       setWishlist([]) // Set empty array on error
     } finally {
       setLoading(false)
@@ -46,10 +50,10 @@ export default function WishlistPage() {
     try {
       await wishlistAPI.remove(item.product)
       setWishlist(wishlist.filter((i) => i.id !== item.id))
-      toast.success('Removed from wishlist')
+      toast.success(t('removedToast'))
     } catch (error) {
       console.error('Error removing from wishlist:', error)
-      toast.error('Failed to remove item')
+      toast.error(t('removeError'))
     } finally {
       setRemovingIds((prev) => {
         const next = new Set(prev)
@@ -61,7 +65,7 @@ export default function WishlistPage() {
 
   const handleAddToCart = async (item) => {
     if (!item.product_available) {
-      toast.error('This product is currently unavailable')
+      toast.error(t('productUnavailable'))
       return
     }
 
@@ -72,10 +76,10 @@ export default function WishlistPage() {
         quantity: 1,
         selected_attributes: {},
       })
-      toast.success('Added to cart!')
+      toast.success(t('addedToCartToast'))
     } catch (error) {
       console.error('Error adding to cart:', error)
-      const errorMsg = apiErrorMessage(error, 'Failed to add to cart')
+      const errorMsg = apiErrorMessage(error, t('addToCartError'))
       toast.error(errorMsg)
     } finally {
       setAddingToCartIds((prev) => {
@@ -87,19 +91,17 @@ export default function WishlistPage() {
   }
 
   const handleClearWishlist = async () => {
-    if (
-      !window.confirm('Are you sure you want to clear your entire wishlist?')
-    ) {
+    if (!window.confirm(t('clearConfirm'))) {
       return
     }
 
     try {
       await wishlistAPI.clear()
       setWishlist([])
-      toast.success('Wishlist cleared')
+      toast.success(t('clearedToast'))
     } catch (error) {
       console.error('Error clearing wishlist:', error)
-      toast.error('Failed to clear wishlist')
+      toast.error(t('clearError'))
     }
   }
 
@@ -125,9 +127,9 @@ export default function WishlistPage() {
         <div className="flex items-center gap-3">
           <Heart className="h-8 w-8 text-primary fill-primary" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Wishlist</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
             <p className="text-gray-600">
-              {wishlist.length} {wishlist.length === 1 ? 'item' : 'items'}
+              {t('itemCount', { n: wishlist.length })}
             </p>
           </div>
         </div>
@@ -137,7 +139,7 @@ export default function WishlistPage() {
             onClick={handleClearWishlist}
             className="text-sm text-red-600 hover:text-red-700 font-medium"
           >
-            Clear Wishlist
+            {t('clearWishlist')}
           </button>
         )}
       </div>
@@ -147,17 +149,14 @@ export default function WishlistPage() {
         <div className="text-center py-16">
           <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Your wishlist is empty
+            {t('emptyTitle')}
           </h2>
-          <p className="text-gray-600 mb-6">
-            Add items you love to your wishlist. Review them anytime and easily
-            move them to your cart.
-          </p>
+          <p className="text-gray-600 mb-6">{t('emptyBody')}</p>
           <button
             onClick={() => router.push('/products')}
             className="btn-primary"
           >
-            Start Shopping
+            {t('startShopping')}
           </button>
         </div>
       ) : (
@@ -178,14 +177,15 @@ export default function WishlistPage() {
                 {!item.product_available && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <span className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                      Out of Stock
+                      {t('outOfStock')}
                     </span>
                   </div>
                 )}
                 <button
                   onClick={() => handleRemove(item)}
                   disabled={removingIds.has(item.id)}
-                  className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                  aria-label={t('removeItem')}
+                  className="absolute top-3 end-3 p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   {removingIds.has(item.id) ? (
                     <div className="animate-spin h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full"></div>
@@ -204,7 +204,7 @@ export default function WishlistPage() {
                   {item.product_name}
                 </h3>
                 <p className="text-2xl font-bold text-primary mb-4">
-                  ${parseFloat(item.product_price).toFixed(2)}
+                  {price(item.product_price)}
                 </p>
 
                 <div className="flex gap-2">
@@ -218,19 +218,19 @@ export default function WishlistPage() {
                     {addingToCartIds.has(item.id) ? (
                       <>
                         <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                        Adding...
+                        {t('adding')}
                       </>
                     ) : (
                       <>
                         <ShoppingCart className="h-4 w-4" />
-                        Add to Cart
+                        {t('addToCart')}
                       </>
                     )}
                   </button>
                   <button
                     onClick={() => router.push(`/products/${item.product}`)}
                     className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    title="View product"
+                    title={t('viewProduct')}
                   >
                     <Package className="h-5 w-5 text-gray-600" />
                   </button>

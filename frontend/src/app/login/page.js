@@ -10,10 +10,12 @@ import { Mail, Lock, Phone, KeyRound, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
+import { useTranslations } from 'next-intl'
 
 export default function LoginPage() {
   const router = useRouter()
   const { login } = useAuth()
+  const t = useTranslations('auth.login')
   // 'password' — the classic pair (the identifier accepts an email *or* a
   // verified phone number, Phase 8); 'otp' — passwordless SMS code login.
   const [mode, setMode] = useState('password')
@@ -38,9 +40,9 @@ export default function LoginPage() {
 
       if (result.success) {
         toast.success(
-          `Welcome back, ${
-            result.user.first_name || result.user.username || 'friend'
-          }!`
+          t('welcomeBack', {
+            name: result.user.first_name || result.user.username || t('friend'),
+          })
         )
         // Redirect based on user type
         setTimeout(() => {
@@ -53,12 +55,12 @@ export default function LoginPage() {
       } else {
         // AuthContext failures are Phase 9 envelopes: `message` is the text
         // to show (already seeded with this page's fallback).
-        const message = apiErrorMessage(result.error, 'Login failed')
+        const message = apiErrorMessage(result.error, t('loginFailed'))
         setError(message)
         toast.error(message)
       }
     } catch (err) {
-      const errorMessage = 'An unexpected error occurred'
+      const errorMessage = t('unexpectedError')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -76,13 +78,13 @@ export default function LoginPage() {
         purpose: 'login',
       })
       setCodeSent(true)
-      toast.success('Code sent. It expires in 5 minutes.')
+      toast.success(t('codeSent'))
     } catch (err) {
       // Field-level message first ("This phone number is already
       // registered."), then the envelope message, then this page's fallback.
       const detail =
         apiFieldError(err, 'phone_number') ||
-        apiErrorMessage(err, 'Could not send the code.')
+        apiErrorMessage(err, t('sendCodeFailed'))
       setError(detail)
       toast.error(detail)
     } finally {
@@ -100,11 +102,12 @@ export default function LoginPage() {
         code,
       })
       toast.success(
-        `Welcome back, ${
-          response.data.user.first_name ||
-          response.data.user.username ||
-          'friend'
-        }!`
+        t('welcomeBack', {
+          name:
+            response.data.user.first_name ||
+            response.data.user.username ||
+            t('friend'),
+        })
       )
       setTimeout(() => {
         if (response.data.user.is_seller) {
@@ -114,10 +117,7 @@ export default function LoginPage() {
         }
       }, 500)
     } catch (err) {
-      const detail = apiErrorMessage(
-        err,
-        'That code is invalid or has expired. Try again.'
-      )
+      const detail = apiErrorMessage(err, t('invalidCode'))
       setError(detail)
       toast.error(detail)
     } finally {
@@ -146,16 +146,19 @@ export default function LoginPage() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="mt-6 text-center text-4xl font-bold gradient-text">
-            Sign in to your account
+            {t('title')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link
-              href="/register"
-              className="font-medium text-primary hover:text-secondary transition-colors"
-            >
-              create a new account
-            </Link>
+            {t.rich('noAccount', {
+              link: (chunks) => (
+                <Link
+                  href="/register"
+                  className="font-medium text-primary hover:text-secondary transition-colors"
+                >
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </motion.div>
 
@@ -167,7 +170,7 @@ export default function LoginPage() {
               exit={{ opacity: 0, x: 20 }}
               className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center shadow-sm"
             >
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 me-2 flex-shrink-0" />
               <span>{error}</span>
             </motion.div>
           )}
@@ -188,7 +191,7 @@ export default function LoginPage() {
             }`}
           >
             <Lock className="h-4 w-4" />
-            Password
+            {t('modePassword')}
           </button>
           <button
             type="button"
@@ -203,7 +206,7 @@ export default function LoginPage() {
             }`}
           >
             <Phone className="h-4 w-4" />
-            SMS code
+            {t('modeSms')}
           </button>
         </div>
 
@@ -228,10 +231,10 @@ export default function LoginPage() {
                     htmlFor="email"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Email or phone number
+                    {t('emailOrPhoneLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                       <Mail className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -242,13 +245,11 @@ export default function LoginPage() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="input-field pl-10"
-                      placeholder="Email address"
+                      className="input-field ps-10"
+                      placeholder={t('emailPlaceholder')}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Phone sign-in works with a verified Algerian number (+213…).
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">{t('phoneHint')}</p>
                 </motion.div>
 
                 <motion.div
@@ -260,10 +261,10 @@ export default function LoginPage() {
                     htmlFor="password"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Password
+                    {t('passwordLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                       <Lock className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -274,8 +275,8 @@ export default function LoginPage() {
                       required
                       value={formData.password}
                       onChange={handleChange}
-                      className="input-field pl-10"
-                      placeholder="Password"
+                      className="input-field ps-10"
+                      placeholder={t('passwordPlaceholder')}
                     />
                   </div>
                 </motion.div>
@@ -291,9 +292,9 @@ export default function LoginPage() {
                   />
                   <label
                     htmlFor="remember-me"
-                    className="ml-2 block text-sm text-gray-900"
+                    className="ms-2 block text-sm text-gray-900"
                   >
-                    Remember me
+                    {t('rememberMe')}
                   </label>
                 </div>
 
@@ -302,7 +303,7 @@ export default function LoginPage() {
                     href="/forgot-password"
                     className="font-medium text-primary hover:text-secondary"
                   >
-                    Forgot your password?
+                    {t('forgotPassword')}
                   </Link>
                 </div>
               </div>
@@ -322,10 +323,10 @@ export default function LoginPage() {
                   {loading ? (
                     <>
                       <LoadingSpinner size="sm" />
-                      Signing in...
+                      {t('signingIn')}
                     </>
                   ) : (
-                    'Sign in'
+                    t('signIn')
                   )}
                 </motion.button>
               </motion.div>
@@ -346,10 +347,10 @@ export default function LoginPage() {
                     htmlFor="phone_number"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Phone number
+                    {t('phoneLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                       <Phone className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -360,7 +361,7 @@ export default function LoginPage() {
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="input-field pl-10"
+                      className="input-field ps-10"
                       placeholder="0555 12 34 56"
                       disabled={codeSent}
                     />
@@ -378,7 +379,7 @@ export default function LoginPage() {
                         htmlFor="otp_code"
                         className="block text-sm font-medium text-gray-700 mb-1"
                       >
-                        Verification code
+                        {t('codeLabel')}
                       </label>
                       <input
                         id="otp_code"
@@ -396,13 +397,13 @@ export default function LoginPage() {
                         placeholder="000000"
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        Sent to {phone}.{' '}
+                        {t('sentTo', { phone })}{' '}
                         <button
                           type="button"
                           onClick={() => setCodeSent(false)}
                           className="text-primary hover:text-secondary"
                         >
-                          Change number
+                          {t('changeNumber')}
                         </button>
                       </p>
                     </motion.div>
@@ -420,23 +421,23 @@ export default function LoginPage() {
                 {otpLoading ? (
                   <>
                     <LoadingSpinner size="sm" />
-                    Working...
+                    {t('working')}
                   </>
                 ) : codeSent ? (
                   <>
                     <KeyRound className="h-4 w-4" />
-                    Sign in with code
+                    {t('signInWithCode')}
                   </>
                 ) : (
                   <>
                     <Phone className="h-4 w-4" />
-                    Send SMS code
+                    {t('sendSmsCode')}
                   </>
                 )}
               </motion.button>
 
               <p className="text-xs text-center text-gray-500">
-                No password needed — the code signs you in.
+                {t('otpHint')}
               </p>
             </motion.form>
           )}

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import { storesAPI, productsAPI, ordersAPI } from '../../../lib/api'
+import { usePrice } from '../../../lib/currency'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import {
   Package,
@@ -31,6 +33,8 @@ import {
 
 export default function SellerDashboard() {
   const router = useRouter()
+  const t = useTranslations('seller')
+  const price = usePrice()
   const { isAuthenticated, user, isSeller, loading: authLoading } = useAuth()
   const [store, setStore] = useState(null)
   const [stats, setStats] = useState(null)
@@ -131,12 +135,14 @@ export default function SellerDashboard() {
         </div>
         <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
         <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500 mt-1">vs previous period</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {t('dashboard.stats.vsPrevious')}
+        </p>
       </div>
     )
   }
 
-  const StatusBadge = ({ status }) => {
+  const StatusBadge = ({ status, label }) => {
     const styles = {
       PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       PROCESSING: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -149,7 +155,7 @@ export default function SellerDashboard() {
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[status] || styles.PENDING}`}
       >
-        {status}
+        {label || status}
       </span>
     )
   }
@@ -171,13 +177,11 @@ export default function SellerDashboard() {
             <Store className="h-10 w-10 text-primary" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome to MarketHub!
+            {t('dashboard.welcome.title')}
           </h2>
-          <p className="text-gray-600 mb-6">
-            You need to set up your store before you can start selling.
-          </p>
+          <p className="text-gray-600 mb-6">{t('dashboard.welcome.body')}</p>
           <Link href="/seller/store/setup" className="btn-primary inline-block">
-            Set Up Your Store
+            {t('dashboard.welcome.cta')}
           </Link>
         </div>
       </div>
@@ -194,16 +198,16 @@ export default function SellerDashboard() {
   if (lowStockCount > 0) {
     alerts.push({
       type: 'warning',
-      message: `${lowStockCount} product${lowStockCount > 1 ? 's are' : ' is'} running low on stock`,
-      action: 'View Items',
+      message: t('dashboard.alerts.lowStock', { count: lowStockCount }),
+      action: t('dashboard.alerts.viewItems'),
       link: '/seller/products',
     })
   }
   if (pendingOrdersCount > 0) {
     alerts.push({
       type: 'info',
-      message: `${pendingOrdersCount} order${pendingOrdersCount > 1 ? 's' : ''} pending fulfillment`,
-      action: 'Process Orders',
+      message: t('dashboard.alerts.pending', { count: pendingOrdersCount }),
+      action: t('dashboard.alerts.processOrders'),
       link: '/seller/orders',
     })
   }
@@ -231,20 +235,26 @@ export default function SellerDashboard() {
                   <h1 className="text-lg font-semibold text-gray-900">
                     {store?.store_name}
                   </h1>
-                  <p className="text-xs text-gray-500">Seller Dashboard</p>
+                  <p className="text-xs text-gray-500">
+                    {t('dashboard.subtitle')}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="p-2 hover:bg-gray-100 rounded-lg relative">
+              <button
+                aria-label={t('dashboard.notifications')}
+                className="p-2 hover:bg-gray-100 rounded-lg relative"
+              >
                 <Bell className="h-5 w-5 text-gray-600" />
                 {alerts.length > 0 && (
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                  <span className="absolute top-1 end-1 h-2 w-2 bg-red-500 rounded-full"></span>
                 )}
               </button>
               <Link
                 href="/seller/store/setup"
+                aria-label={t('dashboard.storeSettings')}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <Settings className="h-5 w-5 text-gray-600" />
@@ -254,7 +264,7 @@ export default function SellerDashboard() {
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                New Product
+                {t('dashboard.newProduct')}
               </Link>
             </div>
           </div>
@@ -273,7 +283,7 @@ export default function SellerDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
               }`}
             >
-              Overview
+              {t('dashboard.tabs.overview')}
             </button>
             <button
               onClick={() => setActiveTab('products')}
@@ -283,7 +293,7 @@ export default function SellerDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
               }`}
             >
-              Products
+              {t('dashboard.tabs.products')}
             </button>
             <button
               onClick={() => setActiveTab('orders')}
@@ -293,19 +303,20 @@ export default function SellerDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
               }`}
             >
-              Orders
+              {t('dashboard.tabs.orders')}
             </button>
           </div>
 
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
+            aria-label={t('dashboard.range.label')}
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
           >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="1y">Last year</option>
+            <option value="7d">{t('dashboard.range.last7')}</option>
+            <option value="30d">{t('dashboard.range.last30')}</option>
+            <option value="90d">{t('dashboard.range.last90')}</option>
+            <option value="1y">{t('dashboard.range.lastYear')}</option>
           </select>
         </div>
 
@@ -341,7 +352,7 @@ export default function SellerDashboard() {
                   href={alert.link}
                   className="text-sm font-medium text-blue-600 hover:text-blue-700"
                 >
-                  {alert.action} →
+                  {alert.action}
                 </Link>
               </div>
             ))}
@@ -366,29 +377,29 @@ export default function SellerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 icon={DollarSign}
-                title="Total Revenue"
-                value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                title={t('dashboard.stats.revenue')}
+                value={price(totalRevenue)}
                 change={12.5}
                 color="green"
               />
               <StatCard
                 icon={ShoppingBag}
-                title="Total Orders"
+                title={t('dashboard.stats.orders')}
                 value={stats?.total_orders || 0}
                 change={8.3}
                 color="blue"
               />
               <StatCard
                 icon={Package}
-                title="Products Listed"
+                title={t('dashboard.stats.listed')}
                 value={`${stats?.total_products || 0}/20`}
                 change={4}
                 color="purple"
               />
               <StatCard
                 icon={TrendingUp}
-                title="Avg Order Value"
-                value={`$${avgOrderValue.toFixed(2)}`}
+                title={t('dashboard.stats.avgOrder')}
+                value={price(avgOrderValue)}
                 change={-0.5}
                 color="orange"
               />
@@ -402,24 +413,32 @@ export default function SellerDashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
-                        Recent Orders
+                        {t('dashboard.recentOrders.title')}
                       </h2>
                       <p className="text-sm text-gray-500 mt-1">
-                        {pendingOrdersCount} pending fulfillment
+                        {t('dashboard.recentOrders.pendingCount', {
+                          count: pendingOrdersCount,
+                        })}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg">
+                      <button
+                        aria-label={t('dashboard.recentOrders.search')}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                      >
                         <Search className="h-4 w-4 text-gray-600" />
                       </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg">
+                      <button
+                        aria-label={t('dashboard.recentOrders.filter')}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                      >
                         <Filter className="h-4 w-4 text-gray-600" />
                       </button>
                       <Link
                         href="/seller/orders"
                         className="px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
                       >
-                        View All
+                        {t('dashboard.recentOrders.viewAll')}
                       </Link>
                     </div>
                   </div>
@@ -429,10 +448,7 @@ export default function SellerDashboard() {
                   {recentOrders.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                       <ShoppingBag className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                      <p>
-                        No orders yet. Orders will appear here when customers
-                        purchase your products.
-                      </p>
+                      <p>{t('dashboard.recentOrders.empty')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -450,7 +466,13 @@ export default function SellerDashboard() {
                                 <p className="font-medium text-gray-900">
                                   #{order.id}
                                 </p>
-                                <StatusBadge status={order.order_status} />
+                                <StatusBadge
+                                  status={order.order_status}
+                                  label={
+                                    order.order_status_label ||
+                                    order.order_status
+                                  }
+                                />
                               </div>
                               <div className="flex items-center gap-3 text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
@@ -462,15 +484,15 @@ export default function SellerDashboard() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-end">
                             <p className="font-semibold text-gray-900">
-                              ${parseFloat(order.total_amount).toFixed(2)}
+                              {price(order.total_amount)}
                             </p>
                             <Link
                               href={`/seller/orders/${order.id}`}
                               className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-1"
                             >
-                              View Details →
+                              {t('dashboard.recentOrders.viewDetails')}
                             </Link>
                           </div>
                         </div>
@@ -484,10 +506,10 @@ export default function SellerDashboard() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Recent Products
+                    {t('dashboard.recentProducts.title')}
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Your latest listings
+                    {t('dashboard.recentProducts.subtitle')}
                   </p>
                 </div>
 
@@ -495,13 +517,15 @@ export default function SellerDashboard() {
                   {products.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                      <p className="mb-4">No products yet.</p>
+                      <p className="mb-4">
+                        {t('dashboard.recentProducts.empty')}
+                      </p>
                       <Link
                         href="/seller/products/create"
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <Plus className="h-4 w-4" />
-                        Add Product
+                        {t('dashboard.recentProducts.add')}
                       </Link>
                     </div>
                   ) : (
@@ -520,7 +544,7 @@ export default function SellerDashboard() {
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs font-semibold text-gray-900">
-                                ${parseFloat(product.base_price).toFixed(2)}
+                                {price(product.base_price)}
                               </span>
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full ${
@@ -530,8 +554,8 @@ export default function SellerDashboard() {
                                 }`}
                               >
                                 {product.is_available
-                                  ? 'Available'
-                                  : 'Unavailable'}
+                                  ? t('dashboard.recentProducts.available')
+                                  : t('dashboard.recentProducts.unavailable')}
                               </span>
                             </div>
                             <Link
@@ -539,7 +563,7 @@ export default function SellerDashboard() {
                               className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-flex items-center gap-1"
                             >
                               <Eye className="h-3 w-3" />
-                              View
+                              {t('dashboard.recentProducts.view')}
                             </Link>
                           </div>
                         </div>
@@ -548,7 +572,7 @@ export default function SellerDashboard() {
                         href="/seller/products"
                         className="block text-center text-sm font-medium text-blue-600 hover:text-blue-700 pt-2 border-t"
                       >
-                        View All Products →
+                        {t('dashboard.recentProducts.viewAll')}
                       </Link>
                     </div>
                   )}
@@ -561,7 +585,7 @@ export default function SellerDashboard() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-600">
-                    Store Performance
+                    {t('dashboard.performance.title')}
                   </h3>
                   <BarChart3 className="h-5 w-5 text-gray-400" />
                 </div>
@@ -581,13 +605,15 @@ export default function SellerDashboard() {
                     {stats?.active_products || 0}/20
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Active products</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {t('dashboard.performance.active')}
+                </p>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-600">
-                    Store Views
+                    {t('dashboard.performance.views')}
                   </h3>
                   <Eye className="h-5 w-5 text-gray-400" />
                 </div>
@@ -603,13 +629,15 @@ export default function SellerDashboard() {
                   </div>
                   <span className="text-sm text-gray-600">78%</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Engagement rate</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {t('dashboard.performance.engagement')}
+                </p>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-gray-600">
-                    Stock Alerts
+                    {t('dashboard.performance.stockAlerts')}
                   </h3>
                   <AlertCircle className="h-5 w-5 text-yellow-500" />
                 </div>
@@ -620,7 +648,7 @@ export default function SellerDashboard() {
                   href="/seller/products"
                   className="text-sm font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
                 >
-                  View low stock items →
+                  {t('dashboard.performance.viewLowStock')}
                 </Link>
               </div>
             </div>

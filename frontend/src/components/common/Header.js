@@ -1,13 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '../../context/AuthContext'
 import { ShoppingCart, User, Store, Menu, X, Heart } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Header() {
   const { user, isAuthenticated, isSeller, logout } = useAuth()
+  const t = useTranslations('common')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
@@ -20,7 +23,7 @@ export default function Header() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
+          <Link href="/" className="flex items-center gap-2 group">
             <motion.div
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
@@ -33,13 +36,13 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center gap-6">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
                 href="/products"
                 className="text-gray-700 hover:text-primary transition-colors font-medium"
               >
-                Products
+                {t('nav.products')}
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -47,7 +50,7 @@ export default function Header() {
                 href="/stores"
                 className="text-gray-700 hover:text-primary transition-colors font-medium"
               >
-                Stores
+                {t('nav.stores')}
               </Link>
             </motion.div>
 
@@ -62,7 +65,7 @@ export default function Header() {
                       href="/seller/dashboard"
                       className="text-gray-700 hover:text-primary transition-colors font-medium"
                     >
-                      Dashboard
+                      {t('nav.dashboard')}
                     </Link>
                   </motion.div>
                 )}
@@ -75,7 +78,7 @@ export default function Header() {
                       <Link
                         href="/wishlist"
                         className="text-gray-700 hover:text-primary transition-colors flex items-center relative"
-                        title="Wishlist"
+                        title={t('nav.wishlist')}
                       >
                         <Heart className="h-5 w-5" />
                       </Link>
@@ -87,7 +90,7 @@ export default function Header() {
                       <Link
                         href="/cart"
                         className="text-gray-700 hover:text-primary transition-colors flex items-center relative"
-                        title="Cart"
+                        title={t('nav.cart')}
                       >
                         <ShoppingCart className="h-5 w-5" />
                       </Link>
@@ -98,7 +101,7 @@ export default function Header() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center space-x-1 text-gray-700 hover:text-primary transition-colors font-medium"
+                    className="flex items-center gap-1 text-gray-700 hover:text-primary transition-colors font-medium"
                   >
                     <User className="h-5 w-5" />
                     <span>{user?.first_name || user?.email}</span>
@@ -107,25 +110,25 @@ export default function Header() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 hidden group-hover:block border border-gray-100"
+                    className="absolute end-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 hidden group-hover:block border border-gray-100"
                   >
                     <Link
                       href="/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
-                      Profile
+                      {t('nav.profile')}
                     </Link>
                     <Link
                       href="/orders"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
-                      Orders
+                      {t('nav.orders')}
                     </Link>
                     <button
                       onClick={logout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="block w-full text-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
-                      Logout
+                      {t('nav.logout')}
                     </button>
                   </motion.div>
                 </div>
@@ -140,7 +143,7 @@ export default function Header() {
                     href="/login"
                     className="text-gray-700 hover:text-primary transition-colors font-medium"
                   >
-                    Login
+                    {t('nav.login')}
                   </Link>
                 </motion.div>
                 <motion.div
@@ -148,43 +151,51 @@ export default function Header() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Link href="/register" className="btn-primary">
-                    Register
+                    {t('nav.register')}
                   </Link>
                 </motion.div>
               </>
             )}
+
+            <LanguageSwitcher />
           </div>
 
           {/* Mobile menu button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            <AnimatePresence mode="wait">
-              {mobileMenuOpen ? (
-                <motion.div
-                  key="close"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <X className="h-6 w-6" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="menu"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Menu className="h-6 w-6" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
+          <div className="flex items-center gap-1 md:hidden">
+            <LanguageSwitcher />
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={
+                mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')
+              }
+              className="p-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <AnimatePresence mode="wait">
+                {mobileMenuOpen ? (
+                  <motion.div
+                    key="close"
+                    initial={{ rotate: -90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <X className="h-6 w-6" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="menu"
+                    initial={{ rotate: 90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: -90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Menu className="h-6 w-6" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -202,14 +213,14 @@ export default function Header() {
                 animate={{ y: 0 }}
                 exit={{ y: -20 }}
                 transition={{ delay: 0.1 }}
-                className="py-4 flex flex-col space-y-3"
+                className="py-4 flex flex-col gap-3"
               >
                 <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     href="/products"
                     className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                   >
-                    Products
+                    {t('nav.products')}
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
@@ -217,7 +228,7 @@ export default function Header() {
                     href="/stores"
                     className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                   >
-                    Stores
+                    {t('nav.stores')}
                   </Link>
                 </motion.div>
 
@@ -232,7 +243,7 @@ export default function Header() {
                           href="/seller/dashboard"
                           className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                         >
-                          Dashboard
+                          {t('nav.dashboard')}
                         </Link>
                       </motion.div>
                     )}
@@ -246,7 +257,7 @@ export default function Header() {
                             href="/wishlist"
                             className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                           >
-                            Wishlist
+                            {t('nav.wishlist')}
                           </Link>
                         </motion.div>
                         <motion.div
@@ -257,7 +268,7 @@ export default function Header() {
                             href="/cart"
                             className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                           >
-                            Cart
+                            {t('nav.cart')}
                           </Link>
                         </motion.div>
                       </>
@@ -270,7 +281,7 @@ export default function Header() {
                         href="/profile"
                         className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                       >
-                        Profile
+                        {t('nav.profile')}
                       </Link>
                     </motion.div>
                     <motion.div
@@ -281,15 +292,15 @@ export default function Header() {
                         href="/orders"
                         className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                       >
-                        Orders
+                        {t('nav.orders')}
                       </Link>
                     </motion.div>
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       onClick={logout}
-                      className="text-left text-gray-700 hover:text-primary transition-colors font-medium py-2"
+                      className="text-start text-gray-700 hover:text-primary transition-colors font-medium py-2"
                     >
-                      Logout
+                      {t('nav.logout')}
                     </motion.button>
                   </>
                 ) : (
@@ -302,7 +313,7 @@ export default function Header() {
                         href="/login"
                         className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                       >
-                        Login
+                        {t('nav.login')}
                       </Link>
                     </motion.div>
                     <motion.div
@@ -313,7 +324,7 @@ export default function Header() {
                         href="/register"
                         className="btn-primary inline-block text-center w-full"
                       >
-                        Register
+                        {t('nav.register')}
                       </Link>
                     </motion.div>
                   </>

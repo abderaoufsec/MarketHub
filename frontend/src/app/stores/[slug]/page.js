@@ -6,8 +6,12 @@ import { storesAPI, productsAPI } from '../../../lib/api'
 import Link from 'next/link'
 import ProductCard from '../../../components/product/ProductCard'
 import { Store, MapPin, Calendar, Package, ArrowLeft } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import { intlLocale } from '../../../i18n/config'
 
 export default function StoreDetailPage() {
+  const t = useTranslations('stores')
+  const locale = useLocale()
   const params = useParams()
   const [store, setStore] = useState(null)
   const [products, setProducts] = useState([])
@@ -58,9 +62,9 @@ export default function StoreDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8 text-center">
         <Store className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500 text-lg mb-4">Store not found</p>
+        <p className="text-gray-500 text-lg mb-4">{t('notFound')}</p>
         <Link href="/stores" className="text-primary hover:text-secondary">
-          Browse All Stores
+          {t('browseAllStores')}
         </Link>
       </div>
     )
@@ -74,8 +78,8 @@ export default function StoreDetailPage() {
           href="/stores"
           className="inline-flex items-center text-gray-600 hover:text-primary"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Stores
+          <ArrowLeft className="h-4 w-4 me-2" />
+          {t('backToStores')}
         </Link>
       </div>
 
@@ -108,7 +112,7 @@ export default function StoreDetailPage() {
                 {store.logo_url ? (
                   <img
                     src={store.logo_url}
-                    alt={`${store.store_name} logo`}
+                    alt={t('logoAlt', { store: store.store_name })}
                     className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg"
                     onError={(e) => {
                       e.target.src = '/placeholder-store.jpg'
@@ -128,15 +132,15 @@ export default function StoreDetailPage() {
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                       {store.store_name}
                     </h1>
-                    {store.category && (
+                    {(store.category_label || store.category) && (
                       <span className="inline-block bg-blue-100 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                        {store.category}
+                        {store.category_label || store.category}
                       </span>
                     )}
                   </div>
                   {store.is_active && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                      Active Store
+                      {t('activeStore')}
                     </span>
                   )}
                 </div>
@@ -153,20 +157,18 @@ export default function StoreDetailPage() {
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        Joined{' '}
-                        {new Date(store.created_at).toLocaleDateString(
-                          'en-US',
-                          {
+                        {t('joined', {
+                          date: new Intl.DateTimeFormat(intlLocale(locale), {
                             year: 'numeric',
                             month: 'long',
-                          }
-                        )}
+                          }).format(new Date(store.created_at)),
+                        })}
                       </span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
                     <Package className="h-4 w-4" />
-                    <span>{products.length} Products</span>
+                    <span>{t('productsCount', { n: products.length })}</span>
                   </div>
                 </div>
               </div>
@@ -178,9 +180,11 @@ export default function StoreDetailPage() {
       {/* Products Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Products</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {t('productsHeading')}
+          </h2>
           <p className="text-gray-600 mt-1">
-            Browse all products from {store.store_name}
+            {t('browseAllFrom', { store: store.store_name })}
           </p>
         </div>
 
@@ -201,11 +205,9 @@ export default function StoreDetailPage() {
           <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
             <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No products yet
+              {t('noProductsYet')}
             </h3>
-            <p className="text-gray-600">
-              This store hasn't listed any products yet. Check back later!
-            </p>
+            <p className="text-gray-600">{t('noProductsBody')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

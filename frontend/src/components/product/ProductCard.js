@@ -4,9 +4,17 @@ import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { usePrice } from '../../lib/currency'
 
 export default function ProductCard({ product, index = 0 }) {
-  const imageUrl = product.images?.[0]?.image_url || '/placeholder-product.jpg'
+  const t = useTranslations('products')
+  const price = usePrice()
+  // ProductListSerializer exposes `primary_image`; `image_url` is kept only as
+  // a defensive fallback for payloads that still ship the old shape, and the
+  // placeholder (plus the error state below) covers "no image at all".
+  const imageUrl =
+    product.primary_image || product.image_url || '/placeholder-product.jpg'
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
 
@@ -50,14 +58,14 @@ export default function ProductCard({ product, index = 0 }) {
                 className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm"
               >
                 <span className="text-white font-semibold px-4 py-2 bg-black/50 rounded-full">
-                  Out of Stock
+                  {t('outOfStock')}
                 </span>
               </motion.div>
             )}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               whileHover={{ opacity: 1, scale: 1 }}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <div className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-md">
                 <ShoppingCart className="h-4 w-4 text-primary" />
@@ -71,14 +79,14 @@ export default function ProductCard({ product, index = 0 }) {
             <p className="text-sm text-gray-600 mb-2 line-clamp-1">
               {product.store_name ||
                 product.store?.store_name ||
-                'MarketHub Store'}
+                t('defaultStoreName')}
             </p>
             <div className="flex items-center justify-between mt-auto">
               <motion.span
                 whileHover={{ scale: 1.05 }}
                 className="text-xl font-bold text-primary"
               >
-                ${parseFloat(product.base_price).toFixed(2)}
+                {price(product.base_price)}
               </motion.span>
             </div>
             {product.category && (

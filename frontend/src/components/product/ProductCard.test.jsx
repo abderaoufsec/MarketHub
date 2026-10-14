@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
+import { renderWithIntl } from '../../test/i18n'
 import ProductCard from './ProductCard'
 
 // next/link needs the App Router context; assert on the rendered anchor.
@@ -56,29 +57,30 @@ const PRODUCT = {
   category: 'phones',
   store_name: 'TechStore Blida',
   is_available: true,
-  images: [{ image_url: 'https://cdn.example.com/s24.jpg' }],
+  primary_image: 'https://cdn.example.com/s24.jpg',
 }
 
 describe('ProductCard', () => {
-  it('renders name, store, formatted price and category', () => {
-    render(<ProductCard product={PRODUCT} />)
+  it('renders name, store, DZD price and category', () => {
+    renderWithIntl(<ProductCard product={PRODUCT} />)
 
     expect(
       screen.getByRole('heading', { name: 'Galaxy S24' })
     ).toBeInTheDocument()
     expect(screen.getByText('TechStore Blida')).toBeInTheDocument()
-    expect(screen.getByText('$45000.00')).toBeInTheDocument()
+    // DZD via usePrice — never a bare "$" amount.
+    expect(screen.getByText('DZD 45,000')).toBeInTheDocument()
     expect(screen.getByText('phones')).toBeInTheDocument()
   })
 
   it('links to the product detail page', () => {
-    render(<ProductCard product={PRODUCT} />)
+    renderWithIntl(<ProductCard product={PRODUCT} />)
 
     expect(screen.getByRole('link')).toHaveAttribute('href', '/products/42')
   })
 
-  it('uses the first image when present', () => {
-    render(<ProductCard product={PRODUCT} />)
+  it('renders the primary image returned by the serializer', () => {
+    renderWithIntl(<ProductCard product={PRODUCT} />)
 
     expect(screen.getByRole('img')).toHaveAttribute(
       'src',
@@ -86,9 +88,26 @@ describe('ProductCard', () => {
     )
   })
 
+  it('falls back to image_url when primary_image is absent', () => {
+    renderWithIntl(
+      <ProductCard
+        product={{
+          ...PRODUCT,
+          primary_image: null,
+          image_url: 'https://cdn.example.com/legacy.jpg',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/legacy.jpg'
+    )
+  })
+
   it('falls back to the store object when store_name is absent', () => {
     const { store_name, ...rest } = PRODUCT
-    render(
+    renderWithIntl(
       <ProductCard
         product={{ ...rest, store: { store_name: 'Nested Store' } }}
       />
@@ -97,9 +116,9 @@ describe('ProductCard', () => {
     expect(screen.getByText('Nested Store')).toBeInTheDocument()
   })
 
-  it('shows a placeholder image path when the product has no images', () => {
-    const { images, ...rest } = PRODUCT
-    render(<ProductCard product={rest} />)
+  it('shows the placeholder when the product has no image at all', () => {
+    const { primary_image, ...rest } = PRODUCT
+    renderWithIntl(<ProductCard product={rest} />)
 
     expect(screen.getByRole('img')).toHaveAttribute(
       'src',
@@ -108,23 +127,25 @@ describe('ProductCard', () => {
   })
 
   it('renders an out-of-stock badge for unavailable products', () => {
-    render(<ProductCard product={{ ...PRODUCT, is_available: false }} />)
+    renderWithIntl(
+      <ProductCard product={{ ...PRODUCT, is_available: false }} />
+    )
 
     expect(screen.getByText('Out of Stock')).toBeInTheDocument()
   })
 
   it('does not render an out-of-stock badge for available products', () => {
-    render(<ProductCard product={PRODUCT} />)
+    renderWithIntl(<ProductCard product={PRODUCT} />)
 
     expect(screen.queryByText('Out of Stock')).not.toBeInTheDocument()
   })
 
   it('does not crash when base_price is missing', () => {
-    // Note: the current renderer shows "$NaN" for a missing price; the
-    // formatting fix belongs with the catalog work (Phase 12), so this test
-    // only pins the "must not throw" contract.
-    const { base_price, ...rest } = PRODUCT
-    render(<ProductCard product={{ ...rest, base_price: undefined }} />)
+    // usePrice renders a zero amount (DZD 0) for a missing price; this test
+    // pins the "must not throw" contract.
+    renderWithIntl(
+      <ProductCard product={{ ...PRODUCT, base_price: undefined }} />
+    )
 
     expect(
       screen.getByRole('heading', { name: 'Galaxy S24' })

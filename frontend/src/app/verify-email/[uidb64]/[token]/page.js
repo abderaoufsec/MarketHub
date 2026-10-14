@@ -8,6 +8,7 @@ import { CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react'
 import { authAPI } from '../../../../lib/api'
 import { apiErrorMessage } from '../../../../lib/errors'
 import LoadingSpinner from '../../../../components/common/LoadingSpinner'
+import { useTranslations } from 'next-intl'
 
 /**
  * Landing page for the link in the verification email:
@@ -19,6 +20,7 @@ import LoadingSpinner from '../../../../components/common/LoadingSpinner'
  */
 export default function VerifyEmailPage() {
   const { uidb64, token } = useParams()
+  const t = useTranslations('auth.verify')
   const [status, setStatus] = useState('verifying') // verifying | ok | error
   const [message, setMessage] = useState('')
   const [resendEmail, setResendEmail] = useState('')
@@ -36,17 +38,14 @@ export default function VerifyEmailPage() {
       .verifyEmail(uidb64, token)
       .then(() => {
         setStatus('ok')
-        setMessage('Your email address is verified — you can sign in now.')
+        setMessage(t('verifiedMessage'))
       })
       .catch((error) => {
         setStatus('error')
-        setMessage(
-          apiErrorMessage(
-            error,
-            'This verification link is invalid or has expired.'
-          )
-        )
+        setMessage(apiErrorMessage(error, t('invalidLink')))
       })
+    // `t` is stable per render tree; the started ref makes this run once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uidb64, token])
 
   const handleResend = async (e) => {
@@ -78,11 +77,9 @@ export default function VerifyEmailPage() {
           <>
             <LoadingSpinner size="lg" />
             <h2 className="mt-6 text-2xl font-bold text-gray-900">
-              Verifying your email…
+              {t('verifyingTitle')}
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              One moment while we confirm your address.
-            </p>
+            <p className="mt-2 text-sm text-gray-600">{t('verifyingBody')}</p>
           </>
         )}
 
@@ -94,14 +91,14 @@ export default function VerifyEmailPage() {
           >
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Email verified!
+              {t('verifiedTitle')}
             </h2>
             <p className="text-gray-600 mb-6">{message}</p>
             <Link
               href="/login"
               className="inline-flex items-center gap-2 py-3 px-6 text-sm font-medium rounded-lg text-white bg-primary hover:bg-blue-700 transition-colors shadow-md"
             >
-              Sign in
+              {t('signIn')}
             </Link>
           </motion.div>
         )}
@@ -114,7 +111,7 @@ export default function VerifyEmailPage() {
           >
             <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Verification failed
+              {t('failedTitle')}
             </h2>
             <p className="text-gray-600 mb-6">{message}</p>
 
@@ -122,8 +119,7 @@ export default function VerifyEmailPage() {
               {resent ? (
                 <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center justify-center gap-2 text-sm">
                   <Mail className="h-4 w-4" />
-                  If that account still needs verification, a new link is on its
-                  way.
+                  {t('resentMessage')}
                 </div>
               ) : (
                 <form onSubmit={handleResend} className="space-y-3">
@@ -134,8 +130,8 @@ export default function VerifyEmailPage() {
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
                     className="input-field w-full"
-                    placeholder="Your email address"
-                    aria-label="Your email address"
+                    placeholder={t('emailPlaceholder')}
+                    aria-label={t('emailPlaceholder')}
                   />
                   <button
                     type="submit"
@@ -147,7 +143,7 @@ export default function VerifyEmailPage() {
                     ) : (
                       <>
                         <AlertCircle className="h-4 w-4" />
-                        Resend verification email
+                        {t('resend')}
                       </>
                     )}
                   </button>
@@ -157,7 +153,7 @@ export default function VerifyEmailPage() {
                 href="/login"
                 className="block w-full py-3 px-4 text-sm font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
               >
-                Back to sign in
+                {t('backToSignIn')}
               </Link>
             </div>
           </motion.div>

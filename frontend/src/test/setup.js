@@ -6,12 +6,15 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   // Session cookies: the JWT pair is HttpOnly (server-side), but the readable
-  // hint and CSRF cookies must not leak between tests.
+  // hint and CSRF cookies must not leak between tests. Locale and price
+  // display (Phase 11) are preferences, not sessions — same rule.
   for (const name of [
     'access_token',
     'refresh_token',
     'mh_session',
     'csrftoken',
+    'mh_locale',
+    'mh_price_display',
   ]) {
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
   }

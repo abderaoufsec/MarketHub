@@ -1,0 +1,707 @@
+{
+  "common": {
+    "nav": {
+      "products": "Produits",
+      "stores": "Boutiques",
+      "dashboard": "Tableau de bord",
+      "wishlist": "Favoris",
+      "cart": "Panier",
+      "profile": "Profil",
+      "orders": "Commandes",
+      "login": "Connexion",
+      "register": "S'inscrire",
+      "logout": "Déconnexion",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu"
+    },
+    "footer": {
+      "tagline": "Votre place de marché en ligne de confiance, qui relie acheteurs et vendeurs.",
+      "quickLinks": "Liens rapides",
+      "forSellers": "Pour les vendeurs",
+      "contact": "Contact",
+      "aboutUs": "À propos",
+      "becomeSeller": "Devenir vendeur",
+      "sellerDashboard": "Tableau de bord vendeur",
+      "sellerHelp": "Aide vendeurs",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "rights": "© {year} MarketHub. Tous droits réservés."
+    },
+    "preferences": {
+      "language": "Langue",
+      "priceDisplay": "Affichage des prix",
+      "priceStandard": "Standard (DZD)",
+      "priceMillions": "Millions (centimes)",
+      "title": "Préférences"
+    },
+    "actions": {
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "back": "Retour",
+      "search": "Rechercher",
+      "loading": "Chargement…",
+      "retry": "Réessayer"
+    },
+    "states": {
+      "error": "Une erreur est survenue. Veuillez réessayer.",
+      "notFound": "Cette page est introuvable.",
+      "empty": "Rien pour le moment."
+    }
+  },
+  "geography": {
+    "wilaya": "Wilaya",
+    "commune": "Commune",
+    "selectWilaya": "Choisir une wilaya",
+    "selectCommune": "Choisir une commune",
+    "loadingWilayas": "Chargement des wilayas…",
+    "loadingCommunes": "Chargement des communes…",
+    "communeNeedsWilaya": "Choisissez d'abord une wilaya",
+    "loadError": "Impossible de charger les données de localisation. Veuillez réessayer."
+  },
+  "auth": {
+    "login": {
+      "title": "Connectez-vous à votre compte",
+      "noAccount": "Ou <link>créez un nouveau compte</link>",
+      "modePassword": "Mot de passe",
+      "modeSms": "Code SMS",
+      "emailOrPhoneLabel": "E-mail ou numéro de téléphone",
+      "emailPlaceholder": "Adresse e-mail",
+      "phoneHint": "La connexion par téléphone fonctionne avec un numéro algérien vérifié (+213…).",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Mot de passe",
+      "rememberMe": "Se souvenir de moi",
+      "forgotPassword": "Mot de passe oublié ?",
+      "signingIn": "Connexion en cours...",
+      "signIn": "Se connecter",
+      "phoneLabel": "Numéro de téléphone",
+      "codeLabel": "Code de vérification",
+      "sentTo": "Envoyé au {phone}.",
+      "changeNumber": "Changer de numéro",
+      "working": "Traitement en cours...",
+      "signInWithCode": "Se connecter avec le code",
+      "sendSmsCode": "Envoyer le code SMS",
+      "otpHint": "Aucun mot de passe requis — le code vous connecte.",
+      "welcomeBack": "Bon retour, {name} !",
+      "friend": "ami",
+      "loginFailed": "Échec de la connexion",
+      "unexpectedError": "Une erreur inattendue est survenue",
+      "codeSent": "Code envoyé. Il expire dans 5 minutes.",
+      "sendCodeFailed": "Impossible d'envoyer le code.",
+      "invalidCode": "Ce code est invalide ou a expiré. Réessayez."
+    },
+    "register": {
+      "title": "Créez votre compte",
+      "titleSeller": "Créez votre compte vendeur",
+      "haveAccount": "Vous avez déjà un compte ? <link>Connectez-vous</link>",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "emailLabel": "Adresse e-mail <hint>(facultatif si vous utilisez un téléphone)</hint>",
+      "emailPlaceholder": "Adresse e-mail",
+      "usernameLabel": "Nom d'utilisateur",
+      "phoneLabel": "Numéro de téléphone <hint>(facultatif)</hint>",
+      "phonePlaceholder": "Numéro de téléphone",
+      "otpHint": "Vérifiez le numéro par SMS — obligatoire lors de l'inscription sans adresse e-mail.",
+      "otpSend": "Envoyer le code",
+      "otpSending": "Envoi en cours...",
+      "otpResend": "Renvoyer le code",
+      "smsCodeLabel": "Code SMS",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Mot de passe (min. 8 caractères)",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Confirmer le mot de passe",
+      "asSeller": "S'inscrire comme vendeur",
+      "creating": "Création du compte...",
+      "createAccount": "Créer le compte",
+      "terms": "En créant un compte, vous acceptez nos <terms>Conditions d'utilisation</terms> et notre <privacy>Politique de confidentialité</privacy>",
+      "successTitle": "Inscription réussie !",
+      "redirecting": "Redirection vers la page de connexion...",
+      "checkEmail": "Veuillez vérifier votre boîte mail pour confirmer votre compte.",
+      "phoneVerified": "Votre numéro de téléphone a été vérifié. Vous pouvez maintenant vous connecter.",
+      "created": "Compte créé avec succès ! {message}",
+      "enterPhoneFirst": "Saisissez d'abord un numéro de téléphone",
+      "otpSent": "Code de vérification envoyé par SMS",
+      "otpSendFailed": "Impossible d'envoyer le code SMS",
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+      "needEmailOrPhone": "Indiquez une adresse e-mail ou un numéro de téléphone",
+      "enterOtp": "Saisissez le code SMS envoyé sur votre téléphone",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+      "failed": "Échec de l'inscription. Veuillez réessayer.",
+      "unexpectedError": "Une erreur inattendue est survenue. Veuillez réessayer."
+    },
+    "forgot": {
+      "title": "Réinitialisez votre mot de passe",
+      "remembered": "Vous vous en souvenez ? <link>Retour à la connexion</link>",
+      "modeEmail": "Par e-mail",
+      "modeSms": "Par code SMS",
+      "checkInbox": "Vérifiez votre boîte de réception",
+      "emailSent": "Si un compte existe pour <mail>{email}</mail>, un lien de réinitialisation est en chemin. Le lien expire dans 24 heures.",
+      "backToSignIn": "Retour à la connexion",
+      "emailLabel": "Adresse e-mail",
+      "sendResetLink": "Envoyer le lien de réinitialisation",
+      "phoneLabel": "Numéro de téléphone",
+      "phoneHint": "Le numéro avec lequel vous vous êtes inscrit, au format algérien.",
+      "otpNotice": "Nous avons envoyé un code à 6 chiffres à ce numéro. Il expire dans 5 minutes.",
+      "codeLabel": "Code de vérification",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "passwordPlaceholder": "Mot de passe (min. 8 caractères)",
+      "confirmPasswordLabel": "Confirmer le nouveau mot de passe",
+      "confirmPasswordPlaceholder": "Saisissez à nouveau le nouveau mot de passe",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "sendSmsCode": "Envoyer le code SMS",
+      "changeNumber": "Utiliser un autre numéro",
+      "noAccount": "Pas encore de compte ? <link>Créez-en un</link>",
+      "invalidEmail": "Veuillez saisir une adresse e-mail valide.",
+      "codeSent": "Si ce numéro possède un compte, un code est en chemin.",
+      "sendCodeFailed": "Impossible d'envoyer le code.",
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+      "resetDone": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter.",
+      "invalidCode": "Ce code est invalide ou a expiré."
+    },
+    "reset": {
+      "title": "Choisissez un nouveau mot de passe",
+      "subtitle": "Ce lien ne fonctionne qu'une seule fois et expire dans 24 heures.",
+      "missingTitle": "Lien de réinitialisation manquant",
+      "missingBody": "Cette page doit être ouverte depuis le lien de votre e-mail — elle ne contient pas le jeton de réinitialisation.",
+      "requestNewLink": "Demander un nouveau lien",
+      "doneTitle": "Mot de passe mis à jour",
+      "doneBody": "Toutes les autres sessions ont été déconnectées par sécurité. Redirection vers la connexion…",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "passwordPlaceholder": "Mot de passe (min. 8 caractères)",
+      "confirmPasswordLabel": "Confirmer le nouveau mot de passe",
+      "confirmPasswordPlaceholder": "Saisissez à nouveau le nouveau mot de passe",
+      "submit": "Définir le nouveau mot de passe",
+      "linkExpired": "Lien expiré ? <link>Demander un nouveau lien</link>",
+      "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+      "resetDone": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter.",
+      "invalidLink": "Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau."
+    },
+    "verify": {
+      "verifyingTitle": "Vérification de votre adresse e-mail…",
+      "verifyingBody": "Un instant pendant que nous confirmons votre adresse.",
+      "verifiedTitle": "Adresse e-mail vérifiée !",
+      "verifiedMessage": "Votre adresse e-mail est vérifiée — vous pouvez maintenant vous connecter.",
+      "signIn": "Se connecter",
+      "failedTitle": "Échec de la vérification",
+      "invalidLink": "Ce lien de vérification est invalide ou a expiré.",
+      "resentMessage": "Si ce compte doit encore être vérifié, un nouveau lien est en chemin.",
+      "emailPlaceholder": "Votre adresse e-mail",
+      "resend": "Renvoyer l'e-mail de vérification",
+      "backToSignIn": "Retour à la connexion"
+    }
+  },
+  "cart": {
+    "title": "Panier",
+    "empty": {
+      "title": "Votre panier est vide",
+      "text": "Commencez vos achats pour ajouter des articles à votre panier",
+      "browseProducts": "Parcourir les produits"
+    },
+    "item": {
+      "unitPrice": "{price} l'unité",
+      "decreaseQuantity": "Diminuer la quantité",
+      "increaseQuantity": "Augmenter la quantité",
+      "remove": "Supprimer"
+    },
+    "summary": {
+      "title": "Récapitulatif de la commande",
+      "subtotal": "Sous-total",
+      "shipping": "Livraison",
+      "free": "Gratuite",
+      "estimatedTax": "TVA estimée",
+      "total": "Total",
+      "checkout": "Passer au paiement",
+      "continueShopping": "Continuer vos achats"
+    }
+  },
+  "checkout": {
+    "title": "Finaliser la commande",
+    "shippingAddress": "Adresse de livraison",
+    "addNewAddress": "Ajouter une adresse",
+    "defaultBadge": "Par défaut",
+    "noAddresses": "Aucune adresse enregistrée. Veuillez ajouter une adresse de livraison.",
+    "addressSaved": "Adresse enregistrée avec succès",
+    "orderPlaced": "Commande confirmée — paiement accepté !",
+    "addressForm": {
+      "addressLine1": "Ligne d'adresse 1",
+      "streetPlaceholder": "Rue et numéro",
+      "addressLine2": "Ligne d'adresse 2",
+      "addressLine2Placeholder": "Appartement, étage, etc. (facultatif)",
+      "setAsDefault": "Définir comme adresse par défaut",
+      "save": "Enregistrer l'adresse",
+      "cancel": "Annuler"
+    },
+    "payment": {
+      "title": "Mode de paiement",
+      "creditCard": "Carte bancaire",
+      "simulatedTitle": "🔒 Paiement simulé :",
+      "simulatedBody": "Ceci est un système de paiement de démonstration. Aucun paiement réel ne sera traité. Passer la commande le débite et le confirme en une seule étape."
+    },
+    "summary": {
+      "title": "Récapitulatif de la commande",
+      "lineQuantity": "Qté : {qty} × {price}",
+      "subtotal": "Sous-total",
+      "shipping": "Livraison",
+      "free": "Gratuite",
+      "tax": "TVA",
+      "total": "Total",
+      "processing": "Traitement de la commande…",
+      "placeOrder": "Commander et payer",
+      "termsNote": "En passant votre commande, vous acceptez nos conditions d'utilisation et notre politique de confidentialité."
+    },
+    "priceChanges": {
+      "title": "Les prix ont changé",
+      "description": "Rien n'a été commandé. Votre panier affiche désormais les prix actuels — vérifiez le total et passez la commande à nouveau.",
+      "line": "{name} : était {oldPrice}, maintenant {newPrice}",
+      "toastOne": "{name} est maintenant à {price}. Vérifiez le total et passez la commande à nouveau.",
+      "toastMany": "Certains prix ont changé pendant le paiement. Vérifiez le total et passez la commande à nouveau."
+    },
+    "errors": {
+      "loadCart": "Impossible de charger le panier",
+      "saveAddress": "Impossible d'enregistrer l'adresse",
+      "emptyCart": "Votre panier est vide",
+      "requiredAddressFields": "Veuillez remplir tous les champs d'adresse obligatoires",
+      "selectAddress": "Veuillez sélectionner ou créer une adresse de livraison",
+      "processOrder": "Impossible de traiter la commande. Veuillez réessayer."
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Bienvenue sur <brand>MarketHub</brand>",
+      "subtitle": "Votre place de marché en ligne de confiance, qui met en relation acheteurs et vendeurs. Découvrez des produits uniques ou commencez à vendre dès aujourd'hui.",
+      "browseProducts": "Parcourir les produits",
+      "becomeSeller": "Devenir vendeur"
+    },
+    "features": {
+      "title": "Pourquoi choisir MarketHub ?",
+      "subtitle": "Découvrez la différence grâce à notre plateforme professionnelle de place de marché",
+      "selection": {
+        "title": "Large choix",
+        "description": "Parcourez des milliers de produits auprès de vendeurs vérifiés dans plusieurs catégories."
+      },
+      "security": {
+        "title": "Achats en sécurité",
+        "description": "Achetez en toute confiance : vos transactions sont protégées et sécurisées."
+      },
+      "selling": {
+        "title": "Vente facile",
+        "description": "Ouvrez votre boutique en ligne rapidement et gérez vos produits en toute simplicité."
+      }
+    },
+    "cta": {
+      "title": "Prêt à vous lancer ?",
+      "subtitle": "Rejoignez des milliers d'acheteurs et de vendeurs sur MarketHub dès aujourd'hui.",
+      "createAccount": "Créer votre compte"
+    }
+  },
+  "orders": {
+    "title": "Mes commandes",
+    "subtitle": "Suivez et gérez vos commandes",
+    "empty": {
+      "title": "Aucune commande pour le moment",
+      "text": "Commencez vos achats pour voir vos commandes ici",
+      "browseProducts": "Parcourir les produits"
+    },
+    "orderNumber": "Commande n° {id}",
+    "itemCount": "{count, plural, one {# article} other {# articles}}",
+    "soldBy": "Vendu par :",
+    "viewDetails": "Voir les détails",
+    "detail": {
+      "backToOrders": "Retour aux commandes",
+      "notFound": "Commande introuvable",
+      "placedOn": "Passée le {date}",
+      "items": "Articles de la commande",
+      "product": "Produit",
+      "quantity": "Quantité : {count}",
+      "each": "l'unité",
+      "shippingAddress": "Adresse de livraison",
+      "noShippingAddress": "Aucune adresse de livraison fournie",
+      "summary": "Récapitulatif de la commande",
+      "subtotal": "Sous-total",
+      "shipping": "Livraison",
+      "standardShipping": "Standard",
+      "total": "Total",
+      "payment": "Paiement",
+      "statusTitle": "Statut de la commande",
+      "status": {
+        "PENDING": "En attente",
+        "PROCESSING": "En cours de traitement",
+        "SHIPPED": "Expédiée",
+        "DELIVERED": "Livrée"
+      }
+    }
+  },
+  "products": {
+    "outOfStock": "Rupture de stock",
+    "inStock": "En stock",
+    "defaultStoreName": "Boutique MarketHub",
+    "title": "Parcourir les produits",
+    "searchPlaceholder": "Rechercher des produits...",
+    "filters": "Filtres",
+    "categoryLabel": "Catégorie",
+    "allCategories": "Toutes les catégories",
+    "categories": {
+      "electronics": "Électronique",
+      "clothing": "Vêtements",
+      "home": "Maison et jardin",
+      "sports": "Sport et plein air",
+      "books": "Livres",
+      "toys": "Jouets et jeux"
+    },
+    "minPrice": "Prix minimum",
+    "maxPrice": "Prix maximum",
+    "inStockOnly": "En stock uniquement",
+    "noResultsToast": "Aucun produit ne correspond à vos critères",
+    "loadError": "Impossible de charger les produits. Veuillez réessayer.",
+    "empty": {
+      "title": "Aucun produit trouvé",
+      "clearFilters": "Effacer les filtres"
+    },
+    "notFound": "Produit introuvable",
+    "backToProducts": "Retour aux produits",
+    "breadcrumb": {
+      "home": "Accueil",
+      "products": "Produits"
+    },
+    "addedToWishlist": "Ajouté à la liste d'envies",
+    "removedFromWishlist": "Retiré de la liste d'envies",
+    "wishlistError": "Impossible de mettre à jour la liste d'envies",
+    "sellerCannotCart": "Les vendeurs ne peuvent pas ajouter de produits au panier",
+    "addedToCart": "Produit ajouté au panier !",
+    "addToCartError": "Impossible d'ajouter au panier",
+    "reviewCount": "{n, plural, one {# avis} other {# avis}}",
+    "description": "Description",
+    "options": "Options",
+    "selectAttribute": "Sélectionner : {name}",
+    "quantity": "Quantité",
+    "adding": "Ajout en cours...",
+    "addToCart": "Ajouter au panier",
+    "removeFromWishlist": "Retirer de la liste d'envies",
+    "addToWishlist": "Ajouter à la liste d'envies",
+    "editYourReview": "Modifier votre avis",
+    "writeReview": "Rédiger un avis",
+    "sellersCannotPurchase": "Les vendeurs ne peuvent pas acheter de produits",
+    "productInformation": "Informations sur le produit",
+    "sku": "SKU :",
+    "categoryInfoLabel": "Catégorie :",
+    "general": "Général",
+    "availability": "Disponibilité :",
+    "customerReviews": "Avis clients ({n})",
+    "noReviews": "Aucun avis pour le moment",
+    "beFirst": "Soyez le premier à donner votre avis sur ce produit",
+    "moreFromStore": "Davantage de cette boutique",
+    "viewAllFrom": "Voir tous les produits de {store}",
+    "editReview": "Modifier l'avis",
+    "close": "Fermer",
+    "yourRating": "Votre note *",
+    "ratings": {
+      "poor": "Médiocre",
+      "fair": "Passable",
+      "good": "Bien",
+      "veryGood": "Très bien",
+      "excellent": "Excellent"
+    },
+    "yourReview": "Votre avis *",
+    "commentPlaceholder": "Partagez votre expérience avec ce produit...",
+    "minCharacters": "Minimum 10 caractères",
+    "submitting": "Envoi en cours...",
+    "updateReview": "Mettre à jour l'avis",
+    "submitReview": "Publier l'avis",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "selectRating": "Veuillez sélectionner une note",
+    "writeComment": "Veuillez rédiger un avis",
+    "updateSuccess": "Avis mis à jour avec succès !",
+    "submitSuccess": "Avis publié avec succès !",
+    "submitError": "Impossible de publier l'avis",
+    "deleteConfirm": "Voulez-vous vraiment supprimer votre avis ?",
+    "deleteSuccess": "Avis supprimé avec succès !",
+    "deleteError": "Impossible de supprimer l'avis"
+  },
+  "profile": {
+    "title": "Mon profil",
+    "subtitle": "Gérez les informations de votre compte",
+    "sellerAccount": "Compte vendeur",
+    "personalInfo": "Informations personnelles",
+    "updateSuccess": "Profil mis à jour avec succès !",
+    "updateFailed": "Impossible de mettre à jour le profil",
+    "fields": {
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Yacine",
+      "lastName": "Nom",
+      "lastNamePlaceholder": "Bensalem",
+      "email": "Adresse e-mail",
+      "emailLocked": "L'adresse e-mail ne peut pas être modifiée",
+      "phone": "Numéro de téléphone",
+      "phonePlaceholder": "+213 5XX XX XX XX",
+      "preferredLanguage": "Langue préférée",
+      "preferredLanguageHint": "Utilisée pour la langue de vos e-mails et SMS."
+    },
+    "save": {
+      "saving": "Enregistrement…",
+      "submit": "Enregistrer les modifications"
+    },
+    "security": {
+      "title": "Sécurité",
+      "changePassword": "Modifier le mot de passe",
+      "changePasswordText": "Mettez à jour votre mot de passe",
+      "change": "Modifier"
+    },
+    "actions": {
+      "title": "Actions du compte",
+      "sellerDashboard": "Accéder au tableau de bord vendeur",
+      "sellerDashboardText": "Gérez votre boutique et vos produits",
+      "orderHistory": "Voir l'historique des commandes",
+      "orderHistoryText": "Consultez vos achats précédents"
+    }
+  },
+  "seller": {
+    "dashboard": {
+      "subtitle": "Tableau de bord vendeur",
+      "notifications": "Notifications",
+      "storeSettings": "Paramètres de la boutique",
+      "newProduct": "Nouveau produit",
+      "tabs": {
+        "overview": "Vue d'ensemble",
+        "products": "Produits",
+        "orders": "Commandes"
+      },
+      "range": {
+        "label": "Période",
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "last90": "90 derniers jours",
+        "lastYear": "Dernière année"
+      },
+      "welcome": {
+        "title": "Bienvenue sur MarketHub !",
+        "body": "Vous devez configurer votre boutique avant de pouvoir commencer à vendre.",
+        "cta": "Configurer votre boutique"
+      },
+      "alerts": {
+        "lowStock": "{count, plural, one {# produit est bientôt en rupture de stock} other {# produits sont bientôt en rupture de stock}}",
+        "viewItems": "Voir les articles →",
+        "pending": "{count, plural, one {# commande en attente de traitement} other {# commandes en attente de traitement}}",
+        "processOrders": "Traiter les commandes →"
+      },
+      "stats": {
+        "revenue": "Chiffre d'affaires total",
+        "orders": "Commandes totales",
+        "listed": "Produits en ligne",
+        "avgOrder": "Valeur moyenne d'une commande",
+        "vsPrevious": "par rapport à la période précédente"
+      },
+      "recentOrders": {
+        "title": "Commandes récentes",
+        "pendingCount": "{count} en attente de traitement",
+        "search": "Rechercher des commandes",
+        "filter": "Filtrer les commandes",
+        "viewAll": "Tout voir",
+        "empty": "Aucune commande pour le moment. Les commandes apparaîtront ici dès que des clients acheteront vos produits.",
+        "viewDetails": "Voir les détails →"
+      },
+      "recentProducts": {
+        "title": "Produits récents",
+        "subtitle": "Vos dernières annonces",
+        "empty": "Aucun produit pour le moment.",
+        "add": "Ajouter un produit",
+        "available": "Disponible",
+        "unavailable": "Indisponible",
+        "view": "Voir",
+        "viewAll": "Voir tous les produits →"
+      },
+      "performance": {
+        "title": "Performances de la boutique",
+        "active": "Produits actifs",
+        "views": "Vues de la boutique",
+        "engagement": "Taux d'engagement",
+        "stockAlerts": "Alertes de stock",
+        "viewLowStock": "Voir les articles en stock faible →"
+      }
+    },
+    "products": {
+      "heading": "Mes produits",
+      "subtitle": "Gérez vos annonces produits",
+      "addNew": "Ajouter un produit",
+      "searchPlaceholder": "Rechercher des produits…",
+      "filters": {
+        "all": "Tous les produits",
+        "available": "Disponible",
+        "outOfStock": "Rupture de stock"
+      },
+      "emptyState": {
+        "noResults": "Aucun produit trouvé",
+        "noneYet": "Aucun produit pour le moment",
+        "noResultsHint": "Essayez de modifier vos termes de recherche",
+        "startHint": "Commencez par ajouter votre premier produit",
+        "addFirst": "Ajouter votre premier produit"
+      },
+      "card": {
+        "price": "Prix :",
+        "category": "Catégorie :",
+        "viewPublic": "Voir la page publique",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "deleteConfirm": "Voulez-vous vraiment supprimer ce produit ?",
+      "deleteError": "Échec de la suppression du produit"
+    },
+    "create": {
+      "back": "Retour aux produits",
+      "title": "Ajouter un produit",
+      "cancel": "Annuler",
+      "created": "Produit créé avec succès !",
+      "createError": "Échec de la création du produit",
+      "form": {
+        "name": "Nom du produit",
+        "namePlaceholder": "Saisissez le nom du produit",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez votre produit en détail",
+        "price": "Prix (DZD)",
+        "category": "Catégorie",
+        "categoryPlaceholder": "p. ex. Électronique, Vêtements, etc.",
+        "lowStock": "Seuil de stock faible",
+        "lowStockHint": "Vous recevrez une alerte lorsque le stock descendra sous ce nombre",
+        "availability": "Rendre ce produit disponible à la vente immédiatement",
+        "requiredError": "Veuillez remplir tous les champs obligatoires",
+        "submit": "Créer le produit",
+        "submitting": "Création…"
+      }
+    },
+    "edit": {
+      "back": "Retour aux produits",
+      "title": "Modifier le produit",
+      "loading": "Chargement du produit…",
+      "cancel": "Annuler",
+      "updated": "Produit mis à jour avec succès !",
+      "loadError": "Échec du chargement du produit",
+      "updateError": "Échec de la mise à jour du produit",
+      "form": {
+        "name": "Nom du produit",
+        "namePlaceholder": "Saisissez le nom du produit",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez votre produit en détail",
+        "price": "Prix (DZD)",
+        "category": "Catégorie",
+        "categoryPlaceholder": "p. ex. Électronique, Vêtements, etc.",
+        "lowStock": "Seuil de stock faible",
+        "lowStockHint": "Vous recevrez une alerte lorsque le stock descendra sous ce nombre",
+        "availability": "Le produit est disponible à la vente",
+        "requiredError": "Veuillez remplir tous les champs obligatoires",
+        "submit": "Enregistrer les modifications",
+        "submitting": "Enregistrement…"
+      }
+    },
+    "orders": {
+      "title": "Commandes",
+      "subtitle": "Gérez les commandes des clients",
+      "filterLabel": "Filtrer par statut",
+      "filterAll": "Toutes les commandes",
+      "statuses": {
+        "pending": "En attente",
+        "processing": "En cours de traitement",
+        "shipped": "Expédiée",
+        "delivered": "Livrée",
+        "cancelled": "Annulée"
+      },
+      "empty": {
+        "title": "Aucune commande trouvée",
+        "body": "Les commandes apparaîtront ici dès que des clients acheteront vos produits"
+      },
+      "number": "Commande n° {id}",
+      "itemsCount": "{count, plural, one {# article} other {# articles}}",
+      "itemsTitle": "Articles de la commande :",
+      "unknownProduct": "Produit",
+      "shippingTitle": "Adresse de livraison :"
+    },
+    "storeSetup": {
+      "title": "Créez votre boutique",
+      "subtitle": "Configurez votre boutique pour commencer à vendre sur MarketHub",
+      "created": "Boutique créée avec succès !",
+      "createError": "Échec de la création de la boutique",
+      "form": {
+        "name": "Nom de la boutique",
+        "namePlaceholder": "Saisissez le nom de votre boutique (min. 3 caractères)",
+        "nameHint": "Ce sera le nom public de votre boutique",
+        "description": "Description de la boutique",
+        "descriptionPlaceholder": "Présentez votre boutique et vos produits aux clients (min. 20 caractères)",
+        "descriptionCount": "{count}/20 caractères minimum",
+        "category": "Catégorie de la boutique",
+        "categoryPlaceholder": "Sélectionnez une catégorie",
+        "submit": "Créer la boutique",
+        "submitting": "Création de la boutique…"
+      },
+      "categories": {
+        "electronics": "Électronique",
+        "fashion": "Vêtements et mode",
+        "home": "Maison et jardin",
+        "books": "Livres et médias",
+        "sports": "Sports et plein air",
+        "toys": "Jouets et jeux",
+        "beauty": "Beauté et santé",
+        "food": "Alimentation et boissons",
+        "other": "Autre"
+      },
+      "next": {
+        "title": "Et ensuite ?",
+        "step1": "• Ajoutez des produits à votre boutique",
+        "step2": "• Configurez le suivi des stocks",
+        "step3": "• Commencez à recevoir des commandes"
+      },
+      "validation": {
+        "required": "Veuillez remplir tous les champs obligatoires",
+        "nameMin": "Le nom de la boutique doit comporter au moins 3 caractères",
+        "descriptionMin": "La description de la boutique doit comporter au moins 20 caractères"
+      }
+    }
+  },
+  "stores": {
+    "title": "Parcourir les boutiques",
+    "subtitle": "Découvrez des produits uniques auprès de vendeurs vérifiés",
+    "searchPlaceholder": "Rechercher des boutiques par nom, catégorie ou description...",
+    "noStoresFound": "Aucune boutique trouvée",
+    "noStoresAvailable": "Aucune boutique disponible",
+    "tryAdjustingSearch": "Essayez de modifier vos termes de recherche",
+    "checkBackLater": "Revenez plus tard pour découvrir de nouvelles boutiques",
+    "clearSearch": "Effacer la recherche",
+    "resultsCount": "{n, plural, one {# boutique affichée} other {# boutiques affichées}}",
+    "logoAlt": "Logo de {store}",
+    "defaultDescription": "Un vendeur de confiance sur MarketHub",
+    "products": "Produits",
+    "active": "Active",
+    "inactive": "Inactive",
+    "notFound": "Boutique introuvable",
+    "browseAllStores": "Parcourir toutes les boutiques",
+    "backToStores": "Retour aux boutiques",
+    "activeStore": "Boutique active",
+    "joined": "Inscrite en {date}",
+    "productsCount": "{n, plural, one {# produit} other {# produits}}",
+    "productsHeading": "Produits",
+    "browseAllFrom": "Parcourez tous les produits de {store}",
+    "noProductsYet": "Aucun produit pour le moment",
+    "noProductsBody": "Cette boutique n'a encore listé aucun produit. Revenez plus tard !"
+  },
+  "wishlist": {
+    "title": "Ma liste d'envies",
+    "itemCount": "{n, plural, one {# article} other {# articles}}",
+    "clearWishlist": "Vider la liste d'envies",
+    "clearConfirm": "Voulez-vous vraiment vider toute votre liste d'envies ?",
+    "clearedToast": "Liste d'envies vidée",
+    "clearError": "Impossible de vider la liste d'envies",
+    "emptyTitle": "Votre liste d'envies est vide",
+    "emptyBody": "Ajoutez les articles que vous aimez à votre liste d'envies. Consultez-les à tout moment et transférez-les facilement vers votre panier.",
+    "startShopping": "Commencer vos achats",
+    "outOfStock": "Rupture de stock",
+    "removeItem": "Retirer de la liste d'envies",
+    "removedToast": "Retiré de la liste d'envies",
+    "removeError": "Impossible de retirer l'article",
+    "productUnavailable": "Ce produit est actuellement indisponible",
+    "addToCart": "Ajouter au panier",
+    "adding": "Ajout en cours...",
+    "addedToCartToast": "Ajouté au panier !",
+    "addToCartError": "Impossible d'ajouter au panier",
+    "viewProduct": "Voir le produit",
+    "loadError": "Impossible de charger la liste d'envies"
+  }
+}

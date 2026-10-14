@@ -277,3 +277,141 @@ msgstr ""
 
 msgid "This Idempotency-Key was already used with a different payload."
 msgstr "استُخدم مفتاح عدم التكرار هذا بالفعل بمحتوى مختلف."
+
+# --- Phase 11: Algeria localisation (apps/users/email.py, otp.py,
+# serializers.py; core/i18n.py choice labels) ----------------------------
+msgid "Verify your MarketHub account"
+msgstr "تحقق من حسابك على MarketHub"
+
+msgid ""
+"Hello {name},\n"
+"\n"
+"Please confirm your email address to activate your MarketHub account:\n"
+"{link}\n"
+"\n"
+"The link expires in 24 hours. If you did not create this account, you can "
+"ignore this message."
+msgstr ""
+"مرحبا {name}،\n"
+"\n"
+"يرجى تأكيد بريدك الإلكتروني لتفعيل حسابك على MarketHub:\n"
+"{link}\n"
+"\n"
+"ينتهي الرابط خلال 24 ساعة. إذا لم تنشئ هذا الحساب، يمكنك تجاهل هذه الرسالة."
+
+msgid "Reset your MarketHub password"
+msgstr "إعادة تعيين كلمة مرورك على MarketHub"
+
+msgid ""
+"Hello {name},\n"
+"\n"
+"Someone asked to reset the password of your MarketHub account:\n"
+"{link}\n"
+"\n"
+"Choose a new password within 24 hours — the link stops working after that, "
+"and also as soon as the password changes. If this was not you, ignore this "
+"message and nothing changes."
+msgstr ""
+"مرحبا {name}،\n"
+"\n"
+"طلب أحدهم إعادة تعيين كلمة مرور حسابك على MarketHub:\n"
+"{link}\n"
+"\n"
+"اختر كلمة مرور جديدة خلال 24 ساعة — يتوقف الرابط عن العمل بعدها، وكذلك "
+"بمجرد تغيير كلمة المرور. إذا لم تكن أنت، تجاهل هذه الرسالة ولن يتغير شيء."
+
+msgid "Your MarketHub password was changed"
+msgstr "تم تغيير كلمة مرورك على MarketHub"
+
+msgid ""
+"Hello,\n"
+"\n"
+"The password of your MarketHub account was just changed. If this was not "
+"you, reset your password immediately and contact support@markethub.example."
+msgstr ""
+"مرحبا،\n"
+"\n"
+"تم تغيير كلمة مرور حسابك على MarketHub للتو. إذا لم تكن أنت، أعد تعيين "
+"كلمة المرور فورا واتصل بـ support@markethub.example."
+
+msgid "Your MarketHub code is {code}. It expires in {minutes} minutes. Never share it."
+msgstr "رمزك على MarketHub هو {code}. تنتهي صلاحيته خلال {minutes} دقائق. لا تشاركه أبدا."
+
+msgid "Your MarketHub password was changed."
+msgstr "تم تغيير كلمة مرورك على MarketHub."
+
+msgid "Wilaya not found."
+msgstr "الولاية غير موجودة."
+
+msgid "Commune not found in this wilaya."
+msgstr "البلدية غير موجودة في هذه الولاية."
+
+# Choice labels — the *_label twin of each raw enum value in API responses.
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+msgid "Processing"
+msgstr "قيد المعالجة"
+
+msgid "Shipped"
+msgstr "تم الشحن"
+
+msgid "Delivered"
+msgstr "تم التسليم"
+
+msgid "Cancelled"
+msgstr "ملغاة"
+
+msgid "Successful"
+msgstr "ناجح"
+
+msgid "Failed"
+msgstr "فشل"
+
+msgid "Simulated"
+msgstr "محاكاة"
+
+msgid "Paid"
+msgstr "مدفوع"
+
+msgid "Sale"
+msgstr "بيع"
+
+msgid "Return"
+msgstr "إرجاع"
+
+msgid "Manual Adjustment"
+msgstr "تعديل يدوي"
+
+msgid "Initial Stock"
+msgstr "المخزون الأولي"
+
+msgid "Restock"
+msgstr "إعادة تموين"
+
+msgid "Electronics"
+msgstr "إلكترونيات"
+
+msgid "Fashion"
+msgstr "أزياء"
+
+msgid "Home & Garden"
+msgstr "المنزل والحديقة"
+
+msgid "Books"
+msgstr "كتب"
+
+msgid "Sports & Outdoors"
+msgstr "رياضة ورحلات"
+
+msgid "Toys & Games"
+msgstr "ألعاب"
+
+msgid "Food & Beverages"
+msgstr "مواد غذائية ومشروبات"
+
+msgid "Beauty & Personal Care"
+msgstr "العناية الشخصية والتجميل"
+
+msgid "Other"
+msgstr "أخرى"

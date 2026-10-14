@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { productsAPI } from '../../../../lib/api'
 import { apiErrorMessage } from '../../../../lib/errors'
+import { useTranslations } from 'next-intl'
 import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CreateProductPage() {
   const router = useRouter()
+  const t = useTranslations('seller')
   const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
@@ -40,7 +42,7 @@ export default function CreateProductPage() {
     e.preventDefault()
 
     if (!formData.name || !formData.description || !formData.base_price) {
-      setMessage({ type: 'error', text: 'Please fill in all required fields' })
+      setMessage({ type: 'error', text: t('create.form.requiredError') })
       return
     }
 
@@ -48,7 +50,7 @@ export default function CreateProductPage() {
       setLoading(true)
       setMessage(null)
       await productsAPI.create(formData)
-      setMessage({ type: 'success', text: 'Product created successfully!' })
+      setMessage({ type: 'success', text: t('create.created') })
       setTimeout(() => {
         router.push('/seller/products')
       }, 1500)
@@ -56,7 +58,7 @@ export default function CreateProductPage() {
       console.error('Error creating product:', error)
       setMessage({
         type: 'error',
-        text: apiErrorMessage(error, 'Failed to create product'),
+        text: apiErrorMessage(error, t('create.createError')),
       })
     } finally {
       setLoading(false)
@@ -77,13 +79,13 @@ export default function CreateProductPage() {
         href="/seller/products"
         className="inline-flex items-center text-gray-600 hover:text-primary mb-6"
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Products
+        <ArrowLeft className="h-4 w-4 me-2" />
+        {t('create.back')}
       </Link>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Add New Product
+          {t('create.title')}
         </h1>
 
         {message && (
@@ -95,9 +97,9 @@ export default function CreateProductPage() {
             }`}
           >
             {message.type === 'success' ? (
-              <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 me-2 flex-shrink-0" />
             ) : (
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 me-2 flex-shrink-0" />
             )}
             <span>{message.text}</span>
           </div>
@@ -109,7 +111,7 @@ export default function CreateProductPage() {
               htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Product Name <span className="text-red-500">*</span>
+              {t('create.form.name')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -119,7 +121,7 @@ export default function CreateProductPage() {
               onChange={handleChange}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Enter product name"
+              placeholder={t('create.form.namePlaceholder')}
             />
           </div>
 
@@ -128,7 +130,8 @@ export default function CreateProductPage() {
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Description <span className="text-red-500">*</span>
+              {t('create.form.description')}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <textarea
               id="description"
@@ -138,7 +141,7 @@ export default function CreateProductPage() {
               required
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Describe your product in detail"
+              placeholder={t('create.form.descriptionPlaceholder')}
             />
           </div>
 
@@ -148,7 +151,7 @@ export default function CreateProductPage() {
                 htmlFor="base_price"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Price ($) <span className="text-red-500">*</span>
+                {t('create.form.price')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -169,7 +172,7 @@ export default function CreateProductPage() {
                 htmlFor="category"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Category
+                {t('create.form.category')}
               </label>
               <input
                 type="text"
@@ -178,7 +181,7 @@ export default function CreateProductPage() {
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="e.g., Electronics, Clothing, etc."
+                placeholder={t('create.form.categoryPlaceholder')}
               />
             </div>
           </div>
@@ -188,7 +191,7 @@ export default function CreateProductPage() {
               htmlFor="low_stock_threshold"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Low Stock Threshold
+              {t('create.form.lowStock')}
             </label>
             <input
               type="number"
@@ -201,7 +204,7 @@ export default function CreateProductPage() {
               placeholder="5"
             />
             <p className="text-sm text-gray-500 mt-1">
-              You'll receive an alert when stock falls below this number
+              {t('create.form.lowStockHint')}
             </p>
           </div>
 
@@ -216,9 +219,9 @@ export default function CreateProductPage() {
             />
             <label
               htmlFor="is_available"
-              className="ml-2 block text-sm text-gray-700"
+              className="ms-2 block text-sm text-gray-700"
             >
-              Make this product available for purchase immediately
+              {t('create.form.availability')}
             </label>
           </div>
 
@@ -229,13 +232,13 @@ export default function CreateProductPage() {
               className="btn-primary flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="h-5 w-5" />
-              {loading ? 'Creating...' : 'Create Product'}
+              {loading ? t('create.form.submitting') : t('create.form.submit')}
             </button>
             <Link
               href="/seller/products"
               className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t('create.cancel')}
             </Link>
           </div>
         </form>

@@ -1,7 +1,8 @@
 // Journey 3 — search -> open listing (docs/todo.md Phase 4).
 // Uses the listing seeded by `manage.py seed_e2e` ("E2E Test Phone"): search
 // for it on /products, open the card, and assert the detail page renders it.
-const { test, expect } = require('@playwright/test')
+// The shared fixture pins `mh_locale=en` (Phase 11: default UI is French).
+const { test, expect } = require('./fixtures')
 
 const SEEDED_PRODUCT = 'E2E Test Phone'
 

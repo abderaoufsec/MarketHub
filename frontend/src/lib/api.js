@@ -1,6 +1,7 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
 import { API_URL } from './env'
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '../i18n/config'
 
 // Create axios instance
 const api = axios.create({
@@ -39,6 +40,15 @@ async function ensureCsrfToken() {
 // travel in HttpOnly cookies automatically (withCredentials) — there is no
 // token for JavaScript to read or attach.
 api.interceptors.request.use(async (config) => {
+  // Phase 11: every translated API surface (error envelope, *_label fields,
+  // geography names) follows the UI language the same way the frontend does —
+  // from the `mh_locale` cookie. LocaleMiddleware on the backend reads this
+  // header; without it the API would answer French under an Arabic UI.
+  const localeCookie = Cookies.get(LOCALE_COOKIE)
+  config.headers['Accept-Language'] = isLocale(localeCookie)
+    ? localeCookie
+    : DEFAULT_LOCALE
+
   const method = (config.method || 'get').toLowerCase()
   if (!SAFE_METHODS.has(method)) {
     const token = await ensureCsrfToken()

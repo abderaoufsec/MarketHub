@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../../../context/AuthContext'
 import { productsAPI } from '../../../../../lib/api'
 import { apiErrorMessage } from '../../../../../lib/errors'
+import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
   Save,
@@ -18,6 +19,7 @@ export default function EditProductPage() {
   const router = useRouter()
   const params = useParams()
   const productId = params.id
+  const t = useTranslations('seller')
   const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -68,7 +70,7 @@ export default function EditProductPage() {
       console.error('Error fetching product:', error)
       setMessage({
         type: 'error',
-        text: apiErrorMessage(error, 'Failed to load product'),
+        text: apiErrorMessage(error, t('edit.loadError')),
       })
     } finally {
       setLoading(false)
@@ -87,7 +89,7 @@ export default function EditProductPage() {
     e.preventDefault()
 
     if (!formData.name || !formData.description || !formData.base_price) {
-      setMessage({ type: 'error', text: 'Please fill in all required fields' })
+      setMessage({ type: 'error', text: t('edit.form.requiredError') })
       return
     }
 
@@ -95,7 +97,7 @@ export default function EditProductPage() {
       setSaving(true)
       setMessage(null)
       await productsAPI.update(productId, formData)
-      setMessage({ type: 'success', text: 'Product updated successfully!' })
+      setMessage({ type: 'success', text: t('edit.updated') })
       setTimeout(() => {
         router.push('/seller/products')
       }, 1500)
@@ -103,7 +105,7 @@ export default function EditProductPage() {
       console.error('Error updating product:', error)
       setMessage({
         type: 'error',
-        text: apiErrorMessage(error, 'Failed to update product'),
+        text: apiErrorMessage(error, t('edit.updateError')),
       })
     } finally {
       setSaving(false)
@@ -115,7 +117,7 @@ export default function EditProductPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-600">Loading product...</p>
+          <p className="text-gray-600">{t('edit.loading')}</p>
         </div>
       </div>
     )
@@ -131,12 +133,14 @@ export default function EditProductPage() {
         href="/seller/products"
         className="inline-flex items-center text-gray-600 hover:text-primary mb-6"
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Products
+        <ArrowLeft className="h-4 w-4 me-2" />
+        {t('edit.back')}
       </Link>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Product</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          {t('edit.title')}
+        </h1>
 
         {message && (
           <div
@@ -147,9 +151,9 @@ export default function EditProductPage() {
             }`}
           >
             {message.type === 'success' ? (
-              <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 me-2 flex-shrink-0" />
             ) : (
-              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 me-2 flex-shrink-0" />
             )}
             <span>{message.text}</span>
           </div>
@@ -161,7 +165,7 @@ export default function EditProductPage() {
               htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Product Name <span className="text-red-500">*</span>
+              {t('edit.form.name')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -171,7 +175,7 @@ export default function EditProductPage() {
               onChange={handleChange}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Enter product name"
+              placeholder={t('edit.form.namePlaceholder')}
             />
           </div>
 
@@ -180,7 +184,8 @@ export default function EditProductPage() {
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Description <span className="text-red-500">*</span>
+              {t('edit.form.description')}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <textarea
               id="description"
@@ -190,7 +195,7 @@ export default function EditProductPage() {
               required
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="Describe your product in detail"
+              placeholder={t('edit.form.descriptionPlaceholder')}
             />
           </div>
 
@@ -200,7 +205,7 @@ export default function EditProductPage() {
                 htmlFor="base_price"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Price ($) <span className="text-red-500">*</span>
+                {t('edit.form.price')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -221,7 +226,7 @@ export default function EditProductPage() {
                 htmlFor="category"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Category
+                {t('edit.form.category')}
               </label>
               <input
                 type="text"
@@ -230,7 +235,7 @@ export default function EditProductPage() {
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="e.g., Electronics, Clothing, etc."
+                placeholder={t('edit.form.categoryPlaceholder')}
               />
             </div>
           </div>
@@ -240,7 +245,7 @@ export default function EditProductPage() {
               htmlFor="low_stock_threshold"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Low Stock Threshold
+              {t('edit.form.lowStock')}
             </label>
             <input
               type="number"
@@ -253,7 +258,7 @@ export default function EditProductPage() {
               placeholder="5"
             />
             <p className="text-sm text-gray-500 mt-1">
-              You'll receive an alert when stock falls below this number
+              {t('edit.form.lowStockHint')}
             </p>
           </div>
 
@@ -268,9 +273,9 @@ export default function EditProductPage() {
             />
             <label
               htmlFor="is_available"
-              className="ml-2 block text-sm text-gray-700"
+              className="ms-2 block text-sm text-gray-700"
             >
-              Product is available for purchase
+              {t('edit.form.availability')}
             </label>
           </div>
 
@@ -283,12 +288,12 @@ export default function EditProductPage() {
               {saving ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Saving...
+                  {t('edit.form.submitting')}
                 </>
               ) : (
                 <>
                   <Save className="h-5 w-5" />
-                  Save Changes
+                  {t('edit.form.submit')}
                 </>
               )}
             </button>
@@ -296,7 +301,7 @@ export default function EditProductPage() {
               href="/seller/products"
               className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t('edit.cancel')}
             </Link>
           </div>
         </form>

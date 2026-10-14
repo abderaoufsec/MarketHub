@@ -12,11 +12,11 @@ MarketHub is **under active development**. The core commerce flows work end-to-e
 
 | Area | State |
 |---|---|
-| Backend | 6 apps · 53 API routes · migrations in sync |
-| Frontend | 19 pages (Next.js App Router) |
-| Tests | Backend: **224 passing** (3 strict xfails pinning known defects) · Frontend: **52 unit + 5 e2e passing** |
+| Backend | 7 apps · 64 API paths / 76 operations · migrations in sync |
+| Frontend | 22 pages (Next.js App Router) |
+| Tests | Backend: **403 passing** (1 strict xfail pinning a known defect) · Frontend: **83 unit + 5 e2e passing** |
 | CI | **GitHub Actions** — backend, frontend and security-audit jobs on every push/PR |
-| API docs | ⚠️ Not yet generated — Phase 9 |
+| API docs | **Swagger** at `/api/docs/`, ReDoc at `/api/redoc/` — generated from drf-spectacular (0 schema errors) |
 
 The full 29-phase plan to close these gaps lives in **[docs/todo.md](docs/todo.md)**.
 
@@ -29,12 +29,14 @@ MarketHub/
 ├── backend/                 # Django project
 │   ├── core/                # settings, root urls, wsgi/asgi
 │   ├── apps/
-│   │   ├── users/           # auth, profiles, addresses
+│   │   ├── users/           # auth, profiles, addresses (wilaya/commune FKs)
+│   │   ├── geography/       # Wilaya & Commune reference data (69 wilayas)
 │   │   ├── stores/          # seller stores & followers
 │   │   ├── products/        # catalog, reviews, wishlist
 │   │   ├── inventory/       # stock levels & audit log
 │   │   ├── orders/          # cart, checkout, order lifecycle
 │   │   └── payments/        # transactions, refunds, commissions
+│   ├── locale/              # gettext catalogs (fr, ar)
 │   ├── static/              # source static assets
 │   ├── templates/           # Django templates
 │   ├── manage.py
@@ -44,7 +46,8 @@ MarketHub/
 │       ├── app/             # App Router pages
 │       ├── components/      # common / product components
 │       ├── context/         # AuthContext
-│       └── lib/             # axios client + API services
+│       ├── i18n/            # locale config + ar/en/fr message catalogues
+│       └── lib/             # axios client, API services, currency/geography
 ├── docs/                    # roadmap & documentation
 └── .gitignore
 ```
@@ -109,6 +112,7 @@ API is now at <http://localhost:8000> — root routes:
 | Prefix | App |
 |---|---|
 | `/api/v1/auth/` | users — register, login, logout, profile, addresses |
+| `/api/v1/geography/` | geography — wilayas, communes (public read-only reference data) |
 | `/api/v1/stores/` | stores — public store list/detail, seller store management |
 | `/api/v1/products/` | products — catalog, reviews, wishlist |
 | `/api/v1/inventory/` | inventory — stock, low-stock, audit log |
@@ -176,7 +180,7 @@ npx playwright install chromium   # once
 npm run e2e
 ```
 
-> The backend suite pins 4 known defects as `xfail(strict=True)` (see [docs/todo.md](docs/todo.md) §0.3): they are expected to fail until Phases 7, 8 and 17 fix them, and the suite turns red the moment a fix lands so the marker gets removed.
+> The backend suite pins 1 known defect as `xfail(strict=True)` (see [docs/todo.md](docs/todo.md) §0.3): it is expected to fail until Phase 17 fixes it, and the suite turns red the moment a fix lands so the marker gets removed.
 
 ### 5. Optional: git hooks
 
@@ -221,6 +225,12 @@ Dependabot opens weekly PRs for pip, npm and GitHub Actions dependencies.
 
 > A cart line whose price changed since it was added is rejected with `400` + `code: "price_changed"`. `POST /api/v1/orders/cart/refresh-prices/` accepts the current catalogue prices (the checkout page shows a "Prices have changed" banner and calls it).
 
+### Localisation (Algeria)
+- **Three UI languages** — French (default), Arabic (RTL) and English — picked in the header and persisted in the `mh_locale` cookie. There is no `/<lang>/` URL segment yet (SEO routing is a later phase); the root layout reads the cookie server-side, so `<html lang dir>` and the message catalogue are right in the first byte and there is no flash. The API follows the same cookie through the `Accept-Language` header the client sends.
+- **Emails and SMS** follow each user's `preferred_language` (profile field, default `fr`); API responses expose translated `*_label` twins of enum/status values, with the raw values unchanged in the contract.
+- **Prices are DZD.** A user preference (`mh_price_display`) switches between `45 000 DZD` and the colloquial centime-millions habit (`1 million` = 10 000 DA).
+- **Addresses are geography FKs** — a street line plus a `Wilaya` (69, matching the Nov 2025 official list) and an optional `Commune` (~1,540), served by read-only `/api/v1/geography/` endpoints and picked with a cascading wilaya → commune selector.
+
 ### Payments
 Payments are **simulated** — there is no live payment gateway, and there is exactly **one** capture path: `process_simulated_payment()`, called from inside the checkout transaction. It writes a `Transaction` plus a `PlatformCommissionLedger` entry using `PLATFORM_COMMISSION_RATE`, and locks the order row so one order can never be charged twice — not concurrently, not by a client retry. `POST /api/v1/payments/simulate/` exists as the retry endpoint for an unpaid (`PENDING`) order and accepts an `idempotency_key` to replay a previous attempt safely.
 
@@ -230,9 +240,7 @@ Payments are **simulated** — there is no live payment gateway, and there is ex
 
 Tracked with concrete file references in [docs/todo.md](docs/todo.md):
 
-- **3 known defects pinned by strict xfails** in the backend suite — fixed in Phases 8 and 17 (see [docs/todo.md](docs/todo.md) §0.3).
-- **Duplicate email-verification flows**, and no frontend verification page (Phase 8).
-- **Product card images don't render** — serializer/field mismatch (Phase 12).
+- **1 known defect pinned by a strict xfail** in the backend suite — a review author can never edit their own review (fixed in Phase 17; see [docs/todo.md](docs/todo.md) §0.3).
 - **Refunds never restock inventory** — `return_inventory_for_order()` exists but nothing calls it (Phase 18).
 - **No Docker or deploy configuration** (Phases 19–20).
 

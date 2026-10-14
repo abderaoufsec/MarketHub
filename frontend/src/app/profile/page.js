@@ -2,20 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '../../context/AuthContext'
 import { apiErrorMessage } from '../../lib/errors'
-import {
-  User,
-  Mail,
-  Phone,
-  Save,
-  AlertCircle,
-  CheckCircle,
-  Lock,
-} from 'lucide-react'
+import { Mail, Phone, Save, AlertCircle, CheckCircle, Lock } from 'lucide-react'
+
+/**
+ * Phase 11 of docs/todo.md: the backend keys emails/SMS off the user's
+ * `preferred_language`. The options are *native* language names (العربية /
+ * Français / English) in every UI locale — you pick a language by the name
+ * speakers of that language use, so these three strings are never translated.
+ */
+const LANGUAGE_OPTIONS = [
+  { value: 'ar', label: 'العربية' },
+  { value: 'fr', label: 'Français' },
+  { value: 'en', label: 'English' },
+]
 
 export default function ProfilePage() {
   const router = useRouter()
+  const t = useTranslations('profile')
   const {
     user,
     isAuthenticated,
@@ -29,6 +35,8 @@ export default function ProfilePage() {
     last_name: '',
     phone_number: '',
     email: '',
+    // The API default is 'fr'; never send an empty value.
+    preferred_language: 'fr',
   })
 
   useEffect(() => {
@@ -44,6 +52,7 @@ export default function ProfilePage() {
         last_name: user.last_name || '',
         phone_number: user.phone_number || '',
         email: user.email || '',
+        preferred_language: user.preferred_language || 'fr',
       })
     }
   }, [user])
@@ -61,20 +70,20 @@ export default function ProfilePage() {
       setMessage(null)
       const result = await updateProfile(formData)
       if (result.success) {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' })
+        setMessage({ type: 'success', text: t('updateSuccess') })
       } else {
         setMessage({
           type: 'error',
           // AuthContext failures are Phase 9 envelopes — `message` is the
           // text to show (already seeded with this action's fallback).
-          text: apiErrorMessage(result.error, 'Failed to update profile'),
+          text: apiErrorMessage(result.error, t('updateFailed')),
         })
       }
     } catch (error) {
       console.error('Error updating profile:', error)
       setMessage({
         type: 'error',
-        text: apiErrorMessage(error, 'Failed to update profile'),
+        text: apiErrorMessage(error, t('updateFailed')),
       })
     } finally {
       setLoading(false)
@@ -92,8 +101,8 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-        <p className="text-gray-600 mt-1">Manage your account information</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600 mt-1">{t('subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -114,19 +123,19 @@ export default function ProfilePage() {
               <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
               {user?.is_seller && (
                 <span className="inline-block mt-3 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                  Seller Account
+                  {t('sellerAccount')}
                 </span>
               )}
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
               <div className="flex items-center text-sm text-gray-600">
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 me-2" />
                 <span className="truncate">{user?.email}</span>
               </div>
               {user?.phone_number && (
                 <div className="flex items-center text-sm text-gray-600">
-                  <Phone className="h-4 w-4 mr-2" />
+                  <Phone className="h-4 w-4 me-2" />
                   <span>{user.phone_number}</span>
                 </div>
               )}
@@ -139,7 +148,7 @@ export default function ProfilePage() {
           {/* Personal Information */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Personal Information
+              {t('personalInfo')}
             </h2>
 
             {message && (
@@ -151,9 +160,9 @@ export default function ProfilePage() {
                 }`}
               >
                 {message.type === 'success' ? (
-                  <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                  <CheckCircle className="h-5 w-5 me-2 flex-shrink-0" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 me-2 flex-shrink-0" />
                 )}
                 <span>{message.text}</span>
               </div>
@@ -166,7 +175,7 @@ export default function ProfilePage() {
                     htmlFor="first_name"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    First Name
+                    {t('fields.firstName')}
                   </label>
                   <input
                     type="text"
@@ -175,7 +184,7 @@ export default function ProfilePage() {
                     value={formData.first_name}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="John"
+                    placeholder={t('fields.firstNamePlaceholder')}
                   />
                 </div>
 
@@ -184,7 +193,7 @@ export default function ProfilePage() {
                     htmlFor="last_name"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Last Name
+                    {t('fields.lastName')}
                   </label>
                   <input
                     type="text"
@@ -193,7 +202,7 @@ export default function ProfilePage() {
                     value={formData.last_name}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="Doe"
+                    placeholder={t('fields.lastNamePlaceholder')}
                   />
                 </div>
               </div>
@@ -203,7 +212,7 @@ export default function ProfilePage() {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Email Address
+                  {t('fields.email')}
                 </label>
                 <input
                   type="email"
@@ -215,7 +224,7 @@ export default function ProfilePage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Email cannot be changed
+                  {t('fields.emailLocked')}
                 </p>
               </div>
 
@@ -224,7 +233,7 @@ export default function ProfilePage() {
                   htmlFor="phone_number"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Phone Number
+                  {t('fields.phone')}
                 </label>
                 <input
                   type="tel"
@@ -233,8 +242,33 @@ export default function ProfilePage() {
                   value={formData.phone_number}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder={t('fields.phonePlaceholder')}
                 />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="preferred_language"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  {t('fields.preferredLanguage')}
+                </label>
+                <select
+                  id="preferred_language"
+                  name="preferred_language"
+                  value={formData.preferred_language}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  {LANGUAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('fields.preferredLanguageHint')}
+                </p>
               </div>
 
               <div className="pt-4 border-t">
@@ -244,7 +278,7 @@ export default function ProfilePage() {
                   className="btn-primary flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save className="h-5 w-5" />
-                  {loading ? 'Saving...' : 'Save Changes'}
+                  {loading ? t('save.saving') : t('save.submit')}
                 </button>
               </div>
             </form>
@@ -253,7 +287,7 @@ export default function ProfilePage() {
           {/* Security Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Security
+              {t('security.title')}
             </h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
@@ -262,14 +296,16 @@ export default function ProfilePage() {
                     <Lock className="h-5 w-5 text-gray-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">Change Password</p>
+                    <p className="font-medium text-gray-900">
+                      {t('security.changePassword')}
+                    </p>
                     <p className="text-sm text-gray-600">
-                      Update your account password
+                      {t('security.changePasswordText')}
                     </p>
                   </div>
                 </div>
                 <button className="text-primary hover:text-secondary font-medium text-sm">
-                  Change
+                  {t('security.change')}
                 </button>
               </div>
             </div>
@@ -278,31 +314,31 @@ export default function ProfilePage() {
           {/* Account Actions */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Account Actions
+              {t('actions.title')}
             </h2>
             <div className="space-y-3">
               {user?.is_seller && (
                 <button
                   onClick={() => router.push('/seller/dashboard')}
-                  className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="w-full text-start px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <span className="font-medium text-gray-900">
-                    Go to Seller Dashboard
+                    {t('actions.sellerDashboard')}
                   </span>
                   <p className="text-sm text-gray-600 mt-1">
-                    Manage your store and products
+                    {t('actions.sellerDashboardText')}
                   </p>
                 </button>
               )}
               <button
                 onClick={() => router.push('/orders')}
-                className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full text-start px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <span className="font-medium text-gray-900">
-                  View Order History
+                  {t('actions.orderHistory')}
                 </span>
                 <p className="text-sm text-gray-600 mt-1">
-                  Check your past purchases
+                  {t('actions.orderHistoryText')}
                 </p>
               </button>
             </div>

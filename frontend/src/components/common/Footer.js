@@ -1,11 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { Store, Mail, Facebook, Twitter, Instagram } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { dirFor } from '../../i18n/config'
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
+  const t = useTranslations('common')
+  const locale = useLocale()
+  // Phase 11: slide-in animations follow the reading direction.
+  const enterX = dirFor(locale) === 'rtl' ? 20 : -20
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -41,7 +46,7 @@ export default function Footer() {
           {/* Brand */}
           <motion.div variants={itemVariants} className="col-span-1">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/" className="flex items-center space-x-2 mb-4 group">
+              <Link href="/" className="flex items-center gap-2 mb-4 group">
                 <motion.div
                   whileHover={{ rotate: [0, -10, 10, -10, 0] }}
                   transition={{ duration: 0.5 }}
@@ -54,28 +59,28 @@ export default function Footer() {
               </Link>
             </motion.div>
             <p className="text-sm leading-relaxed opacity-90">
-              Your trusted online marketplace connecting buyers and sellers.
+              {t('footer.tagline')}
             </p>
           </motion.div>
 
           {/* Quick Links */}
           <motion.div variants={itemVariants}>
             <h3 className="text-white font-semibold mb-4 text-lg">
-              Quick Links
+              {t('footer.quickLinks')}
             </h3>
             <ul className="space-y-3 text-sm">
               {[
-                { href: '/products', label: 'Products' },
-                { href: '/stores', label: 'Stores' },
-                { href: '/about', label: 'About Us' },
+                { href: '/products', label: t('nav.products') },
+                { href: '/stores', label: t('nav.stores') },
+                { href: '/about', label: t('footer.aboutUs') },
               ].map((link, index) => (
                 <motion.li
                   key={link.href}
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: enterX }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  whileHover={{ x: 5 }}
+                  whileHover={{ x: enterX > 0 ? -5 : 5 }}
                 >
                   <Link
                     href={link.href}
@@ -93,21 +98,27 @@ export default function Footer() {
           {/* For Sellers */}
           <motion.div variants={itemVariants}>
             <h3 className="text-white font-semibold mb-4 text-lg">
-              For Sellers
+              {t('footer.forSellers')}
             </h3>
             <ul className="space-y-3 text-sm">
               {[
-                { href: '/register?seller=true', label: 'Become a Seller' },
-                { href: '/seller/dashboard', label: 'Seller Dashboard' },
-                { href: '/help/sellers', label: 'Seller Help' },
+                {
+                  href: '/register?seller=true',
+                  label: t('footer.becomeSeller'),
+                },
+                {
+                  href: '/seller/dashboard',
+                  label: t('footer.sellerDashboard'),
+                },
+                { href: '/help/sellers', label: t('footer.sellerHelp') },
               ].map((link, index) => (
                 <motion.li
                   key={link.href}
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: enterX }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  whileHover={{ x: 5 }}
+                  whileHover={{ x: enterX > 0 ? -5 : 5 }}
                 >
                   <Link
                     href={link.href}
@@ -124,24 +135,27 @@ export default function Footer() {
 
           {/* Contact */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-white font-semibold mb-4 text-lg">Contact</h3>
+            <h3 className="text-white font-semibold mb-4 text-lg">
+              {t('footer.contact')}
+            </h3>
             <ul className="space-y-3 text-sm">
               <motion.li
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: enterX }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                className="flex items-center space-x-2 group"
+                className="flex items-center gap-2 group"
               >
                 <Mail className="h-4 w-4 group-hover:text-primary transition-colors" />
                 <a
                   href="mailto:support@markethub.com"
                   className="hover:text-white transition-colors group-hover:text-primary"
+                  dir="ltr"
                 >
                   support@markethub.com
                 </a>
               </motion.li>
             </ul>
-            <div className="flex space-x-4 mt-6">
+            <div className="flex gap-4 mt-6">
               {[
                 { Icon: Facebook, href: '#' },
                 { Icon: Twitter, href: '#' },
@@ -169,12 +183,12 @@ export default function Footer() {
           className="border-t border-gray-800 mt-8 pt-8 text-sm text-center"
         >
           <p className="mb-4 opacity-80">
-            &copy; {currentYear} MarketHub. All rights reserved.
+            {t('footer.rights', { year: new Date().getFullYear() })}
           </p>
-          <div className="flex justify-center space-x-6">
+          <div className="flex justify-center gap-6">
             {[
-              { href: '/privacy', label: 'Privacy Policy' },
-              { href: '/terms', label: 'Terms of Service' },
+              { href: '/privacy', label: t('footer.privacy') },
+              { href: '/terms', label: t('footer.terms') },
             ].map((link) => (
               <motion.div
                 key={link.href}

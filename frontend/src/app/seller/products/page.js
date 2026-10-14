@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import { productsAPI } from '../../../lib/api'
+import { usePrice } from '../../../lib/currency'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Package, Plus, Edit, Trash2, Search } from 'lucide-react'
 
 export default function SellerProductsPage() {
   const router = useRouter()
+  const t = useTranslations('seller')
+  const price = usePrice()
   const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -40,13 +44,13 @@ export default function SellerProductsPage() {
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this product?')) {
+    if (confirm(t('products.deleteConfirm'))) {
       try {
         await productsAPI.delete(id)
         setProducts(products.filter((p) => p.id !== id))
       } catch (error) {
         console.error('Error deleting product:', error)
-        alert('Failed to delete product')
+        alert(t('products.deleteError'))
       }
     }
   }
@@ -74,28 +78,30 @@ export default function SellerProductsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Products</h1>
-          <p className="text-gray-600 mt-1">Manage your product listings</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t('products.heading')}
+          </h1>
+          <p className="text-gray-600 mt-1">{t('products.subtitle')}</p>
         </div>
         <Link
           href="/seller/products/create"
           className="btn-primary flex items-center gap-2"
         >
           <Plus className="h-5 w-5" />
-          Add New Product
+          {t('products.addNew')}
         </Link>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={t('products.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+              className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
           <select
@@ -103,9 +109,11 @@ export default function SellerProductsPage() {
             onChange={(e) => setFilter(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           >
-            <option value="all">All Products</option>
-            <option value="available">Available</option>
-            <option value="unavailable">Out of Stock</option>
+            <option value="all">{t('products.filters.all')}</option>
+            <option value="available">{t('products.filters.available')}</option>
+            <option value="unavailable">
+              {t('products.filters.outOfStock')}
+            </option>
           </select>
         </div>
       </div>
@@ -126,19 +134,21 @@ export default function SellerProductsPage() {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? 'No products found' : 'No products yet'}
+            {searchTerm
+              ? t('products.emptyState.noResults')
+              : t('products.emptyState.noneYet')}
           </h3>
           <p className="text-gray-600 mb-6">
             {searchTerm
-              ? 'Try adjusting your search terms'
-              : 'Start by adding your first product'}
+              ? t('products.emptyState.noResultsHint')
+              : t('products.emptyState.startHint')}
           </p>
           {!searchTerm && (
             <Link
               href="/seller/products/create"
               className="btn-primary inline-block"
             >
-              Add Your First Product
+              {t('products.emptyState.addFirst')}
             </Link>
           )}
         </div>
@@ -179,19 +189,21 @@ export default function SellerProductsPage() {
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {product.is_available ? 'Available' : 'Out of Stock'}
+                      {product.is_available
+                        ? t('products.filters.available')
+                        : t('products.filters.outOfStock')}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                     <span>
-                      Price:{' '}
+                      {t('products.card.price')}{' '}
                       <strong className="text-gray-900">
-                        ${parseFloat(product.base_price).toFixed(2)}
+                        {price(product.base_price)}
                       </strong>
                     </span>
                     {product.category && (
                       <span>
-                        Category:{' '}
+                        {t('products.card.category')}{' '}
                         <strong className="text-gray-900">
                           {product.category}
                         </strong>
@@ -203,7 +215,7 @@ export default function SellerProductsPage() {
                       href={`/products/${product.id}`}
                       className="text-sm text-gray-600 hover:text-primary"
                     >
-                      View Public
+                      {t('products.card.viewPublic')}
                     </Link>
                     <span className="text-gray-300">|</span>
                     <Link
@@ -211,7 +223,7 @@ export default function SellerProductsPage() {
                       className="text-sm text-primary hover:text-secondary flex items-center gap-1"
                     >
                       <Edit className="h-4 w-4" />
-                      Edit
+                      {t('products.card.edit')}
                     </Link>
                     <span className="text-gray-300">|</span>
                     <button
@@ -219,7 +231,7 @@ export default function SellerProductsPage() {
                       className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
                     >
                       <Trash2 className="h-4 w-4" />
-                      Delete
+                      {t('products.card.delete')}
                     </button>
                   </div>
                 </div>

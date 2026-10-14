@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { storesAPI } from '../../lib/api'
 import Link from 'next/link'
 import { Store, Search, ChevronRight, Package } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export default function StoresPage() {
+  const t = useTranslations('stores')
   const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -47,22 +49,20 @@ export default function StoresPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Stores</h1>
-        <p className="text-gray-600">
-          Discover unique products from verified sellers
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('title')}</h1>
+        <p className="text-gray-600">{t('subtitle')}</p>
       </div>
 
       {/* Search */}
       <div className="mb-8">
         <div className="relative max-w-xl">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search stores by name, category, or description..."
+            placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            className="w-full ps-10 pe-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
       </div>
@@ -86,16 +86,14 @@ export default function StoresPage() {
         <div className="text-center py-16">
           <Store className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {searchTerm ? 'No stores found' : 'No stores available'}
+            {searchTerm ? t('noStoresFound') : t('noStoresAvailable')}
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchTerm
-              ? 'Try adjusting your search terms'
-              : 'Check back later for new stores'}
+            {searchTerm ? t('tryAdjustingSearch') : t('checkBackLater')}
           </p>
           {searchTerm && (
             <button onClick={() => setSearchTerm('')} className="btn-primary">
-              Clear Search
+              {t('clearSearch')}
             </button>
           )}
         </div>
@@ -103,8 +101,7 @@ export default function StoresPage() {
         <>
           {/* Results Count */}
           <div className="mb-4 text-sm text-gray-600">
-            Showing {filteredStores.length}{' '}
-            {filteredStores.length === 1 ? 'store' : 'stores'}
+            {t('resultsCount', { n: filteredStores.length })}
           </div>
 
           {/* Stores Grid */}
@@ -141,7 +138,7 @@ export default function StoresPage() {
                       {store.logo_url ? (
                         <img
                           src={store.logo_url}
-                          alt={`${store.store_name} logo`}
+                          alt={t('logoAlt', { store: store.store_name })}
                           className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-md"
                           onError={(e) => {
                             e.target.src = '/placeholder-store.jpg'
@@ -156,9 +153,9 @@ export default function StoresPage() {
                         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
                           {store.store_name}
                         </h3>
-                        {store.category && (
+                        {(store.category_label || store.category) && (
                           <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                            {store.category}
+                            {store.category_label || store.category}
                           </span>
                         )}
                       </div>
@@ -168,19 +165,21 @@ export default function StoresPage() {
 
                   {/* Description */}
                   <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                    {store.description || 'A trusted seller on MarketHub'}
+                    {store.description || t('defaultDescription')}
                   </p>
 
                   {/* Stats */}
                   <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t border-gray-200">
                     <div className="flex items-center gap-1">
                       <Package className="h-4 w-4" />
-                      <span>Products</span>
+                      <span>{t('products')}</span>
                     </div>
                     {store.is_active ? (
-                      <span className="text-green-600 font-medium">Active</span>
+                      <span className="text-green-600 font-medium">
+                        {t('active')}
+                      </span>
                     ) : (
-                      <span className="text-gray-400">Inactive</span>
+                      <span className="text-gray-400">{t('inactive')}</span>
                     )}
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.users.serializers import UserSerializer
+from core.i18n import choice_label
 
 from .models import Store
 
@@ -10,6 +11,7 @@ class StoreSerializer(serializers.ModelSerializer):
 
     owner = UserSerializer(read_only=True)
     product_count = serializers.SerializerMethodField()
+    category_label = serializers.SerializerMethodField()
 
     class Meta:
         model = Store
@@ -20,6 +22,7 @@ class StoreSerializer(serializers.ModelSerializer):
             "store_slug",
             "description",
             "category",
+            "category_label",
             "logo_url",
             "banner_image_url",
             "is_active",
@@ -28,6 +31,9 @@ class StoreSerializer(serializers.ModelSerializer):
             "product_count",
         ]
         read_only_fields = ["id", "store_slug", "created_at", "updated_at"]
+
+    def get_category_label(self, obj) -> str:
+        return choice_label(Store.CATEGORY_CHOICES, obj.category)
 
     def get_product_count(self, obj) -> int:
         """The ``product_count`` annotation when the queryset carries one.

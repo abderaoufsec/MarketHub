@@ -15,7 +15,7 @@ class AddressInline(admin.TabularInline):
 
     model = Address
     extra = 0
-    fields = ["address_line1", "city", "country", "is_default"]
+    fields = ["address_line1", "wilaya", "commune", "country", "is_default"]
     classes = ["collapse"]
 
 
@@ -284,9 +284,9 @@ class PhoneOtpAdmin(admin.ModelAdmin):
 class AddressAdmin(admin.ModelAdmin):
     """Address Admin"""
 
-    list_display = ["id", "user_link", "address_display", "city", "country", "default_badge"]
-    list_filter = ["country", "is_default"]
-    search_fields = ["user__email", "city", "address_line1"]
+    list_display = ["id", "user_link", "address_display", "wilaya", "country", "default_badge"]
+    list_filter = ["wilaya", "is_default"]
+    search_fields = ["user__email", "address_line1", "wilaya__name_fr", "commune__name_fr"]
     ordering = ["-is_default", "user__email"]
 
     def user_link(self, obj):

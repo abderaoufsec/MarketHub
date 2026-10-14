@@ -1,0 +1,707 @@
+{
+  "common": {
+    "nav": {
+      "products": "المنتجات",
+      "stores": "المتاجر",
+      "dashboard": "لوحة التحكم",
+      "wishlist": "المفضلة",
+      "cart": "السلة",
+      "profile": "الملف الشخصي",
+      "orders": "الطلبات",
+      "login": "تسجيل الدخول",
+      "register": "إنشاء حساب",
+      "logout": "تسجيل الخروج",
+      "openMenu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة"
+    },
+    "footer": {
+      "tagline": "سوقك الإلكتروني الموثوق الذي يربط بين المشترين والبائعين.",
+      "quickLinks": "روابط سريعة",
+      "forSellers": "للبائعين",
+      "contact": "اتصل بنا",
+      "aboutUs": "من نحن",
+      "becomeSeller": "كن بائعا",
+      "sellerDashboard": "لوحة تحكم البائع",
+      "sellerHelp": "مساعدة البائعين",
+      "privacy": "سياسة الخصوصية",
+      "terms": "شروط الاستخدام",
+      "rights": "© {year} MarketHub. جميع الحقوق محفوظة."
+    },
+    "preferences": {
+      "language": "اللغة",
+      "priceDisplay": "عرض الأسعار",
+      "priceStandard": "قياسي (د.ج)",
+      "priceMillions": "الملايين (سنتيمات)",
+      "title": "التفضيلات"
+    },
+    "actions": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "delete": "حذف",
+      "edit": "تعديل",
+      "back": "رجوع",
+      "search": "بحث",
+      "loading": "جار التحميل…",
+      "retry": "إعادة المحاولة"
+    },
+    "states": {
+      "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+      "notFound": "لا يمكن العثور على هذه الصفحة.",
+      "empty": "لا يوجد شيء هنا بعد."
+    }
+  },
+  "geography": {
+    "wilaya": "الولاية",
+    "commune": "البلدية",
+    "selectWilaya": "اختر ولاية",
+    "selectCommune": "اختر بلدية",
+    "loadingWilayas": "جار تحميل الولايات…",
+    "loadingCommunes": "جار تحميل البلديات…",
+    "communeNeedsWilaya": "اختر ولاية أولا",
+    "loadError": "تعذر تحميل بيانات الموقع. يرجى المحاولة مرة أخرى."
+  },
+  "auth": {
+    "login": {
+      "title": "سجّل الدخول إلى حسابك",
+      "noAccount": "أو <link>أنشئ حساباً جديداً</link>",
+      "modePassword": "كلمة المرور",
+      "modeSms": "رمز SMS",
+      "emailOrPhoneLabel": "البريد الإلكتروني أو رقم الهاتف",
+      "emailPlaceholder": "البريد الإلكتروني",
+      "phoneHint": "الدخول بالهاتف يعمل مع رقم جزائري موثّق (+213…).",
+      "passwordLabel": "كلمة المرور",
+      "passwordPlaceholder": "كلمة المرور",
+      "rememberMe": "تذكّرني",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "signingIn": "جارٍ الدخول...",
+      "signIn": "تسجيل الدخول",
+      "phoneLabel": "رقم الهاتف",
+      "codeLabel": "رمز التحقق",
+      "sentTo": "أُرسل إلى {phone}.",
+      "changeNumber": "تغيير الرقم",
+      "working": "جارٍ المعالجة...",
+      "signInWithCode": "الدخول بالرمز",
+      "sendSmsCode": "إرسال رمز SMS",
+      "otpHint": "لا حاجة لكلمة مرور — الرمز يكفي لتسجيل الدخول.",
+      "welcomeBack": "مرحباً بعودتك، {name}!",
+      "friend": "صديقي",
+      "loginFailed": "فشل تسجيل الدخول",
+      "unexpectedError": "حدث خطأ غير متوقع",
+      "codeSent": "تم إرسال الرمز. تنتهي صلاحيته بعد 5 دقائق.",
+      "sendCodeFailed": "تعذّر إرسال الرمز.",
+      "invalidCode": "هذا الرمز غير صالح أو انتهت صلاحيته. حاول مجدداً."
+    },
+    "register": {
+      "title": "أنشئ حسابك",
+      "titleSeller": "أنشئ حساب البائع",
+      "haveAccount": "عندك حساب بالفعل؟ <link>سجّل الدخول</link>",
+      "firstNameLabel": "الاسم",
+      "lastNameLabel": "اللقب",
+      "emailLabel": "البريد الإلكتروني <hint>(اختياري إذا استعملت الهاتف)</hint>",
+      "emailPlaceholder": "البريد الإلكتروني",
+      "usernameLabel": "اسم المستخدم",
+      "phoneLabel": "رقم الهاتف <hint>(اختياري)</hint>",
+      "phonePlaceholder": "رقم الهاتف",
+      "otpHint": "وثّق الرقم عبر SMS — إلزامي عند التسجيل بدون بريد إلكتروني.",
+      "otpSend": "إرسال الرمز",
+      "otpSending": "جارٍ الإرسال...",
+      "otpResend": "إعادة إرسال الرمز",
+      "smsCodeLabel": "رمز SMS",
+      "passwordLabel": "كلمة المرور",
+      "passwordPlaceholder": "كلمة المرور (8 أحرف على الأقل)",
+      "confirmPasswordLabel": "تأكيد كلمة المرور",
+      "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
+      "asSeller": "التسجيل كبائع",
+      "creating": "جارٍ إنشاء الحساب...",
+      "createAccount": "إنشاء الحساب",
+      "terms": "بإنشائك حساباً، فأنت توافق على <terms>شروط الاستخدام</terms> و<privacy>سياسة الخصوصية</privacy>",
+      "successTitle": "تم التسجيل بنجاح!",
+      "redirecting": "جارٍ تحويلك إلى صفحة الدخول...",
+      "checkEmail": "تحقق من بريدك الإلكتروني لتأكيد حسابك.",
+      "phoneVerified": "تم توثيق رقم هاتفك. يمكنك الآن تسجيل الدخول.",
+      "created": "تم إنشاء الحساب بنجاح! {message}",
+      "enterPhoneFirst": "أدخل رقم الهاتف أولاً",
+      "otpSent": "تم إرسال رمز التحقق عبر SMS",
+      "otpSendFailed": "تعذّر إرسال رمز SMS",
+      "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+      "needEmailOrPhone": "أدخل بريداً إلكترونياً أو رقم هاتف",
+      "enterOtp": "أدخل رمز SMS المرسل إلى هاتفك",
+      "passwordTooShort": "يجب أن تتكوّن كلمة المرور من 8 أحرف على الأقل",
+      "failed": "فشل التسجيل. حاول مجدداً.",
+      "unexpectedError": "حدث خطأ غير متوقع. حاول مجدداً."
+    },
+    "forgot": {
+      "title": "إعادة تعيين كلمة المرور",
+      "remembered": "تذكّرتها؟ <link>العودة إلى الدخول</link>",
+      "modeEmail": "بالبريد الإلكتروني",
+      "modeSms": "برمز SMS",
+      "checkInbox": "تصدّق بريدك الوارد",
+      "emailSent": "إذا كان يوجد حساب مرتبط بـ <mail>{email}</mail>، فرابط إعادة التعيين في الطريق. تنتهي صلاحية الرابط بعد 24 ساعة.",
+      "backToSignIn": "العودة إلى الدخول",
+      "emailLabel": "البريد الإلكتروني",
+      "sendResetLink": "إرسال رابط إعادة التعيين",
+      "phoneLabel": "رقم الهاتف",
+      "phoneHint": "الرقم الذي سجّلت به، بالصيغة الجزائرية.",
+      "otpNotice": "أرسلنا رمزاً من 6 أرقام إلى ذلك الرقم. تنتهي صلاحيته بعد 5 دقائق.",
+      "codeLabel": "رمز التحقق",
+      "newPasswordLabel": "كلمة المرور الجديدة",
+      "passwordPlaceholder": "كلمة المرور (8 أحرف على الأقل)",
+      "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة",
+      "confirmPasswordPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+      "resetPassword": "إعادة تعيين كلمة المرور",
+      "sendSmsCode": "إرسال رمز SMS",
+      "changeNumber": "استعمال رقم آخر",
+      "noAccount": "ما عندكش حساب؟ <link>أنشئ واحداً</link>",
+      "invalidEmail": "أدخل بريداً إلكترونياً صحيحاً.",
+      "codeSent": "إذا كان لهذا الرقم حساب، فالرمز في الطريق.",
+      "sendCodeFailed": "تعذّر إرسال الرمز.",
+      "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+      "resetDone": "تمت إعادة تعيين كلمة المرور. يمكنك الآن تسجيل الدخول.",
+      "invalidCode": "هذا الرمز غير صالح أو انتهت صلاحيته."
+    },
+    "reset": {
+      "title": "اختر كلمة مرور جديدة",
+      "subtitle": "هذا الرابط يعمل مرة واحدة فقط وتنتهي صلاحيته بعد 24 ساعة.",
+      "missingTitle": "رابط إعادة التعيين مفقود",
+      "missingBody": "يجب فتح هذه الصفحة من الرابط الوارد في بريدك — لا تحتوي على رمز إعادة التعيين.",
+      "requestNewLink": "اطلب رابطاً جديداً",
+      "doneTitle": "تم تحديث كلمة المرور",
+      "doneBody": "تم تسجيل خروج كل الجلسات الأخرى حفاظاً على أمانك. جارٍ تحويلك إلى صفحة الدخول…",
+      "newPasswordLabel": "كلمة المرور الجديدة",
+      "passwordPlaceholder": "كلمة المرور (8 أحرف على الأقل)",
+      "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة",
+      "confirmPasswordPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+      "submit": "تعيين كلمة المرور الجديدة",
+      "linkExpired": "انتهت صلاحية الرابط؟ <link>اطلب رابطاً جديداً</link>",
+      "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+      "resetDone": "تمت إعادة تعيين كلمة المرور. يمكنك الآن تسجيل الدخول.",
+      "invalidLink": "رابط إعادة التعيين هذا غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً."
+    },
+    "verify": {
+      "verifyingTitle": "جارٍ التحقق من بريدك الإلكتروني…",
+      "verifyingBody": "لحظة من فضلك بينما نؤكد عنوانك.",
+      "verifiedTitle": "تم التحقق من البريد الإلكتروني!",
+      "verifiedMessage": "تم التحقق من بريدك الإلكتروني — يمكنك الآن تسجيل الدخول.",
+      "signIn": "تسجيل الدخول",
+      "failedTitle": "فشل التحقق",
+      "invalidLink": "رابط التحقق هذا غير صالح أو انتهت صلاحيته.",
+      "resentMessage": "إذا كان هذا الحساب يحتاج إلى توثيق، فرابط جديد في الطريق.",
+      "emailPlaceholder": "بريدك الإلكتروني",
+      "resend": "إعادة إرسال بريد التحقق",
+      "backToSignIn": "العودة إلى الدخول"
+    }
+  },
+  "cart": {
+    "title": "سلة المشتريات",
+    "empty": {
+      "title": "سلتك فارغة",
+      "text": "ابدأ التسوق لإضافת المنتجات إلى سلتك",
+      "browseProducts": "تصفح المنتجات"
+    },
+    "item": {
+      "unitPrice": "{price} للوحدة",
+      "decreaseQuantity": "إنقاص الكمية",
+      "increaseQuantity": "زيادة الكمية",
+      "remove": "حذف"
+    },
+    "summary": {
+      "title": "ملخص الطلب",
+      "subtotal": "المجموع الفرعي",
+      "shipping": "التوصيل",
+      "free": "مجاني",
+      "estimatedTax": "الرسم التقديري (TVA)",
+      "total": "المجموع",
+      "checkout": "المتابعة إلى الدفع",
+      "continueShopping": "مواصلة التسوق"
+    }
+  },
+  "checkout": {
+    "title": "إتمام الطلب",
+    "shippingAddress": "عنوان التوصيل",
+    "addNewAddress": "إضافة عنوان جديد",
+    "defaultBadge": "الافتراضي",
+    "noAddresses": "لا توجد عناوين محفوظة. يرجى إضافة عنوان للتوصيل.",
+    "addressSaved": "تم حفظ العنوان بنجاح",
+    "orderPlaced": "تم تأكيد الطلب — تم الدفع بنجاح!",
+    "addressForm": {
+      "addressLine1": "سطر العنوان 1",
+      "streetPlaceholder": "العنوان بالتفصيل (الحي، الشارع، الرقم)",
+      "addressLine2": "سطر العنوان 2",
+      "addressLine2Placeholder": "الشقة، الطابق، إلخ (اختياري)",
+      "setAsDefault": "تعيين كعنوان افتراضي",
+      "save": "حفظ العنوان",
+      "cancel": "إلغاء"
+    },
+    "payment": {
+      "title": "طريقة الدفع",
+      "creditCard": "بطاقة بنكية",
+      "simulatedTitle": "🔒 دفع تجريبي:",
+      "simulatedBody": "هذا نظام دفع تجريبي. لن يتم تحصيل أي مبلغ حقيقي. تأكيد الطلب يخصم المبلغ ويؤكده في خطوة واحدة."
+    },
+    "summary": {
+      "title": "ملخص الطلب",
+      "lineQuantity": "الكمية: {qty} × {price}",
+      "subtotal": "المجموع الفرعي",
+      "shipping": "التوصيل",
+      "free": "مجاني",
+      "tax": "الرسم (TVA)",
+      "total": "المجموع",
+      "processing": "جارٍ معالجة الطلب…",
+      "placeOrder": "تأكيد الطلب والدفع",
+      "termsNote": "بتأكيدك للطلب فإنك توافق على شروط الاستخدام وسياسة الخصوصية."
+    },
+    "priceChanges": {
+      "title": "تغيرت الأسعار",
+      "description": "لم يتم تسجيل أي طلب. تعرض سلتك الآن الأسعار الحالية — راجع المجموع وأعد تأكيد الطلب.",
+      "line": "{name}: كان {oldPrice}، وأصبح {newPrice}",
+      "toastOne": "أصبح سعر {name} هو {price}. راجع المجموع وأعد تأكيد الطلب.",
+      "toastMany": "تغيرت بعض الأسعار أثناء إتمام الطلب. راجع المجموع وأعد تأكيد الطلب."
+    },
+    "errors": {
+      "loadCart": "تعذر تحميل السلة",
+      "saveAddress": "تعذر حفظ العنوان",
+      "emptyCart": "سلتك فارغة",
+      "requiredAddressFields": "يرجى ملء جميع الحقول الإلزامية للعنوان",
+      "selectAddress": "يرجى اختيار عنوان توصيل أو إنشاء عنوان جديد",
+      "processOrder": "تعذر معالجة الطلب. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "مرحباً بك في <brand>MarketHub</brand>",
+      "subtitle": "سوقك الإلكتروني الموثوق الذي يربط المشترين بالبائعين. اكتشف منتجات فريدة أو ابدأ البيع من اليوم.",
+      "browseProducts": "تصفح المنتجات",
+      "becomeSeller": "كن بائعاً"
+    },
+    "features": {
+      "title": "لماذا تختار MarketHub؟",
+      "subtitle": "اكتشف الفرق مع منصتنا الاحترافية للبيع والشراء",
+      "selection": {
+        "title": "تشكيلة واسعة",
+        "description": "تصفح آلاف المنتجات لدى بائعين موثوقين في عدة فئات."
+      },
+      "security": {
+        "title": "تسوق آمن",
+        "description": "تسوق بثقة علم أن معاملاتك محمية وآمنة."
+      },
+      "selling": {
+        "title": "بيع سهل",
+        "description": "افتح متجرك الإلكتروني بسرعة وأدر منتجاتك بكل سهولة."
+      }
+    },
+    "cta": {
+      "title": "جاهز للانطلاق؟",
+      "subtitle": "انضم إلى آلاف المشترين والبائعين على MarketHub اليوم.",
+      "createAccount": "أنشئ حسابك"
+    }
+  },
+  "orders": {
+    "title": "طلباتي",
+    "subtitle": "تتبع طلباتك وأدرها",
+    "empty": {
+      "title": "لا توجد طلبات بعد",
+      "text": "ابدأ التسوق لرؤية طلباتك هنا",
+      "browseProducts": "تصفح المنتجات"
+    },
+    "orderNumber": "الطلب رقم {id}",
+    "itemCount": "{count, plural, zero {# مقال} one {# مقال} two {# مقالين} few {# مقالات} many {# مقال} other {# مقال}}",
+    "soldBy": "يُباع من طرف:",
+    "viewDetails": "عرض التفاصيل",
+    "detail": {
+      "backToOrders": "العودة إلى الطلبات",
+      "notFound": "الطلب غير موجود",
+      "placedOn": "تم الطلب يوم {date}",
+      "items": "منتجات الطلب",
+      "product": "منتج",
+      "quantity": "الكمية: {count}",
+      "each": "للوحدة",
+      "shippingAddress": "عنوان التوصيل",
+      "noShippingAddress": "لا يوجد عنوان توصيل",
+      "summary": "ملخص الطلب",
+      "subtotal": "المجموع الفرعي",
+      "shipping": "التوصيل",
+      "standardShipping": "عادي",
+      "total": "المجموع",
+      "payment": "الدفع",
+      "statusTitle": "حالة الطلب",
+      "status": {
+        "PENDING": "قيد الانتظار",
+        "PROCESSING": "قيد المعالجة",
+        "SHIPPED": "تم الشحن",
+        "DELIVERED": "تم التسليم"
+      }
+    }
+  },
+  "products": {
+    "outOfStock": "نفدت الكمية",
+    "inStock": "متوفر",
+    "defaultStoreName": "متجر MarketHub",
+    "title": "تصفح المنتجات",
+    "searchPlaceholder": "قلّب على المنتجات...",
+    "filters": "التصفية",
+    "categoryLabel": "الفئة",
+    "allCategories": "كل الفئات",
+    "categories": {
+      "electronics": "إلكترونيات",
+      "clothing": "ألبسة",
+      "home": "المنزل والحدائق",
+      "sports": "رياضة ورحلات",
+      "books": "كتب",
+      "toys": "ألعاب ودمى"
+    },
+    "minPrice": "أدنى سعر",
+    "maxPrice": "أقصى سعر",
+    "inStockOnly": "المتوفر فقط",
+    "noResultsToast": "ما لقيناش منتجات تطابق هاد المعايير",
+    "loadError": "ما قدرناش نحمّلو المنتجات. عاود المحاولة من فضلك.",
+    "empty": {
+      "title": "ما لقيناش منتجات",
+      "clearFilters": "مسح التصفية"
+    },
+    "notFound": "المنتج غير موجود",
+    "backToProducts": "الرجوع إلى المنتجات",
+    "breadcrumb": {
+      "home": "الرئيسية",
+      "products": "المنتجات"
+    },
+    "addedToWishlist": "تزاد لقائمة الرغبات",
+    "removedFromWishlist": "تحيد من قائمة الرغبات",
+    "wishlistError": "ما قدرناش نحدّثو قائمة الرغبات",
+    "sellerCannotCart": "البائعين ما يقدروش يزيدو المنتجات للسلة",
+    "addedToCart": "تزاد المنتج للسلة!",
+    "addToCartError": "ما قدرناش نزيدوه للسلة",
+    "reviewCount": "{n, plural, zero {# مراجعة} one {# مراجعة} two {# مراجعتين} few {# مراجعات} many {# مراجعة} other {# مراجعة}}",
+    "description": "الوصف",
+    "options": "الخيارات",
+    "selectAttribute": "اختار {name}",
+    "quantity": "الكمية",
+    "adding": "جاري الإضافة...",
+    "addToCart": "زيد للسلة",
+    "removeFromWishlist": "حيّد من قائمة الرغبات",
+    "addToWishlist": "زيد لقائمة الرغبات",
+    "editYourReview": "عدّل رأيك",
+    "writeReview": "كتب رأيك",
+    "sellersCannotPurchase": "البائعين ما يقدروش يشريو المنتجات",
+    "productInformation": "معلومات على المنتج",
+    "sku": "SKU:",
+    "categoryInfoLabel": "الفئة:",
+    "general": "عام",
+    "availability": "التوفّر:",
+    "customerReviews": "آراء الزبناء ({n})",
+    "noReviews": "ما كاين حتى رأي حاليا",
+    "beFirst": "كون أول واحد يعطي رأيه على هاد المنتج",
+    "moreFromStore": "زيد من هاد المتجر",
+    "viewAllFrom": "شوف كل منتجات {store}",
+    "editReview": "عدّل الرأي",
+    "close": "سدّ",
+    "yourRating": "تقييمك *",
+    "ratings": {
+      "poor": "خايب",
+      "fair": "مقبول",
+      "good": "مزيان",
+      "veryGood": "مزيان بزاف",
+      "excellent": "ممتاز"
+    },
+    "yourReview": "رأيك *",
+    "commentPlaceholder": "شاركنا تجربتك مع هاد المنتج...",
+    "minCharacters": "10 حروف على الأقل",
+    "submitting": "كنبعثو...",
+    "updateReview": "حدّث الرأي",
+    "submitReview": "ابعث الرأي",
+    "delete": "مسح",
+    "cancel": "إلغاء",
+    "selectRating": "من فضلك اختار تقييم",
+    "writeComment": "من فضلك كتب رأي",
+    "updateSuccess": "تحديث الرأي داز مزيان!",
+    "submitSuccess": "تبعث الرأي داز مزيان!",
+    "submitError": "ما قدرناش نبعثو الرأي",
+    "deleteConfirm": "واش متأكد بلي بغيتي تمسح رأيك؟",
+    "deleteSuccess": "تمسح الرأي بنجاح!",
+    "deleteError": "ما قدرناش نمسحو الرأي"
+  },
+  "profile": {
+    "title": "ملفي الشخصي",
+    "subtitle": "أدر معلومات حسابك",
+    "sellerAccount": "حساب بائع",
+    "personalInfo": "المعلومات الشخصية",
+    "updateSuccess": "تم تحديث الملف الشخصي بنجاح!",
+    "updateFailed": "تعذر تحديث الملف الشخصي",
+    "fields": {
+      "firstName": "الاسم الأول",
+      "firstNamePlaceholder": "ياسين",
+      "lastName": "اسم العائلة",
+      "lastNamePlaceholder": "بن صالح",
+      "email": "البريد الإلكتروني",
+      "emailLocked": "لا يمكن تغيير البريد الإلكتروني",
+      "phone": "رقم الهاتف",
+      "phonePlaceholder": "+213 5XX XX XX XX",
+      "preferredLanguage": "اللغة المفضلة",
+      "preferredLanguageHint": "تُستعمل في لغة رسائلك الإشعارية ورسائل SMS."
+    },
+    "save": {
+      "saving": "جارٍ الحفظ…",
+      "submit": "حفظ التغييرات"
+    },
+    "security": {
+      "title": "الأمان",
+      "changePassword": "تغيير كلمة المرور",
+      "changePasswordText": "قم بتحديث كلمة مرور حسابك",
+      "change": "تغيير"
+    },
+    "actions": {
+      "title": "إجراءات الحساب",
+      "sellerDashboard": "الذهاب إلى لوحة تحكم البائع",
+      "sellerDashboardText": "أدر متجرك ومنتجاتك",
+      "orderHistory": "عرض سجل الطلبات",
+      "orderHistoryText": "اطلع على مشترياتك السابقة"
+    }
+  },
+  "seller": {
+    "dashboard": {
+      "subtitle": "لوحة تحكم البائع",
+      "notifications": "الإشعارات",
+      "storeSettings": "إعدادات المتجر",
+      "newProduct": "منتج جديد",
+      "tabs": {
+        "overview": "نظرة عامة",
+        "products": "المنتجات",
+        "orders": "الطلبيات"
+      },
+      "range": {
+        "label": "الفترة الزمنية",
+        "last7": "آخر 7 أيام",
+        "last30": "آخر 30 يوماً",
+        "last90": "آخر 90 يوماً",
+        "lastYear": "آخر 12 شهراً"
+      },
+      "welcome": {
+        "title": "مرحباً بكم في MarketHub !",
+        "body": "يجب إعداد متجركم قبل البدء في البيع.",
+        "cta": "إعداد متجركم"
+      },
+      "alerts": {
+        "lowStock": "{count, plural, one {{count} منتج على وشك النفاد من المخزون} two {{count} منتجان على وشك النفاد من المخزون} few {{count} منتجات على وشك النفاد من المخزون} other {{count} منتجاً على وشك النفاد من المخزون}}",
+        "viewItems": "عرض المنتجات ←",
+        "pending": "{count, plural, one {{count} طلبية في انتظار التجهيز} two {{count} طلبيتان في انتظار التجهيز} few {{count} طلبيات في انتظار التجهيز} other {{count} طلبية في انتظار التجهيز}}",
+        "processOrders": "معالجة الطلبيات ←"
+      },
+      "stats": {
+        "revenue": "إجمالي المداخيل",
+        "orders": "إجمالي الطلبيات",
+        "listed": "المنتجات المعروضة",
+        "avgOrder": "متوسط قيمة الطلبية",
+        "vsPrevious": "مقارنة بالفترة السابقة"
+      },
+      "recentOrders": {
+        "title": "الطلبيات الأخيرة",
+        "pendingCount": "{count} في انتظار التجهيز",
+        "search": "البحث في الطلبيات",
+        "filter": "تصفية الطلبيات",
+        "viewAll": "عرض الكل",
+        "empty": "لا توجد طلبيات حتى الآن. ستظهر الطلبيات هنا عندما يشتري الزبائن منتجاتكم.",
+        "viewDetails": "عرض التفاصيل ←"
+      },
+      "recentProducts": {
+        "title": "المنتجات الأخيرة",
+        "subtitle": "أحدث منتجاتكم",
+        "empty": "لا توجد منتجات حتى الآن.",
+        "add": "إضافة منتج",
+        "available": "متوفر",
+        "unavailable": "غير متوفر",
+        "view": "عرض",
+        "viewAll": "عرض كل المنتجات ←"
+      },
+      "performance": {
+        "title": "أداء المتجر",
+        "active": "منتجات نشطة",
+        "views": "مشاهدات المتجر",
+        "engagement": "معدل التفاعل",
+        "stockAlerts": "تنبيهات المخزون",
+        "viewLowStock": "عرض المنتجات منخفضة المخزون ←"
+      }
+    },
+    "products": {
+      "heading": "منتجاتي",
+      "subtitle": "تسيير إعلانات منتجاتكم",
+      "addNew": "إضافة منتج جديد",
+      "searchPlaceholder": "البحث عن منتجات…",
+      "filters": {
+        "all": "كل المنتجات",
+        "available": "متوفر",
+        "outOfStock": "نفد المخزون"
+      },
+      "emptyState": {
+        "noResults": "لم يتم العثور على منتجات",
+        "noneYet": "لا توجد منتجات حتى الآن",
+        "noResultsHint": "جرّب تعديل كلمات البحث",
+        "startHint": "ابدأ بإضافة منتجك الأول",
+        "addFirst": "أضف منتجك الأول"
+      },
+      "card": {
+        "price": "الثمن :",
+        "category": "الفئة :",
+        "viewPublic": "عرض الصفحة العمومية",
+        "edit": "تعديل",
+        "delete": "حذف"
+      },
+      "deleteConfirm": "هل تريد فعلاً حذف هذا المنتج؟",
+      "deleteError": "تعذّر حذف المنتج"
+    },
+    "create": {
+      "back": "العودة إلى المنتجات",
+      "title": "إضافة منتج جديد",
+      "cancel": "إلغاء",
+      "created": "تم إنشاء المنتج بنجاح!",
+      "createError": "تعذّر إنشاء المنتج",
+      "form": {
+        "name": "اسم المنتج",
+        "namePlaceholder": "أدخل اسم المنتج",
+        "description": "الوصف",
+        "descriptionPlaceholder": "صف منتجك بالتفصيل",
+        "price": "الثمن (دج)",
+        "category": "الفئة",
+        "categoryPlaceholder": "مثلاً: إلكترونيات، ملابس، إلخ",
+        "lowStock": "حد المخزون المنخفض",
+        "lowStockHint": "ستتلقى تنبيهاً عندما ينخفض المخزون تحت هذا الرقم",
+        "availability": "اجعل هذا المنتج متاحاً للشراء فوراً",
+        "requiredError": "يرجى ملء جميع الحقول الإلزامية",
+        "submit": "إنشاء المنتج",
+        "submitting": "جاري الإنشاء…"
+      }
+    },
+    "edit": {
+      "back": "العودة إلى المنتجات",
+      "title": "تعديل المنتج",
+      "loading": "جاري تحميل المنتج…",
+      "cancel": "إلغاء",
+      "updated": "تم تحديث المنتج بنجاح!",
+      "loadError": "تعذّر تحميل المنتج",
+      "updateError": "تعذّر تحديث المنتج",
+      "form": {
+        "name": "اسم المنتج",
+        "namePlaceholder": "أدخل اسم المنتج",
+        "description": "الوصف",
+        "descriptionPlaceholder": "صف منتجك بالتفصيل",
+        "price": "الثمن (دج)",
+        "category": "الفئة",
+        "categoryPlaceholder": "مثلاً: إلكترونيات، ملابس، إلخ",
+        "lowStock": "حد المخزون المنخفض",
+        "lowStockHint": "ستتلقى تنبيهاً عندما ينخفض المخزون تحت هذا الرقم",
+        "availability": "المنتج متاح للشراء",
+        "requiredError": "يرجى ملء جميع الحقول الإلزامية",
+        "submit": "حفظ التغييرات",
+        "submitting": "جاري الحفظ…"
+      }
+    },
+    "orders": {
+      "title": "الطلبيات",
+      "subtitle": "تسيير طلبيات الزبائن",
+      "filterLabel": "تصفية حسب الحالة",
+      "filterAll": "كل الطلبيات",
+      "statuses": {
+        "pending": "في الانتظار",
+        "processing": "قيد التجهيز",
+        "shipped": "تم الشحن",
+        "delivered": "تم التسليم",
+        "cancelled": "ملغاة"
+      },
+      "empty": {
+        "title": "لم يتم العثور على طلبيات",
+        "body": "ستظهر الطلبيات هنا عندما يشتري الزبائن منتجاتكم"
+      },
+      "number": "الطلبية رقم {id}",
+      "itemsCount": "{count, plural, one {{count} عنصر} two {{count} عنصران} few {{count} عناصر} other {{count} عنصراً}}",
+      "itemsTitle": "عناصر الطلبية :",
+      "unknownProduct": "منتج",
+      "shippingTitle": "عنوان الشحن :"
+    },
+    "storeSetup": {
+      "title": "أنشئ متجركم",
+      "subtitle": "قموا بإعداد متجركم الإلكتروني للبدء في البيع على MarketHub",
+      "created": "تم إنشاء المتجر بنجاح!",
+      "createError": "تعذّر إنشاء المتجر",
+      "form": {
+        "name": "اسم المتجر",
+        "namePlaceholder": "أدخل اسم متجرك (3 أحرف على الأقل)",
+        "nameHint": "سيكون هذا هو الاسم العمومي لمتجرك",
+        "description": "وصف المتجر",
+        "descriptionPlaceholder": "عرّفوا زبائنا بمتجركم وما تبيعونه (20 حرفاً على الأقل)",
+        "descriptionCount": "{count}/20 حرفاً كحد أدنى",
+        "category": "فئة المتجر",
+        "categoryPlaceholder": "اختروا فئة",
+        "submit": "إنشاء المتجر",
+        "submitting": "جاري إنشاء المتجر…"
+      },
+      "categories": {
+        "electronics": "إلكترونيات",
+        "fashion": "ملابس وأزياء",
+        "home": "منزل وحديقة",
+        "books": "كتب ووسائل إعلامية",
+        "sports": "رياضة وأنشطة خارجية",
+        "toys": "ألعاب ومرح",
+        "beauty": "تجميل وصحة",
+        "food": "مواد غذائية ومشروبات",
+        "other": "أخرى"
+      },
+      "next": {
+        "title": "ماذا بعد؟",
+        "step1": "• أضفوا منتجات إلى متجركم",
+        "step2": "• أعدادوا تتبّع المخزون",
+        "step3": "• ابدأوا في تلقّي الطلبيات"
+      },
+      "validation": {
+        "required": "يرجى ملء جميع الحقول الإلزامية",
+        "nameMin": "يجب أن يتكون اسم المتجر من 3 أحرف على الأقل",
+        "descriptionMin": "يجب أن يتكون وصف المتجر من 20 حرفاً على الأقل"
+      }
+    }
+  },
+  "stores": {
+    "title": "تصفح المتاجر",
+    "subtitle": "اكتشف منتجات فريدة من بائعين موثّقين",
+    "searchPlaceholder": "قلّب على المتجر بالسم، الفئة ولا الوصف...",
+    "noStoresFound": "ما لقيناش متجر",
+    "noStoresAvailable": "ما كاين حتى متجر متوفّر",
+    "tryAdjustingSearch": "جرّب تبدّل كلمات البحث",
+    "checkBackLater": "عاود دوز من بعد باش تلقى متاجر جديدة",
+    "clearSearch": "مسح البحث",
+    "resultsCount": "{n, plural, zero {# متجر} one {# متجر} two {# متجران} few {# متاجر} many {# متجر} other {# متجر}}",
+    "logoAlt": "شعار {store}",
+    "defaultDescription": "بائع موثوق على MarketHub",
+    "products": "المنتجات",
+    "active": "نشيط",
+    "inactive": "غير نشيط",
+    "notFound": "المتجر غير موجود",
+    "browseAllStores": "تصفح جميع المتاجر",
+    "backToStores": "العودة إلى المتاجر",
+    "activeStore": "متجر نشيط",
+    "joined": "كان هنا من {date}",
+    "productsCount": "{n, plural, zero {# منتج} one {# منتج} two {# منتجان} few {# منتجات} many {# منتج} other {# منتج}}",
+    "productsHeading": "المنتجات",
+    "browseAllFrom": "تصفح كل منتجات {store}",
+    "noProductsYet": "ما كاين حتى منتج حتى دابا",
+    "noProductsBody": "هاد المتجر ما عرّض حتى منتج. عاود دوز من بعد!"
+  },
+  "wishlist": {
+    "title": "قائمة الرغبات تاعي",
+    "itemCount": "{n, plural, zero {# حاجة} one {# حاجة} two {# حاجتين} few {# حاجات} many {# حاجة} other {# حاجة}}",
+    "clearWishlist": "فرّغ قائمة الرغبات",
+    "clearConfirm": "واش متأكد بلي بغيتي تفرّغ كامل قائمة الرغبات تاعك؟",
+    "clearedToast": "تفرّغات قائمة الرغبات",
+    "clearError": "ما قدرناش نفرّغو قائمة الرغبات",
+    "emptyTitle": "قائمة الرغبات تاعك خاوية",
+    "emptyBody": "زيد لها الحاجات لي عجبواك. تشوفهم في أي وقت وحوّلهم بسهولة للسلة.",
+    "startShopping": "بدا الشراء",
+    "outOfStock": "نفدت الكمية",
+    "removeItem": "حيّد من قائمة الرغبات",
+    "removedToast": "تحيد من قائمة الرغبات",
+    "removeError": "ما قدرناش نحيّدو",
+    "productUnavailable": "هاد المنتج غير متوفّر حاليا",
+    "addToCart": "زيد للسلة",
+    "adding": "جاري الإضافة...",
+    "addedToCartToast": "تزاد للسلة!",
+    "addToCartError": "ما قدرناش نزيدوه للسلة",
+    "viewProduct": "شوف المنتج",
+    "loadError": "ما قدرناش نحمّلو قائمة الرغبات"
+  }
+}

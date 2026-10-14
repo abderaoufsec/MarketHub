@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.products.serializers import ProductListSerializer
 from apps.users.serializers import AddressSerializer
+from core.i18n import choice_label
 
 from .models import Cart, CartItem, Order, OrderItem
 
@@ -86,11 +87,18 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """Serializer for Order model"""
+    """Serializer for Order model
+
+    Phase 11: the raw status values stay (``order_status``/``payment_status``
+    are what code branches on); the ``*_label`` twins are translated per
+    request language via ``Accept-Language``.
+    """
 
     items = OrderItemSerializer(many=True, read_only=True)
     shipping_address = AddressSerializer(read_only=True)
     store_name = serializers.CharField(source="store.store_name", read_only=True)
+    order_status_label = serializers.SerializerMethodField()
+    payment_status_label = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -103,12 +111,20 @@ class OrderSerializer(serializers.ModelSerializer):
             "total_amount",
             "shipping_address",
             "order_status",
+            "order_status_label",
             "payment_status",
+            "payment_status_label",
             "shipping_method",
             "tracking_number",
             "items",
         ]
         read_only_fields = ["id", "user", "store", "order_date"]
+
+    def get_order_status_label(self, obj) -> str:
+        return choice_label(Order.STATUS_CHOICES, obj.order_status)
+
+    def get_payment_status_label(self, obj) -> str:
+        return choice_label(Order.PAYMENT_STATUS_CHOICES, obj.payment_status)
 
 
 class CheckoutSerializer(serializers.Serializer):

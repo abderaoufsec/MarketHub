@@ -11,8 +11,10 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
+import { useTranslations } from 'next-intl'
 
 export default function Home() {
+  const t = useTranslations('home')
   const [heroRef, heroInView] = useInView({ threshold: 0.2, triggerOnce: true })
   const [featuresRef, featuresInView] = useInView({
     threshold: 0.2,
@@ -58,7 +60,7 @@ export default function Home() {
               repeat: Infinity,
               ease: 'linear',
             }}
-            className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"
+            className="absolute top-0 start-0 w-96 h-96 bg-white rounded-full blur-3xl"
           />
           <motion.div
             animate={{
@@ -71,7 +73,7 @@ export default function Home() {
               repeat: Infinity,
               ease: 'linear',
             }}
-            className="absolute bottom-0 right-0 w-96 h-96 bg-secondary rounded-full blur-3xl"
+            className="absolute bottom-0 end-0 w-96 h-96 bg-secondary rounded-full blur-3xl"
           />
         </div>
 
@@ -89,17 +91,19 @@ export default function Home() {
             variants={itemVariants}
             className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
           >
-            Welcome to{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-white">
-              MarketHub
-            </span>
+            {t.rich('hero.title', {
+              brand: (chunks) => (
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-white">
+                  {chunks}
+                </span>
+              ),
+            })}
           </motion.h1>
           <motion.p
             variants={itemVariants}
             className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto opacity-90"
           >
-            Your trusted online marketplace connecting buyers and sellers.
-            Discover unique products or start selling today.
+            {t('hero.subtitle')}
           </motion.p>
           <motion.div
             variants={itemVariants}
@@ -110,7 +114,7 @@ export default function Home() {
                 href="/products"
                 className="inline-flex items-center gap-2 bg-white text-primary hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all shadow-lg hover:shadow-xl"
               >
-                Browse Products
+                {t('hero.browseProducts')}
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </motion.div>
@@ -119,7 +123,7 @@ export default function Home() {
                 href="/register?seller=true"
                 className="inline-flex items-center gap-2 bg-transparent border-2 border-white hover:bg-white hover:text-primary font-semibold py-3 px-8 rounded-lg transition-all backdrop-blur-sm"
               >
-                Become a Seller
+                {t('hero.becomeSeller')}
                 <Store className="h-5 w-5" />
               </Link>
             </motion.div>
@@ -141,10 +145,10 @@ export default function Home() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 gradient-text">
-            Why Choose MarketHub?
+            {t('features.title')}
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Experience the difference with our professional marketplace platform
+            {t('features.subtitle')}
           </p>
         </motion.div>
         <motion.div
@@ -166,11 +170,10 @@ export default function Home() {
               <ShoppingBag className="h-10 w-10 text-primary" />
             </motion.div>
             <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:text-primary transition-colors">
-              Wide Selection
+              {t('features.selection.title')}
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Browse thousands of products from verified sellers across multiple
-              categories.
+              {t('features.selection.description')}
             </p>
           </motion.div>
           <motion.div
@@ -186,11 +189,10 @@ export default function Home() {
               <Shield className="h-10 w-10 text-green-600" />
             </motion.div>
             <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:text-green-600 transition-colors">
-              Secure Shopping
+              {t('features.security.title')}
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Shop with confidence knowing your transactions are protected and
-              secure.
+              {t('features.security.description')}
             </p>
           </motion.div>
           <motion.div
@@ -206,11 +208,10 @@ export default function Home() {
               <TrendingUp className="h-10 w-10 text-purple-600" />
             </motion.div>
             <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:text-purple-600 transition-colors">
-              Easy Selling
+              {t('features.selling.title')}
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Start your online store quickly and manage your products with
-              ease.
+              {t('features.selling.description')}
             </p>
           </motion.div>
         </motion.div>
@@ -232,7 +233,7 @@ export default function Home() {
               repeat: Infinity,
               ease: 'linear',
             }}
-            className="absolute top-0 right-0 w-96 h-96 bg-primary rounded-full blur-3xl"
+            className="absolute top-0 end-0 w-96 h-96 bg-primary rounded-full blur-3xl"
           />
         </div>
         <motion.div
@@ -246,7 +247,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="text-4xl md:text-5xl font-bold mb-4 text-gray-900"
           >
-            Ready to Get Started?
+            {t('cta.title')}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
@@ -254,14 +255,14 @@ export default function Home() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto"
           >
-            Join thousands of buyers and sellers on MarketHub today.
+            {t('cta.subtitle')}
           </motion.p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link
               href="/register"
               className="inline-flex items-center gap-2 btn-primary text-lg py-4 px-10 text-lg font-bold shadow-xl"
             >
-              Create Your Account
+              {t('cta.createAccount')}
               <ArrowRight className="h-5 w-5" />
             </Link>
           </motion.div>

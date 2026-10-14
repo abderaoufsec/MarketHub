@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import { useAuth } from '../../context/AuthContext'
 import { ordersAPI } from '../../lib/api'
+import { usePrice } from '../../lib/currency'
+import { intlLocale } from '../../i18n/config'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -13,17 +16,23 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 
-const ORDER_STATUS = {
-  PENDING: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
-  PROCESSING: { label: 'Processing', color: 'bg-blue-100 text-blue-800' },
-  SHIPPED: { label: 'Shipped', color: 'bg-purple-100 text-purple-800' },
-  DELIVERED: { label: 'Delivered', color: 'bg-green-100 text-green-800' },
-  CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
+// Colour per status *value*; the words themselves come from the backend's
+// translated `order_status_label` (Phase 11) — never from this file.
+const ORDER_STATUS_COLORS = {
+  PENDING: 'bg-yellow-100 text-yellow-800',
+  PROCESSING: 'bg-blue-100 text-blue-800',
+  SHIPPED: 'bg-purple-100 text-purple-800',
+  DELIVERED: 'bg-green-100 text-green-800',
+  CANCELLED: 'bg-red-100 text-red-800',
 }
 
 export default function OrdersPage() {
+  const t = useTranslations('orders')
+  const locale = useLocale()
   const { isAuthenticated, user, loading: authLoading } = useAuth()
   const router = useRouter()
+  // Locale-aware DZD formatter (Phase 11) — dinars, never a `$`.
+  const price = usePrice()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -62,8 +71,8 @@ export default function OrdersPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
-        <p className="text-gray-600 mt-2">Track and manage your orders</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600 mt-2">{t('subtitle')}</p>
       </div>
 
       {loading ? (
@@ -83,13 +92,11 @@ export default function OrdersPage() {
         <div className="text-center py-16">
           <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No orders yet
+            {t('empty.title')}
           </h3>
-          <p className="text-gray-600 mb-6">
-            Start shopping to see your orders here
-          </p>
+          <p className="text-gray-600 mb-6">{t('empty.text')}</p>
           <Link href="/products" className="btn-primary inline-block">
-            Browse Products
+            {t('empty.browseProducts')}
           </Link>
         </div>
       ) : (
@@ -104,16 +111,17 @@ export default function OrdersPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Order #{order.id}
+                      {t('orderNumber', { id: order.id })}
                     </h3>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        ORDER_STATUS[order.order_status]?.color ||
+                        ORDER_STATUS_COLORS[order.order_status] ||
                         'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {ORDER_STATUS[order.order_status]?.label ||
-                        order.order_status}
+                      {/* Translated server-side (Phase 11); raw value is the
+                          only fallback so a new status is still visible. */}
+                      {order.order_status_label || order.order_status}
                     </span>
                   </div>
 
@@ -121,24 +129,28 @@ export default function OrdersPage() {
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {new Date(order.order_date).toLocaleDateString()}
+                        {new Date(order.order_date).toLocaleDateString(
+                          intlLocale(locale)
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Package className="h-4 w-4" />
-                      <span>{order.items?.length || 0} item(s)</span>
+                      <span>
+                        {t('itemCount', { count: order.items?.length || 0 })}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4" />
                       <span className="font-semibold">
-                        ${parseFloat(order.total_amount).toFixed(2)}
+                        {price(order.total_amount)}
                       </span>
                     </div>
                   </div>
 
                   {order.store_name && (
                     <p className="text-sm text-gray-600 mt-2">
-                      Sold by:{' '}
+                      {t('soldBy')}{' '}
                       <span className="font-medium">{order.store_name}</span>
                     </p>
                   )}
@@ -146,7 +158,7 @@ export default function OrdersPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-primary font-medium text-sm">
-                    View Details
+                    {t('viewDetails')}
                   </span>
                   <ChevronRight className="h-5 w-5 text-primary" />
                 </div>

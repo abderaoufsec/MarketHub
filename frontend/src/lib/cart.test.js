@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { cartItemCount, cartSubtotal, formatPrice, lineTotal } from './cart'
+import { cartItemCount, cartSubtotal, lineTotal } from './cart'
 
 describe('lineTotal', () => {
   it('multiplies unit price by quantity', () => {
@@ -66,17 +66,5 @@ describe('cartItemCount', () => {
   it('is 0 for empty or missing carts', () => {
     expect(cartItemCount([])).toBe(0)
     expect(cartItemCount(null)).toBe(0)
-  })
-})
-
-describe('formatPrice', () => {
-  it('renders two decimals with a currency symbol', () => {
-    expect(formatPrice(19900)).toBe('$19900.00')
-    expect(formatPrice('45000.5')).toBe('$45000.50')
-  })
-
-  it('falls back to $0.00 for invalid amounts', () => {
-    expect(formatPrice(undefined)).toBe('$0.00')
-    expect(formatPrice('not-a-price')).toBe('$0.00')
   })
 })

@@ -10,11 +10,16 @@
  * 3. **The success copy is honest.** Accounts created with an email keep the
  *    exact sentence the e2e suite asserts; phone-only accounts are never told
  *    to "check your email".
+ *
+ * Phase 11 (Algeria localisation): every user-facing string comes from the
+ * `auth.register` namespace, so the tests render through `renderWithIntl`
+ * (English catalogue) and assert the English source strings.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { renderWithIntl } from '../../test/i18n'
 import RegisterPage from './page'
 
 const { mocks } = vi.hoisted(() => ({
@@ -57,6 +62,11 @@ beforeEach(() => {
   mocks.register.mockResolvedValue({ success: true, data: {} })
 })
 
+/** Render through `renderWithIntl` — the full English catalogue (Phase 11). */
+function renderRegister() {
+  return renderWithIntl(<RegisterPage />)
+}
+
 function fill(overrides = {}) {
   const values = { ...VALID, email: '', phone_number: '', ...overrides }
   for (const [label, value] of Object.entries({
@@ -82,7 +92,7 @@ function fill(overrides = {}) {
 
 describe('phone-first sign-up', () => {
   it('refuses a phone-only signup before the SMS code has been entered', async () => {
-    render(<RegisterPage />)
+    renderRegister()
     fill({ phone_number: '+213555000001' })
 
     fireEvent.click(screen.getByRole('button', { name: /create account/i }))
@@ -98,7 +108,7 @@ describe('phone-first sign-up', () => {
   it('sends an OTP and submits it with the account', async () => {
     mocks.requestPhoneOtp.mockResolvedValue({ data: { detail: 'Code sent' } })
 
-    render(<RegisterPage />)
+    renderRegister()
     fill({ phone_number: '+213555000002', username: '' })
 
     fireEvent.click(screen.getByRole('button', { name: /send code/i }))
@@ -124,7 +134,7 @@ describe('phone-first sign-up', () => {
   it('shows the phone confirmation instead of "check your email"', async () => {
     mocks.requestPhoneOtp.mockResolvedValue({ data: { detail: 'Code sent' } })
 
-    render(<RegisterPage />)
+    renderRegister()
     fill({ phone_number: '+213555000003' })
     fireEvent.click(screen.getByRole('button', { name: /send code/i }))
     await screen.findByLabelText(/sms code/i)
@@ -143,7 +153,7 @@ describe('phone-first sign-up', () => {
 
 describe('email sign-up (unchanged Phase 1 contract)', () => {
   it('keeps the exact e2e success sentence when an email is given', async () => {
-    render(<RegisterPage />)
+    renderRegister()
     fill({ email: 'newbie@example.com' })
 
     fireEvent.click(screen.getByRole('button', { name: /create account/i }))
@@ -158,7 +168,7 @@ describe('email sign-up (unchanged Phase 1 contract)', () => {
   })
 
   it('rejects a signup with neither identifier', async () => {
-    render(<RegisterPage />)
+    renderRegister()
     fill()
 
     fireEvent.click(screen.getByRole('button', { name: /create account/i }))
@@ -187,7 +197,7 @@ describe('server validation failures (Phase 9 envelope)', () => {
       },
     })
 
-    render(<RegisterPage />)
+    renderRegister()
     fill({ email: 'taken@example.com' })
 
     fireEvent.click(screen.getByRole('button', { name: /create account/i }))
@@ -214,7 +224,7 @@ describe('server validation failures (Phase 9 envelope)', () => {
       },
     })
 
-    render(<RegisterPage />)
+    renderRegister()
     fill({ email: 'newbie@example.com' })
 
     fireEvent.click(screen.getByRole('button', { name: /create account/i }))

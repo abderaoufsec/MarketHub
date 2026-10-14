@@ -5,13 +5,27 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { storesAPI } from '../../../../lib/api'
 import { apiErrorMessage, apiFieldError } from '../../../../lib/errors'
+import { useTranslations } from 'next-intl'
 import { Store, Save, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../../../components/common/LoadingSpinner'
 
+const CATEGORY_VALUES = [
+  'electronics',
+  'fashion',
+  'home',
+  'books',
+  'sports',
+  'toys',
+  'beauty',
+  'food',
+  'other',
+]
+
 export default function StoreSetupPage() {
   const router = useRouter()
+  const t = useTranslations('seller')
   const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
@@ -36,7 +50,7 @@ export default function StoreSetupPage() {
     e.preventDefault()
 
     if (!formData.store_name || !formData.description || !formData.category) {
-      const errorMsg = 'Please fill in all required fields'
+      const errorMsg = t('storeSetup.validation.required')
       setMessage({ type: 'error', text: errorMsg })
       toast.error(errorMsg)
       return
@@ -44,7 +58,7 @@ export default function StoreSetupPage() {
 
     // Validate store name length
     if (formData.store_name.length < 3) {
-      const errorMsg = 'Store name must be at least 3 characters long'
+      const errorMsg = t('storeSetup.validation.nameMin')
       setMessage({ type: 'error', text: errorMsg })
       toast.error(errorMsg)
       return
@@ -52,7 +66,7 @@ export default function StoreSetupPage() {
 
     // Validate description length
     if (formData.description.length < 20) {
-      const errorMsg = 'Store description must be at least 20 characters long'
+      const errorMsg = t('storeSetup.validation.descriptionMin')
       setMessage({ type: 'error', text: errorMsg })
       toast.error(errorMsg)
       return
@@ -63,7 +77,7 @@ export default function StoreSetupPage() {
       setMessage(null)
       console.log('Submitting store data:', formData) // Debug log
       const response = await storesAPI.create(formData)
-      const successMsg = 'Store created successfully!'
+      const successMsg = t('storeSetup.created')
       setMessage({ type: 'success', text: successMsg })
       toast.success(successMsg)
       setTimeout(() => {
@@ -78,7 +92,7 @@ export default function StoreSetupPage() {
         apiFieldError(error, 'store_name') ||
         apiFieldError(error, 'category') ||
         apiFieldError(error, 'non_field_errors') ||
-        apiErrorMessage(error, 'Failed to create store')
+        apiErrorMessage(error, t('storeSetup.createError'))
 
       setMessage({ type: 'error', text: errorMsg })
       toast.error(errorMsg)
@@ -117,11 +131,9 @@ export default function StoreSetupPage() {
             <Store className="h-10 w-10 text-primary" />
           </motion.div>
           <h1 className="text-4xl font-bold gradient-text mb-2">
-            Create Your Store
+            {t('storeSetup.title')}
           </h1>
-          <p className="text-gray-600 text-lg">
-            Set up your storefront to start selling on MarketHub
-          </p>
+          <p className="text-gray-600 text-lg">{t('storeSetup.subtitle')}</p>
         </motion.div>
 
         <motion.div
@@ -143,9 +155,9 @@ export default function StoreSetupPage() {
                 }`}
               >
                 {message.type === 'success' ? (
-                  <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                  <CheckCircle className="h-5 w-5 me-2 flex-shrink-0" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 me-2 flex-shrink-0" />
                 )}
                 <span>{message.text}</span>
               </motion.div>
@@ -168,7 +180,8 @@ export default function StoreSetupPage() {
                 htmlFor="store_name"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Store Name <span className="text-red-500">*</span>
+                {t('storeSetup.form.name')}{' '}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -179,10 +192,10 @@ export default function StoreSetupPage() {
                 required
                 minLength={3}
                 className="input-field"
-                placeholder="Enter your store name (min. 3 characters)"
+                placeholder={t('storeSetup.form.namePlaceholder')}
               />
               <p className="text-sm text-gray-500 mt-1">
-                This will be your store's public name
+                {t('storeSetup.form.nameHint')}
               </p>
             </motion.div>
 
@@ -195,7 +208,8 @@ export default function StoreSetupPage() {
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Store Description <span className="text-red-500">*</span>
+                {t('storeSetup.form.description')}{' '}
+                <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="description"
@@ -206,10 +220,12 @@ export default function StoreSetupPage() {
                 minLength={20}
                 rows={4}
                 className="input-field resize-none"
-                placeholder="Tell customers about your store and what you sell (min. 20 characters)"
+                placeholder={t('storeSetup.form.descriptionPlaceholder')}
               />
               <p className="text-sm text-gray-500 mt-1">
-                {formData.description.length}/20 characters minimum
+                {t('storeSetup.form.descriptionCount', {
+                  count: formData.description.length,
+                })}
               </p>
             </motion.div>
 
@@ -222,7 +238,8 @@ export default function StoreSetupPage() {
                 htmlFor="category"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Store Category <span className="text-red-500">*</span>
+                {t('storeSetup.form.category')}{' '}
+                <span className="text-red-500">*</span>
               </label>
               <select
                 id="category"
@@ -232,16 +249,14 @@ export default function StoreSetupPage() {
                 required
                 className="input-field"
               >
-                <option value="">Select a category</option>
-                <option value="electronics">Electronics</option>
-                <option value="fashion">Clothing & Fashion</option>
-                <option value="home">Home & Garden</option>
-                <option value="books">Books & Media</option>
-                <option value="sports">Sports & Outdoors</option>
-                <option value="toys">Toys & Games</option>
-                <option value="beauty">Beauty & Health</option>
-                <option value="food">Food & Beverages</option>
-                <option value="other">Other</option>
+                <option value="">
+                  {t('storeSetup.form.categoryPlaceholder')}
+                </option>
+                {CATEGORY_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`storeSetup.categories.${value}`)}
+                  </option>
+                ))}
               </select>
             </motion.div>
 
@@ -253,12 +268,12 @@ export default function StoreSetupPage() {
             >
               <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
                 <ArrowRight className="h-4 w-4" />
-                What's Next?
+                {t('storeSetup.next.title')}
               </h3>
-              <ul className="text-sm text-blue-800 space-y-1 ml-6">
-                <li>• Add products to your store</li>
-                <li>• Set up inventory tracking</li>
-                <li>• Start receiving orders</li>
+              <ul className="text-sm text-blue-800 space-y-1 ms-6">
+                <li>{t('storeSetup.next.step1')}</li>
+                <li>{t('storeSetup.next.step2')}</li>
+                <li>{t('storeSetup.next.step3')}</li>
               </ul>
             </motion.div>
 
@@ -278,12 +293,12 @@ export default function StoreSetupPage() {
                 {loading ? (
                   <>
                     <LoadingSpinner size="sm" />
-                    Creating Store...
+                    {t('storeSetup.form.submitting')}
                   </>
                 ) : (
                   <>
                     <Save className="h-5 w-5" />
-                    Create Store
+                    {t('storeSetup.form.submit')}
                   </>
                 )}
               </motion.button>

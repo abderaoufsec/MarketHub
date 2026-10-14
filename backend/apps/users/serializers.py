@@ -1,7 +1,11 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework import serializers
+
+from apps.geography.models import Commune, Wilaya
+from apps.geography.serializers import CommuneSerializer, WilayaSerializer
 
 from .models import Address, User
 from .otp import OtpError, verify_otp
@@ -40,6 +44,7 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "phone_number",
             "phone_verified",
+            "preferred_language",
             "is_seller",
             "is_verified",
             "date_joined",
@@ -117,6 +122,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "last_name",
             "phone_number",
             "otp_code",
+            "preferred_language",
             "is_seller",
         ]
 
@@ -209,6 +215,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             last_name=validated_data.get("last_name", ""),
             phone_number=phone,
             is_seller=validated_data.get("is_seller", False),
+            # Phase 11: someone signing up from the Arabic UI gets Arabic
+            # emails/SMS without a second step.
+            preferred_language=validated_data.get("preferred_language") or "fr",
         )
         if phone and phone_verified_now:
             # The OTP in this request already proved ownership of the number.
@@ -328,7 +337,19 @@ class SocialLoginSerializer(serializers.Serializer):
 
 
 class AddressSerializer(serializers.ModelSerializer):
-    """Serializer for Address model"""
+    """Address payload (Phase 11): reads nested geography, writes ids.
+
+    Clients send ``wilaya_id`` (required) and ``commune_id`` (optional, but it
+    must belong to that wilaya — a mismatch is a client bug, not something to
+    silently repair). Responses nest the full ``wilaya``/``commune`` objects so
+    a list of addresses renders without extra calls. ``country`` is derived:
+    every wilaya is Algerian, so it is read-only and defaults to "DZ".
+    """
+
+    wilaya = WilayaSerializer(read_only=True)
+    commune = CommuneSerializer(read_only=True)
+    wilaya_id = serializers.IntegerField(write_only=True, required=True)
+    commune_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Address
@@ -336,12 +357,40 @@ class AddressSerializer(serializers.ModelSerializer):
             "id",
             "address_line1",
             "address_line2",
-            "city",
-            "state_province",
-            "postal_code",
+            "wilaya",
+            "commune",
+            "wilaya_id",
+            "commune_id",
             "country",
             "is_default",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "country", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        wilaya_id = attrs.get("wilaya_id")
+        if wilaya_id is None and self.instance is not None:
+            wilaya_id = self.instance.wilaya_id
+        wilaya = Wilaya.objects.filter(id=wilaya_id, is_active=True).first()
+        if wilaya is None:
+            raise serializers.ValidationError({"wilaya_id": _("Wilaya not found.")})
+
+        commune_id = attrs.get("commune_id")
+        commune = None
+        if commune_id not in (None, ""):
+            commune = Commune.objects.filter(id=commune_id, wilaya=wilaya, is_active=True).first()
+            if commune is None:
+                raise serializers.ValidationError(
+                    {"commune_id": _("Commune not found in this wilaya.")}
+                )
+
+        # Resolve to model instances and drop the write-only id keys, so
+        # create()/update() receive each foreign key exactly once.
+        attrs.pop("wilaya_id", None)
+        attrs.pop("commune_id", None)
+        attrs["wilaya"] = wilaya
+        attrs["commune"] = commune
+        return attrs

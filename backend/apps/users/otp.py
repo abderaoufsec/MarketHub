@@ -24,6 +24,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework.exceptions import Throttled
 
 from .models import PhoneOtp, User
@@ -128,10 +129,16 @@ def issue_otp(
         )
 
         try:
+            # The active request language (LocaleMiddleware) decides: an OTP
+            # is always sent during a request, and the sender's UI language is
+            # the best signal available — a register-purpose code has no user
+            # row to read a preference from yet (Phase 11).
             send_sms(
                 phone,
-                f"Your MarketHub code is {code}. It expires in "
-                f"{settings.OTP_TTL_SECONDS // 60} minutes. Never share it.",
+                _(
+                    "Your MarketHub code is {code}. It expires in {minutes} minutes. "
+                    "Never share it."
+                ).format(code=code, minutes=settings.OTP_TTL_SECONDS // 60),
             )
         except SmsError:
             # Delivery failed → the code can never be entered. Do not leave a

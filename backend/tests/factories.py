@@ -12,6 +12,7 @@ import factory
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from apps.geography.models import Commune, Wilaya
 from apps.inventory.models import Inventory, InventoryAuditLog
 from apps.orders.models import Cart, CartItem, Order, OrderItem
 from apps.payments.models import Transaction
@@ -147,15 +148,36 @@ class InventoryAuditLogFactory(factory.django.DjangoModelFactory):
     new_quantity = 1
 
 
+class WilayaFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Wilaya
+
+    # Sequences, not real codes: tests that need "09 Blida" pass it in.
+    code = factory.Sequence(lambda n: f"{n:04d}")
+    name_fr = factory.Sequence(lambda n: f"Wilaya {n}")
+    name_ar = factory.Sequence(lambda n: f"ولاية {n}")
+
+
+class CommuneFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Commune
+
+    wilaya = factory.SubFactory(WilayaFactory)
+    code = factory.Sequence(lambda n: f"C{n:06d}")
+    name_fr = factory.Sequence(lambda n: f"Commune {n}")
+    name_ar = factory.Sequence(lambda n: f"بلدية {n}")
+
+
 class AddressFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Address
 
     user = factory.SubFactory(UserFactory)
     address_line1 = "12 Rue de la Liberté"
-    city = "Blida"
-    state_province = "Blida"
-    postal_code = "09000"
+    # Commune and address share one wilaya: the serializer (and reality)
+    # rejects a commune from a different wilaya than the address.
+    wilaya = factory.SubFactory(WilayaFactory)
+    commune = factory.SubFactory(CommuneFactory, wilaya=factory.SelfAttribute("..wilaya"))
     country = "DZ"
     is_default = True
 

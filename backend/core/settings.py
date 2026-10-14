@@ -111,6 +111,8 @@ INSTALLED_APPS = [
     # helpers (and their management commands, e.g. compile_api_messages) on
     # Django's path. It defines no models, so it contributes no migrations.
     "core",
+    # Geography first: apps.users.Address references its Wilaya/Commune.
+    "apps.geography",
     "apps.users",
     "apps.stores",
     "apps.products",

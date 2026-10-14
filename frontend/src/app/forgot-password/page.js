@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { authAPI } from '../../lib/api'
 import { apiErrorMessage, apiFieldError } from '../../lib/errors'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
+import { useTranslations } from 'next-intl'
 
 /**
  * Account recovery (Phase 8 of docs/todo.md).
@@ -22,6 +23,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
  */
 export default function ForgotPasswordPage() {
   const router = useRouter()
+  const t = useTranslations('auth.forgot')
   const [mode, setMode] = useState('email') // 'email' | 'phone'
 
   const [email, setEmail] = useState('')
@@ -47,7 +49,7 @@ export default function ForgotPasswordPage() {
       // leak whether the account exists, so the backend does not do it.
       toast.error(
         apiFieldError(error, 'email') ||
-          apiErrorMessage(error, 'Please enter a valid email address.')
+          apiErrorMessage(error, t('invalidEmail'))
       )
     } finally {
       setEmailLoading(false)
@@ -63,11 +65,11 @@ export default function ForgotPasswordPage() {
         purpose: 'password_reset',
       })
       setCodeSent(true)
-      toast.success('If that number has an account, a code is on its way.')
+      toast.success(t('codeSent'))
     } catch (error) {
       toast.error(
         apiFieldError(error, 'phone_number') ||
-          apiErrorMessage(error, 'Could not send the code.')
+          apiErrorMessage(error, t('sendCodeFailed'))
       )
     } finally {
       setPhoneLoading(false)
@@ -77,7 +79,7 @@ export default function ForgotPasswordPage() {
   const resetByPhone = async (e) => {
     e.preventDefault()
     if (newPassword !== passwordConfirm) {
-      toast.error('Passwords do not match')
+      toast.error(t('passwordsDoNotMatch'))
       return
     }
     setResetLoading(true)
@@ -88,7 +90,7 @@ export default function ForgotPasswordPage() {
         new_password: newPassword,
         new_password_confirm: passwordConfirm,
       })
-      toast.success('Password reset. You can sign in now.')
+      toast.success(t('resetDone'))
       router.push('/login')
     } catch (error) {
       // The specific field message wins over the generic envelope one —
@@ -97,7 +99,7 @@ export default function ForgotPasswordPage() {
         apiFieldError(error, 'new_password') ||
         apiFieldError(error, 'code') ||
         apiFieldError(error, 'phone_number') ||
-        apiErrorMessage(error, 'That code is invalid or has expired.')
+        apiErrorMessage(error, t('invalidCode'))
       toast.error(detail)
     } finally {
       setResetLoading(false)
@@ -114,16 +116,19 @@ export default function ForgotPasswordPage() {
       >
         <div>
           <h2 className="mt-6 text-center text-4xl font-bold gradient-text">
-            Reset your password
+            {t('title')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Remembered it?{' '}
-            <Link
-              href="/login"
-              className="font-medium text-primary hover:text-secondary transition-colors"
-            >
-              Back to sign in
-            </Link>
+            {t.rich('remembered', {
+              link: (chunks) => (
+                <Link
+                  href="/login"
+                  className="font-medium text-primary hover:text-secondary transition-colors"
+                >
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
 
@@ -139,7 +144,7 @@ export default function ForgotPasswordPage() {
             }`}
           >
             <Mail className="h-4 w-4" />
-            By email
+            {t('modeEmail')}
           </button>
           <button
             type="button"
@@ -151,7 +156,7 @@ export default function ForgotPasswordPage() {
             }`}
           >
             <Phone className="h-4 w-4" />
-            By SMS code
+            {t('modeSms')}
           </button>
         </div>
 
@@ -168,18 +173,21 @@ export default function ForgotPasswordPage() {
                 <div className="text-center space-y-4">
                   <CheckCircle className="h-14 w-14 text-green-500 mx-auto" />
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Check your inbox
+                    {t('checkInbox')}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    If an account exists for{' '}
-                    <span className="font-medium">{email}</span>, a reset link
-                    is on its way. The link expires in 24 hours.
+                    {t.rich('emailSent', {
+                      mail: (chunks) => (
+                        <span className="font-medium">{chunks}</span>
+                      ),
+                      email,
+                    })}
                   </p>
                   <Link
                     href="/login"
                     className="inline-block py-2 px-4 text-sm font-medium rounded-lg text-primary hover:bg-primary/10 transition-colors"
                   >
-                    Back to sign in
+                    {t('backToSignIn')}
                   </Link>
                 </div>
               ) : (
@@ -189,7 +197,7 @@ export default function ForgotPasswordPage() {
                       htmlFor="email"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      Email address
+                      {t('emailLabel')}
                     </label>
                     <input
                       id="email"
@@ -212,7 +220,7 @@ export default function ForgotPasswordPage() {
                     ) : (
                       <>
                         <Mail className="h-4 w-4" />
-                        Send reset link
+                        {t('sendResetLink')}
                       </>
                     )}
                   </button>
@@ -236,7 +244,7 @@ export default function ForgotPasswordPage() {
                     htmlFor="phone_number"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Phone number
+                    {t('phoneLabel')}
                   </label>
                   <input
                     id="phone_number"
@@ -249,9 +257,7 @@ export default function ForgotPasswordPage() {
                     placeholder="0555 12 34 56"
                     disabled={codeSent}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    The number you registered with, in Algerian format.
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">{t('phoneHint')}</p>
                 </div>
 
                 <AnimatePresence>
@@ -264,15 +270,14 @@ export default function ForgotPasswordPage() {
                     >
                       <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                        We sent a 6-digit code to that number. It expires in 5
-                        minutes.
+                        {t('otpNotice')}
                       </div>
                       <div>
                         <label
                           htmlFor="code"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Verification code
+                          {t('codeLabel')}
                         </label>
                         <input
                           id="code"
@@ -294,7 +299,7 @@ export default function ForgotPasswordPage() {
                           htmlFor="new_password"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          New password
+                          {t('newPasswordLabel')}
                         </label>
                         <input
                           id="new_password"
@@ -305,7 +310,7 @@ export default function ForgotPasswordPage() {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           className="input-field w-full"
-                          placeholder="Password (min. 8 characters)"
+                          placeholder={t('passwordPlaceholder')}
                         />
                       </div>
                       <div>
@@ -313,7 +318,7 @@ export default function ForgotPasswordPage() {
                           htmlFor="password_confirm"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Confirm new password
+                          {t('confirmPasswordLabel')}
                         </label>
                         <input
                           id="password_confirm"
@@ -323,7 +328,7 @@ export default function ForgotPasswordPage() {
                           value={passwordConfirm}
                           onChange={(e) => setPasswordConfirm(e.target.value)}
                           className="input-field w-full"
-                          placeholder="Repeat the new password"
+                          placeholder={t('confirmPasswordPlaceholder')}
                         />
                       </div>
                     </motion.div>
@@ -340,12 +345,12 @@ export default function ForgotPasswordPage() {
                   ) : codeSent ? (
                     <>
                       <KeyRound className="h-4 w-4" />
-                      Reset password
+                      {t('resetPassword')}
                     </>
                   ) : (
                     <>
                       <Phone className="h-4 w-4" />
-                      Send SMS code
+                      {t('sendSmsCode')}
                     </>
                   )}
                 </button>
@@ -361,7 +366,7 @@ export default function ForgotPasswordPage() {
                     }}
                     className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                   >
-                    Use a different number
+                    {t('changeNumber')}
                   </button>
                 )}
               </form>
@@ -370,13 +375,16 @@ export default function ForgotPasswordPage() {
         </AnimatePresence>
 
         <p className="text-xs text-center text-gray-500">
-          No account yet?{' '}
-          <Link
-            href="/register"
-            className="text-primary hover:text-secondary transition-colors"
-          >
-            Create one
-          </Link>
+          {t.rich('noAccount', {
+            link: (chunks) => (
+              <Link
+                href="/register"
+                className="text-primary hover:text-secondary transition-colors"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       </motion.div>
     </div>

@@ -3,8 +3,10 @@
  * reused (checkout summary, order review) without duplicating the formulas.
  *
  * All amounts arrive from the API as decimal strings ("19900.00"); the code
- * works in floats for display, and `formatPrice` is the single place that
- * decides how they are rendered.
+ * works in floats for display. How they are *rendered* is no longer decided
+ * here: money formatting moved to `src/lib/currency.js` (DZD, locale-aware,
+ * standard/millions modes — Phase 11), and components read it through the
+ * `usePrice()` hook.
  */
 
 /** Line total for one cart item: unit price × quantity. */
@@ -25,10 +27,4 @@ export function cartSubtotal(items) {
 export function cartItemCount(items) {
   if (!Array.isArray(items)) return 0
   return items.reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0)
-}
-
-/** Render a numeric amount as a display price, e.g. 19900 -> "$19900.00". */
-export function formatPrice(amount) {
-  const value = parseFloat(amount)
-  return `$${(Number.isNaN(value) ? 0 : value).toFixed(2)}`
 }

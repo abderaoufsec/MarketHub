@@ -83,7 +83,11 @@ def test_reset_password_completes_and_kills_old_sessions(api_client, buyer):
     buyer.refresh_from_db()
     assert buyer.check_password(NEW_PASSWORD)
     # The security notice went out (non-fatal, but it is sent in-process).
-    assert any("password was changed" in m.subject.lower() for m in mail.outbox)
+    # Phase 11: account emails follow the user's preferred language — the
+    # default preference is French, so the subject is French, not the
+    # request's Accept-Language. The switching itself is pinned in
+    # apps/users/tests/test_localization.py.
+    assert any("mot de passe markethub" in m.subject.lower() for m in mail.outbox)
 
     # Old password is dead, new one works, the old session is blacklisted.
     assert (
@@ -276,7 +280,8 @@ def test_phone_reset_flow(api_client):
     user.refresh_from_db()
     assert user.check_password(NEW_PASSWORD)
     # Change notice went out on the channel this account actually owns.
-    assert any("password was changed" in m["message"].lower() for m in outbox)
+    # Phase 11: written in the account's preferred language (fr by default).
+    assert any("mot de passe" in m["message"].lower() for m in outbox)
 
     login = api_client.post(LOGIN_URL, {"email": PHONE, "password": NEW_PASSWORD}, format="json")
     assert login.status_code == 200

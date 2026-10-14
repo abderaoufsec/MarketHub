@@ -12,9 +12,11 @@
  * 3. **Retries are safe.** The same idempotency key is sent with the request.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { renderWithIntl } from '../../test/i18n'
+import { formatPrice } from '../../lib/currency'
 import CheckoutPage from './page'
 
 const { mocks } = vi.hoisted(() => ({
@@ -58,15 +60,16 @@ const CART = {
   total_price: '200.00',
 }
 
+// Phase 11 address shape: a street line plus a wilaya and an optional
+// commune, each carrying a localized `name`.
 const ADDRESSES = {
   results: [
     {
       id: 5,
       address_line1: '12 Rue de la Liberté',
       address_line2: '',
-      city: 'Blida',
-      state_province: 'Blida',
-      postal_code: '09000',
+      wilaya: { id: 16, name: 'Alger' },
+      commune: { id: 1601, name: 'Alger Centre' },
       country: 'DZ',
       is_default: true,
     },
@@ -78,7 +81,7 @@ async function renderCheckout() {
   cartAPI.get.mockResolvedValue({ data: CART })
   addressesAPI.list.mockResolvedValue({ data: ADDRESSES })
 
-  render(<CheckoutPage />)
+  renderWithIntl(<CheckoutPage />)
 
   return screen.findByRole('button', { name: /place order/i })
 }
@@ -182,9 +185,12 @@ describe('when the price changed while checking out', () => {
 
     expect(mocks.refreshPrices).toHaveBeenCalledTimes(1)
     expect(mocks.push).not.toHaveBeenCalled()
-    // The buyer sees exactly what moved, old price and new price.
-    expect(bodyText()).toContain('was $100.00')
-    expect(bodyText()).toContain('$150.00')
+    // The buyer sees exactly what moved, old price and new price — in DZD
+    // (Phase 11), never in `$`.
+    expect(bodyText()).toContain(
+      `was ${formatPrice('100.00', { locale: 'en' })}`
+    )
+    expect(bodyText()).toContain(formatPrice('150.00', { locale: 'en' }))
   })
 })
 

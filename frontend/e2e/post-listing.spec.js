@@ -4,7 +4,8 @@
 // and waits for the success message + redirect to "My Products".
 // The name is stamped per run so repeated runs never collide; the seed command
 // prunes stale "E2E Listing ..." rows so the free-plan quota is never hit.
-const { test, expect } = require('@playwright/test')
+// The shared fixture pins `mh_locale=en` (Phase 11: default UI is French).
+const { test, expect } = require('./fixtures')
 
 const SELLER = {
   email: 'e2e-seller@example.com',

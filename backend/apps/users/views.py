@@ -6,6 +6,8 @@ from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
+from django.utils.translation import gettext as _
+from django.utils.translation import override
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -31,6 +33,7 @@ from .audit import record_auth_event
 from .authentication import CookieJWTAuthentication
 from .cookies import REFRESH_COOKIE, clear_auth_cookies, set_auth_cookies
 from .email import (
+    recipient_language,
     send_password_changed_email,
     send_password_reset_email,
     send_verification_email,
@@ -590,8 +593,8 @@ def phone_reset_password(request):
     clear_budgets(phone=data["phone_number"])
     send_password_changed_email(user)
     # Change notice is best-effort; the reset itself already succeeded.
-    with suppress(SmsError, TypeError, ValueError):
-        send_sms(user.phone_number, "Your MarketHub password was changed.")
+    with suppress(SmsError, TypeError, ValueError), override(recipient_language(user)):
+        send_sms(user.phone_number, _("Your MarketHub password was changed."))
 
     return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
 

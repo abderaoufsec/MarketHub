@@ -276,3 +276,143 @@ msgstr ""
 
 msgid "This Idempotency-Key was already used with a different payload."
 msgstr "Cette clé d'idempotence a déjà été utilisée avec un contenu différent."
+
+# --- Phase 11: Algeria localisation (apps/users/email.py, otp.py,
+# serializers.py; core/i18n.py choice labels) ----------------------------
+msgid "Verify your MarketHub account"
+msgstr "Vérifiez votre compte MarketHub"
+
+msgid ""
+"Hello {name},\n"
+"\n"
+"Please confirm your email address to activate your MarketHub account:\n"
+"{link}\n"
+"\n"
+"The link expires in 24 hours. If you did not create this account, you can "
+"ignore this message."
+msgstr ""
+"Bonjour {name},\n"
+"\n"
+"Veuillez confirmer votre adresse e-mail pour activer votre compte MarketHub :\n"
+"{link}\n"
+"\n"
+"Le lien expire dans 24 heures. Si vous n'avez pas créé ce compte, vous "
+"pouvez ignorer ce message."
+
+msgid "Reset your MarketHub password"
+msgstr "Réinitialisez votre mot de passe MarketHub"
+
+msgid ""
+"Hello {name},\n"
+"\n"
+"Someone asked to reset the password of your MarketHub account:\n"
+"{link}\n"
+"\n"
+"Choose a new password within 24 hours — the link stops working after that, "
+"and also as soon as the password changes. If this was not you, ignore this "
+"message and nothing changes."
+msgstr ""
+"Bonjour {name},\n"
+"\n"
+"Une demande de réinitialisation du mot de passe de votre compte MarketHub a été faite :\n"
+"{link}\n"
+"\n"
+"Choisissez un nouveau mot de passe dans les 24 heures — le lien cesse ensuite de "
+"fonctionner, dès que le mot de passe est modifié. Si ce n'est pas vous, ignorez "
+"ce message : rien ne change."
+
+msgid "Your MarketHub password was changed"
+msgstr "Votre mot de passe MarketHub a été modifié"
+
+msgid ""
+"Hello,\n"
+"\n"
+"The password of your MarketHub account was just changed. If this was not "
+"you, reset your password immediately and contact support@markethub.example."
+msgstr ""
+"Bonjour,\n"
+"\n"
+"Le mot de passe de votre compte MarketHub vient d'être modifié. Si ce n'est "
+"pas vous, réinitialisez-le immédiatement et contactez support@markethub.example."
+
+msgid "Your MarketHub code is {code}. It expires in {minutes} minutes. Never share it."
+msgstr "Votre code MarketHub est {code}. Il expire dans {minutes} minutes. Ne le partagez jamais."
+
+msgid "Your MarketHub password was changed."
+msgstr "Votre mot de passe MarketHub a été modifié."
+
+msgid "Wilaya not found."
+msgstr "Wilaya introuvable."
+
+msgid "Commune not found in this wilaya."
+msgstr "Commune introuvable dans cette wilaya."
+
+# Choice labels — the *_label twin of each raw enum value in API responses.
+msgid "Pending"
+msgstr "En attente"
+
+msgid "Processing"
+msgstr "En cours de traitement"
+
+msgid "Shipped"
+msgstr "Expédiée"
+
+msgid "Delivered"
+msgstr "Livrée"
+
+msgid "Cancelled"
+msgstr "Annulée"
+
+msgid "Successful"
+msgstr "Réussi"
+
+msgid "Failed"
+msgstr "Échoué"
+
+msgid "Simulated"
+msgstr "Simulé"
+
+msgid "Paid"
+msgstr "Payé"
+
+msgid "Sale"
+msgstr "Vente"
+
+msgid "Return"
+msgstr "Retour"
+
+msgid "Manual Adjustment"
+msgstr "Ajustement manuel"
+
+msgid "Initial Stock"
+msgstr "Stock initial"
+
+msgid "Restock"
+msgstr "Réapprovisionnement"
+
+msgid "Electronics"
+msgstr "Électronique"
+
+msgid "Fashion"
+msgstr "Mode"
+
+msgid "Home & Garden"
+msgstr "Maison & Jardin"
+
+msgid "Books"
+msgstr "Livres"
+
+msgid "Sports & Outdoors"
+msgstr "Sports & Plein air"
+
+msgid "Toys & Games"
+msgstr "Jouets & Jeux"
+
+msgid "Food & Beverages"
+msgstr "Alimentation & Boissons"
+
+msgid "Beauty & Personal Care"
+msgstr "Beauté & Soins personnels"
+
+msgid "Other"
+msgstr "Autre"

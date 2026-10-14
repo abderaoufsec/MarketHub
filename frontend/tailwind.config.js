@@ -36,7 +36,19 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
+        // Phase 11: Inter (Latin) first, Noto Sans Arabic as the Arabic
+        // fallback — both injected as CSS variables by next/font in
+        // src/app/layout.js, so `<html lang="ar">` needs no class changes.
+        sans: [
+          'var(--font-inter)',
+          'var(--font-noto-arabic)',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'sans-serif',
+        ],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

@@ -8,8 +8,10 @@ import ProductCard from '../../components/product/ProductCard'
 import SkeletonLoader from '../../components/common/SkeletonLoader'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
+import { useTranslations } from 'next-intl'
 
 export default function ProductsPage() {
+  const t = useTranslations('products')
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -38,12 +40,12 @@ export default function ProductsPage() {
       const response = await productsAPI.list(params)
       setProducts(response.data.results || response.data)
       if (response.data.results?.length === 0 || response.data?.length === 0) {
-        toast('No products found matching your criteria', { icon: '🔍' })
+        toast(t('noResultsToast'), { icon: '🔍' })
       }
     } catch (error) {
       console.error('Error fetching products:', error)
       setProducts([])
-      toast.error('Failed to load products. Please try again.')
+      toast.error(t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -71,7 +73,7 @@ export default function ProductsPage() {
         transition={{ delay: 0.1 }}
         className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 gradient-text"
       >
-        Browse Products
+        {t('title')}
       </motion.h1>
 
       {/* Search Bar */}
@@ -84,13 +86,13 @@ export default function ProductsPage() {
       >
         <div className="flex gap-2">
           <motion.div whileFocus={{ scale: 1.01 }} className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm hover:shadow-md"
+              className="w-full ps-10 pe-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm hover:shadow-md"
             />
           </motion.div>
           <motion.button
@@ -101,7 +103,7 @@ export default function ProductsPage() {
             className="btn-secondary flex items-center gap-2"
           >
             <Filter className="h-5 w-5" />
-            Filters
+            {t('filters')}
             <motion.div
               animate={{ rotate: showFilters ? 180 : 0 }}
               transition={{ duration: 0.3 }}
@@ -124,26 +126,28 @@ export default function ProductsPage() {
           >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
+                {t('categoryLabel')}
               </label>
               <select
                 value={filters.category}
                 onChange={(e) => handleFilterChange('category', e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
               >
-                <option value="">All Categories</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Home">Home & Garden</option>
-                <option value="Sports">Sports & Outdoors</option>
-                <option value="Books">Books</option>
-                <option value="Toys">Toys & Games</option>
+                <option value="">{t('allCategories')}</option>
+                <option value="Electronics">
+                  {t('categories.electronics')}
+                </option>
+                <option value="Clothing">{t('categories.clothing')}</option>
+                <option value="Home">{t('categories.home')}</option>
+                <option value="Sports">{t('categories.sports')}</option>
+                <option value="Books">{t('categories.books')}</option>
+                <option value="Toys">{t('categories.toys')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Min Price
+                {t('minPrice')}
               </label>
               <input
                 type="number"
@@ -158,7 +162,7 @@ export default function ProductsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Price
+                {t('maxPrice')}
               </label>
               <input
                 type="number"
@@ -181,8 +185,8 @@ export default function ProductsPage() {
                   }
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                 />
-                <span className="ml-2 text-sm text-gray-700">
-                  In Stock Only
+                <span className="ms-2 text-sm text-gray-700">
+                  {t('inStockOnly')}
                 </span>
               </label>
             </div>
@@ -220,7 +224,7 @@ export default function ProductsPage() {
             <Search className="h-12 w-12 text-gray-400" />
           </div>
           <p className="text-gray-500 text-lg mb-4 font-medium">
-            No products found
+            {t('empty.title')}
           </p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link
@@ -236,7 +240,7 @@ export default function ProductsPage() {
                 })
               }}
             >
-              Clear filters
+              {t('empty.clearFilters')}
             </Link>
           </motion.div>
         </motion.div>
