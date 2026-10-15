@@ -23,7 +23,7 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-hot-toast": "^2.6.0",
-    "react-intersection-observer": "^10.0.0"
+    "react-intersection-observer": "^11.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
