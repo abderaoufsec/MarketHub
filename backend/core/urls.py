@@ -16,6 +16,7 @@ from drf_spectacular.views import (
 API_V1_URLPATTERNS = [
     path("auth/", include("apps.users.urls")),
     path("geography/", include("apps.geography.urls")),
+    path("catalog/", include("apps.catalog.urls")),
     path("stores/", include("apps.stores.urls")),
     path("products/", include("apps.products.urls")),
     path("inventory/", include("apps.inventory.urls")),

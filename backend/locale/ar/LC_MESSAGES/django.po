@@ -415,3 +415,10 @@ msgstr "العناية الشخصية والتجميل"
 
 msgid "Other"
 msgstr "أخرى"
+
+# --- catalog attributes (apps/catalog/validation.py) ----------------------
+msgid "Attributes must be an object."
+msgstr "يجب أن تكون السمات كائنًا."
+
+msgid "Attributes require a category to validate against."
+msgstr "تتطلب السمات وجود فئة للتحقق منها."

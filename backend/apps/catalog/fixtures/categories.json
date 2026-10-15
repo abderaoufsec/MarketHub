@@ -1,0 +1,931 @@
+{
+  "meta": {
+    "source": "Curated launch taxonomy for Phase 12 (docs/todo.md), modeled on the top-level structure of Algerian classifieds sites (Ouedkniss categories v3) and trimmed to the categories the platform launches with. Phase 29 owns the full taxonomy expansion; new roots since Phase 11's store migration reuse the nine legacy slugs so existing stores keep their category.",
+    "generated": "2026-10-15",
+    "conventions": {
+      "slugs": "lower-kebab-case, stable — they are the API/filter contract",
+      "labels": "label_fr is the guaranteed-complete fallback; label_ar/label_en ride along",
+      "types": "text | number | enum | boolean | year | range",
+      "range_values": "stored as {\"min\": n, \"max\": n} pairs",
+      "orders": "multiples of 10 so an admin can insert between rows"
+    }
+  },
+  "categories": [
+    {
+      "slug": "vehicles",
+      "name_fr": "Véhicules",
+      "name_ar": "مركبات",
+      "name_en": "Vehicles",
+      "icon": "car",
+      "order": 10,
+      "attribute_definitions": [],
+      "children": [
+        {
+          "slug": "cars",
+          "name_fr": "Voitures",
+          "name_ar": "سيارات",
+          "name_en": "Cars",
+          "icon": "car",
+          "order": 10,
+          "attribute_definitions": [
+            {
+              "key": "brand",
+              "label_fr": "Marque",
+              "label_ar": "العلامة التجارية",
+              "label_en": "Brand",
+              "type": "enum",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": [
+                {"value": "renault", "label_fr": "Renault", "label_ar": "رينو", "label_en": "Renault"},
+                {"value": "peugeot", "label_fr": "Peugeot", "label_ar": "بوجو", "label_en": "Peugeot"},
+                {"value": "toyota", "label_fr": "Toyota", "label_ar": "تويوتا", "label_en": "Toyota"},
+                {"value": "hyundai", "label_fr": "Hyundai", "label_ar": "هيونداي", "label_en": "Hyundai"},
+                {"value": "kia", "label_fr": "Kia", "label_ar": "كيا", "label_en": "Kia"},
+                {"value": "volkswagen", "label_fr": "Volkswagen", "label_ar": "فولكسفاغن", "label_en": "Volkswagen"},
+                {"value": "fiat", "label_fr": "Fiat", "label_ar": "فيات", "label_en": "Fiat"},
+                {"value": "citroen", "label_fr": "Citroën", "label_ar": "ستروين", "label_en": "Citroën"},
+                {"value": "dacia", "label_fr": "Dacia", "label_ar": "داسيا", "label_en": "Dacia"},
+                {"value": "suzuki", "label_fr": "Suzuki", "label_ar": "سوزوكي", "label_en": "Suzuki"},
+                {"value": "other", "label_fr": "Autre", "label_ar": "أخرى", "label_en": "Other"}
+              ]
+            },
+            {
+              "key": "model",
+              "label_fr": "Modèle",
+              "label_ar": "الطراز",
+              "label_en": "Model",
+              "type": "text",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 20,
+              "choices": []
+            },
+            {
+              "key": "year",
+              "label_fr": "Année",
+              "label_ar": "السنة",
+              "label_en": "Year",
+              "type": "year",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 30,
+              "choices": []
+            },
+            {
+              "key": "km",
+              "label_fr": "Kilométrage",
+              "label_ar": "المسافة المقطوعة",
+              "label_en": "Mileage",
+              "type": "number",
+              "required": true,
+              "filterable": true,
+              "unit": "km",
+              "order": 40,
+              "choices": []
+            },
+            {
+              "key": "fuel",
+              "label_fr": "Carburant",
+              "label_ar": "الوقود",
+              "label_en": "Fuel",
+              "type": "enum",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 50,
+              "choices": [
+                {"value": "petrol", "label_fr": "Essence", "label_ar": "بنزين", "label_en": "Petrol"},
+                {"value": "diesel", "label_fr": "Diesel", "label_ar": "ديزل", "label_en": "Diesel"},
+                {"value": "hybrid", "label_fr": "Hybride", "label_ar": "هجين", "label_en": "Hybrid"},
+                {"value": "electric", "label_fr": "Électrique", "label_ar": "كهربائي", "label_en": "Electric"}
+              ]
+            },
+            {
+              "key": "gearbox",
+              "label_fr": "Boîte de vitesses",
+              "label_ar": "علبة السرعة",
+              "label_en": "Gearbox",
+              "type": "enum",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 60,
+              "choices": [
+                {"value": "manual", "label_fr": "Manuelle", "label_ar": "يدوي", "label_en": "Manual"},
+                {"value": "automatic", "label_fr": "Automatique", "label_ar": "أوتوماتيكي", "label_en": "Automatic"}
+              ]
+            },
+            {
+              "key": "papers",
+              "label_fr": "Papiers",
+              "label_ar": "الوثائق",
+              "label_en": "Papers",
+              "type": "enum",
+              "required": false,
+              "filterable": false,
+              "unit": "",
+              "order": 70,
+              "choices": [
+                {"value": "up_to_date", "label_fr": "À jour", "label_ar": "محدّثة", "label_en": "Up to date"},
+                {"value": "pending", "label_fr": "En cours", "label_ar": "قيد الإنجاز", "label_en": "In progress"},
+                {"value": "missing", "label_fr": "Manquants", "label_ar": "ناقصة", "label_en": "Missing"}
+              ]
+            }
+          ],
+          "children": []
+        },
+        {
+          "slug": "motorcycles",
+          "name_fr": "Motos",
+          "name_ar": "دراجات نارية",
+          "name_en": "Motorcycles",
+          "icon": "bike",
+          "order": 20,
+          "attribute_definitions": [
+            {
+              "key": "brand",
+              "label_fr": "Marque",
+              "label_ar": "العلامة التجارية",
+              "label_en": "Brand",
+              "type": "enum",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": [
+                {"value": "yamaha", "label_fr": "Yamaha", "label_ar": "ياماها", "label_en": "Yamaha"},
+                {"value": "honda", "label_fr": "Honda", "label_ar": "هوندا", "label_en": "Honda"},
+                {"value": "kawasaki", "label_fr": "Kawasaki", "label_ar": "كاوازاكي", "label_en": "Kawasaki"},
+                {"value": "suzuki", "label_fr": "Suzuki", "label_ar": "سوزوكي", "label_en": "Suzuki"},
+                {"value": "ktm", "label_fr": "KTM", "label_ar": "كي تي إم", "label_en": "KTM"},
+                {"value": "other", "label_fr": "Autre", "label_ar": "أخرى", "label_en": "Other"}
+              ]
+            },
+            {
+              "key": "model",
+              "label_fr": "Modèle",
+              "label_ar": "الطراز",
+              "label_en": "Model",
+              "type": "text",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 20,
+              "choices": []
+            },
+            {
+              "key": "year",
+              "label_fr": "Année",
+              "label_ar": "السنة",
+              "label_en": "Year",
+              "type": "year",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 30,
+              "choices": []
+            },
+            {
+              "key": "km",
+              "label_fr": "Kilométrage",
+              "label_ar": "المسافة المقطوعة",
+              "label_en": "Mileage",
+              "type": "number",
+              "required": true,
+              "filterable": true,
+              "unit": "km",
+              "order": 40,
+              "choices": []
+            },
+            {
+              "key": "engine_cc",
+              "label_fr": "Cylindrée",
+              "label_ar": "السعة",
+              "label_en": "Engine size",
+              "type": "number",
+              "required": false,
+              "filterable": true,
+              "unit": "cm³",
+              "order": 50,
+              "choices": []
+            }
+          ],
+          "children": []
+        },
+        {
+          "slug": "auto-parts",
+          "name_fr": "Pièces détachées",
+          "name_ar": "قطع غيار",
+          "name_en": "Auto Parts",
+          "icon": "settings",
+          "order": 30,
+          "attribute_definitions": [
+            {
+              "key": "brand",
+              "label_fr": "Marque du véhicule",
+              "label_ar": "علامة المركبة",
+              "label_en": "Vehicle brand",
+              "type": "text",
+              "required": false,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": []
+            },
+            {
+              "key": "condition",
+              "label_fr": "État",
+              "label_ar": "الحالة",
+              "label_en": "Condition",
+              "type": "enum",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 20,
+              "choices": [
+                {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+                {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"},
+                {"value": "reconditioned", "label_fr": "Reconditionné", "label_ar": "مجدّد", "label_en": "Reconditioned"}
+              ]
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "slug": "real-estate",
+      "name_fr": "Immobilier",
+      "name_ar": "عقارات",
+      "name_en": "Real Estate",
+      "icon": "building-2",
+      "order": 20,
+      "attribute_definitions": [
+        {
+          "key": "deal_type",
+          "label_fr": "Type d'annonce",
+          "label_ar": "نوع العرض",
+          "label_en": "Deal type",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "sale", "label_fr": "Vente", "label_ar": "بيع", "label_en": "Sale"},
+            {"value": "rent", "label_fr": "Location", "label_ar": "كراء", "label_en": "Rent"}
+          ]
+        },
+        {
+          "key": "area",
+          "label_fr": "Surface",
+          "label_ar": "المساحة",
+          "label_en": "Area",
+          "type": "number",
+          "required": false,
+          "filterable": true,
+          "unit": "m²",
+          "order": 20,
+          "choices": []
+        }
+      ],
+      "children": [
+        {
+          "slug": "apartments",
+          "name_fr": "Appartements",
+          "name_ar": "شقق",
+          "name_en": "Apartments",
+          "icon": "building",
+          "order": 10,
+          "attribute_definitions": [
+            {
+              "key": "rooms",
+              "label_fr": "Nombre de pièces",
+              "label_ar": "عدد الغرف",
+              "label_en": "Rooms",
+              "type": "number",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": []
+            },
+            {
+              "key": "floor",
+              "label_fr": "Étage",
+              "label_ar": "الطابق",
+              "label_en": "Floor",
+              "type": "number",
+              "required": false,
+              "filterable": false,
+              "unit": "",
+              "order": 20,
+              "choices": []
+            },
+            {
+              "key": "furnished",
+              "label_fr": "Meublé",
+              "label_ar": "مفروش",
+              "label_en": "Furnished",
+              "type": "boolean",
+              "required": false,
+              "filterable": true,
+              "unit": "",
+              "order": 30,
+              "choices": []
+            }
+          ],
+          "children": []
+        },
+        {
+          "slug": "villas",
+          "name_fr": "Villas",
+          "name_ar": "فلل",
+          "name_en": "Villas",
+          "icon": "home",
+          "order": 20,
+          "attribute_definitions": [
+            {
+              "key": "rooms",
+              "label_fr": "Nombre de pièces",
+              "label_ar": "عدد الغرف",
+              "label_en": "Rooms",
+              "type": "number",
+              "required": true,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": []
+            },
+            {
+              "key": "pool",
+              "label_fr": "Piscine",
+              "label_ar": "مسبح",
+              "label_en": "Pool",
+              "type": "boolean",
+              "required": false,
+              "filterable": true,
+              "unit": "",
+              "order": 20,
+              "choices": []
+            }
+          ],
+          "children": []
+        },
+        {
+          "slug": "land",
+          "name_fr": "Terrains",
+          "name_ar": "أراضي",
+          "name_en": "Land",
+          "icon": "map",
+          "order": 30,
+          "attribute_definitions": [
+            {
+              "key": "land_type",
+              "label_fr": "Type de terrain",
+              "label_ar": "نوع الأرض",
+              "label_en": "Land type",
+              "type": "enum",
+              "required": false,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": [
+                {"value": "buildable", "label_fr": "Constructible", "label_ar": "قابل للبناء", "label_en": "Buildable"},
+                {"value": "agricultural", "label_fr": "Agricole", "label_ar": "فلاحي", "label_en": "Agricultural"},
+                {"value": "industrial", "label_fr": "Industriel", "label_ar": "صناعي", "label_en": "Industrial"}
+              ]
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "slug": "phones-tablets",
+      "name_fr": "Téléphones & Tablettes",
+      "name_ar": "هواتف وأجهزة لوحية",
+      "name_en": "Phones & Tablets",
+      "icon": "smartphone",
+      "order": 30,
+      "attribute_definitions": [
+        {
+          "key": "brand",
+          "label_fr": "Marque",
+          "label_ar": "العلامة التجارية",
+          "label_en": "Brand",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "apple", "label_fr": "Apple", "label_ar": "أبل", "label_en": "Apple"},
+            {"value": "samsung", "label_fr": "Samsung", "label_ar": "سامسونغ", "label_en": "Samsung"},
+            {"value": "xiaomi", "label_fr": "Xiaomi", "label_ar": "شاومي", "label_en": "Xiaomi"},
+            {"value": "oppo", "label_fr": "Oppo", "label_ar": "أوبو", "label_en": "Oppo"},
+            {"value": "huawei", "label_fr": "Huawei", "label_ar": "هواوي", "label_en": "Huawei"},
+            {"value": "realme", "label_fr": "Realme", "label_ar": "ريلمي", "label_en": "Realme"},
+            {"value": "honor", "label_fr": "Honor", "label_ar": "أونر", "label_en": "Honor"},
+            {"value": "other", "label_fr": "Autre", "label_ar": "أخرى", "label_en": "Other"}
+          ]
+        },
+        {
+          "key": "storage",
+          "label_fr": "Stockage",
+          "label_ar": "التخزين",
+          "label_en": "Storage",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 20,
+          "choices": [
+            {"value": "32", "label_fr": "32 Go", "label_ar": "32 جيجا", "label_en": "32 GB"},
+            {"value": "64", "label_fr": "64 Go", "label_ar": "64 جيجا", "label_en": "64 GB"},
+            {"value": "128", "label_fr": "128 Go", "label_ar": "128 جيجا", "label_en": "128 GB"},
+            {"value": "256", "label_fr": "256 Go", "label_ar": "256 جيجا", "label_en": "256 GB"},
+            {"value": "512", "label_fr": "512 Go", "label_ar": "512 جيجا", "label_en": "512 GB"}
+          ]
+        },
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 30,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "like_new", "label_fr": "Comme neuf", "label_ar": "كالجديد", "label_en": "Like new"},
+            {"value": "used_good", "label_fr": "Bon état", "label_ar": "حالة جيدة", "label_en": "Good condition"},
+            {"value": "for_parts", "label_fr": "Pour pièces", "label_ar": "للقطع", "label_en": "For parts"}
+          ]
+        },
+        {
+          "key": "warranty",
+          "label_fr": "Sous garantie",
+          "label_ar": "تحت الضمان",
+          "label_en": "Under warranty",
+          "type": "boolean",
+          "required": false,
+          "filterable": false,
+          "unit": "",
+          "order": 40,
+          "choices": []
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "electronics",
+      "name_fr": "Électronique",
+      "name_ar": "إلكترونيات",
+      "name_en": "Electronics",
+      "icon": "cpu",
+      "order": 40,
+      "attribute_definitions": [
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"},
+            {"value": "refurbished", "label_fr": "Reconditionné", "label_ar": "مجدّد", "label_en": "Refurbished"}
+          ]
+        }
+      ],
+      "children": [
+        {
+          "slug": "computers",
+          "name_fr": "Informatique",
+          "name_ar": "حواسيب",
+          "name_en": "Computers",
+          "icon": "laptop",
+          "order": 10,
+          "attribute_definitions": [
+            {
+              "key": "brand",
+              "label_fr": "Marque",
+              "label_ar": "العلامة التجارية",
+              "label_en": "Brand",
+              "type": "text",
+              "required": false,
+              "filterable": true,
+              "unit": "",
+              "order": 10,
+              "choices": []
+            },
+            {
+              "key": "ram",
+              "label_fr": "Mémoire RAM",
+              "label_ar": "الذاكرة العشوائية",
+              "label_en": "RAM",
+              "type": "enum",
+              "required": false,
+              "filterable": true,
+              "unit": "",
+              "order": 20,
+              "choices": [
+                {"value": "4", "label_fr": "4 Go", "label_ar": "4 جيجا", "label_en": "4 GB"},
+                {"value": "8", "label_fr": "8 Go", "label_ar": "8 جيجا", "label_en": "8 GB"},
+                {"value": "16", "label_fr": "16 Go", "label_ar": "16 جيجا", "label_en": "16 GB"},
+                {"value": "32", "label_fr": "32 Go", "label_ar": "32 جيجا", "label_en": "32 GB"}
+              ]
+            }
+          ],
+          "children": []
+        },
+        {
+          "slug": "tv-audio",
+          "name_fr": "TV & Audio",
+          "name_ar": "تلفزيون وصوتيات",
+          "name_en": "TV & Audio",
+          "icon": "tv",
+          "order": 20,
+          "attribute_definitions": [
+            {
+              "key": "screen_size",
+              "label_fr": "Diagonale",
+              "label_ar": "القطر",
+              "label_en": "Screen size",
+              "type": "number",
+              "required": false,
+              "filterable": true,
+              "unit": "pouces",
+              "order": 10,
+              "choices": []
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "slug": "fashion",
+      "name_fr": "Mode & Vêtements",
+      "name_ar": "ألبسة وأزياء",
+      "name_en": "Fashion & Clothing",
+      "icon": "shirt",
+      "order": 50,
+      "attribute_definitions": [
+        {
+          "key": "gender",
+          "label_fr": "Genre",
+          "label_ar": "الفئة",
+          "label_en": "Gender",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "men", "label_fr": "Homme", "label_ar": "رجال", "label_en": "Men"},
+            {"value": "women", "label_fr": "Femme", "label_ar": "نساء", "label_en": "Women"},
+            {"value": "kids", "label_fr": "Enfant", "label_ar": "أطفال", "label_en": "Kids"},
+            {"value": "unisex", "label_fr": "Unisexe", "label_ar": "للجنسين", "label_en": "Unisex"}
+          ]
+        },
+        {
+          "key": "size",
+          "label_fr": "Taille",
+          "label_ar": "المقاس",
+          "label_en": "Size",
+          "type": "enum",
+          "required": false,
+          "filterable": true,
+          "unit": "",
+          "order": 20,
+          "choices": [
+            {"value": "xs", "label_fr": "XS", "label_ar": "XS", "label_en": "XS"},
+            {"value": "s", "label_fr": "S", "label_ar": "S", "label_en": "S"},
+            {"value": "m", "label_fr": "M", "label_ar": "M", "label_en": "M"},
+            {"value": "l", "label_fr": "L", "label_ar": "L", "label_en": "L"},
+            {"value": "xl", "label_fr": "XL", "label_ar": "XL", "label_en": "XL"}
+          ]
+        },
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 30,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "like_new", "label_fr": "Comme neuf", "label_ar": "كالجديد", "label_en": "Like new"},
+            {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"}
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "home-garden",
+      "name_fr": "Maison & Jardin",
+      "name_ar": "منزل وحديقة",
+      "name_en": "Home & Garden",
+      "icon": "sofa",
+      "order": 60,
+      "attribute_definitions": [
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"}
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "books",
+      "name_fr": "Livres",
+      "name_ar": "كتب",
+      "name_en": "Books",
+      "icon": "book-open",
+      "order": 70,
+      "attribute_definitions": [
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"}
+          ]
+        },
+        {
+          "key": "language",
+          "label_fr": "Langue",
+          "label_ar": "اللغة",
+          "label_en": "Language",
+          "type": "enum",
+          "required": false,
+          "filterable": true,
+          "unit": "",
+          "order": 20,
+          "choices": [
+            {"value": "fr", "label_fr": "Français", "label_ar": "فرنسية", "label_en": "French"},
+            {"value": "ar", "label_fr": "Arabe", "label_ar": "عربية", "label_en": "Arabic"},
+            {"value": "en", "label_fr": "Anglais", "label_ar": "إنجليزية", "label_en": "English"}
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "sports-outdoors",
+      "name_fr": "Sport & Plein air",
+      "name_ar": "رياضة وطبيعة",
+      "name_en": "Sports & Outdoors",
+      "icon": "dumbbell",
+      "order": 80,
+      "attribute_definitions": [
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"}
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "toys-games",
+      "name_fr": "Jouets & Jeux",
+      "name_ar": "ألعاب ودمى",
+      "name_en": "Toys & Games",
+      "icon": "gamepad-2",
+      "order": 90,
+      "attribute_definitions": [
+        {
+          "key": "age_range",
+          "label_fr": "Tranche d'âge",
+          "label_ar": "الفئة العمرية",
+          "label_en": "Age range",
+          "type": "enum",
+          "required": false,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "0-3", "label_fr": "0-3 ans", "label_ar": "0-3 سنوات", "label_en": "0-3 yrs"},
+            {"value": "3-6", "label_fr": "3-6 ans", "label_ar": "3-6 سنوات", "label_en": "3-6 yrs"},
+            {"value": "6-12", "label_fr": "6-12 ans", "label_ar": "6-12 سنة", "label_en": "6-12 yrs"},
+            {"value": "12+", "label_fr": "12 ans et +", "label_ar": "12 سنة فما فوق", "label_en": "12+ yrs"}
+          ]
+        },
+        {
+          "key": "condition",
+          "label_fr": "État",
+          "label_ar": "الحالة",
+          "label_en": "Condition",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 20,
+          "choices": [
+            {"value": "new", "label_fr": "Neuf", "label_ar": "جديد", "label_en": "New"},
+            {"value": "used", "label_fr": "Occasion", "label_ar": "مستعمل", "label_en": "Used"}
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "food-beverages",
+      "name_fr": "Alimentation",
+      "name_ar": "مواد غذائية",
+      "name_en": "Food & Beverages",
+      "icon": "utensils",
+      "order": 100,
+      "attribute_definitions": [],
+      "children": []
+    },
+    {
+      "slug": "beauty-health",
+      "name_fr": "Beauté & Santé",
+      "name_ar": "جمال وصحة",
+      "name_en": "Beauty & Health",
+      "icon": "sparkles",
+      "order": 110,
+      "attribute_definitions": [],
+      "children": []
+    },
+    {
+      "slug": "jobs",
+      "name_fr": "Emploi",
+      "name_ar": "وظائف",
+      "name_en": "Jobs",
+      "icon": "briefcase",
+      "order": 120,
+      "attribute_definitions": [
+        {
+          "key": "contract",
+          "label_fr": "Contrat",
+          "label_ar": "نوع العقد",
+          "label_en": "Contract",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "cdi", "label_fr": "CDI", "label_ar": "عقد دائم", "label_en": "Permanent (CDI)"},
+            {"value": "cdd", "label_fr": "CDD", "label_ar": "عقد محدّد", "label_en": "Fixed-term (CDD)"},
+            {"value": "freelance", "label_fr": "Freelance", "label_ar": "حر", "label_en": "Freelance"},
+            {"value": "internship", "label_fr": "Stage", "label_ar": "تربص", "label_en": "Internship"}
+          ]
+        },
+        {
+          "key": "experience",
+          "label_fr": "Expérience",
+          "label_ar": "الخبرة",
+          "label_en": "Experience",
+          "type": "enum",
+          "required": false,
+          "filterable": true,
+          "unit": "",
+          "order": 20,
+          "choices": [
+            {"value": "entry", "label_fr": "Débutant", "label_ar": "مبتدئ", "label_en": "Entry level"},
+            {"value": "intermediate", "label_fr": "Confirmé", "label_ar": "متمرّس", "label_en": "Mid-level"},
+            {"value": "senior", "label_fr": "Senior", "label_ar": "خبير", "label_en": "Senior"}
+          ]
+        },
+        {
+          "key": "salary",
+          "label_fr": "Salaire mensuel",
+          "label_ar": "الراتب الشهري",
+          "label_en": "Monthly salary",
+          "type": "range",
+          "required": false,
+          "filterable": true,
+          "unit": "DA",
+          "order": 30,
+          "choices": []
+        },
+        {
+          "key": "schedule",
+          "label_fr": "Horaire",
+          "label_ar": "نمط العمل",
+          "label_en": "Schedule",
+          "type": "enum",
+          "required": false,
+          "filterable": true,
+          "unit": "",
+          "order": 40,
+          "choices": [
+            {"value": "full_time", "label_fr": "Temps plein", "label_ar": "دوام كامل", "label_en": "Full-time"},
+            {"value": "part_time", "label_fr": "Temps partiel", "label_ar": "دوام جزئي", "label_en": "Part-time"}
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "services",
+      "name_fr": "Services",
+      "name_ar": "خدمات",
+      "name_en": "Services",
+      "icon": "wrench",
+      "order": 130,
+      "attribute_definitions": [],
+      "children": []
+    },
+    {
+      "slug": "animals",
+      "name_fr": "Animaux",
+      "name_ar": "حيوانات",
+      "name_en": "Animals",
+      "icon": "paw-print",
+      "order": 140,
+      "attribute_definitions": [
+        {
+          "key": "species",
+          "label_fr": "Espèce",
+          "label_ar": "النوع",
+          "label_en": "Species",
+          "type": "enum",
+          "required": true,
+          "filterable": true,
+          "unit": "",
+          "order": 10,
+          "choices": [
+            {"value": "dogs", "label_fr": "Chiens", "label_ar": "كلاب", "label_en": "Dogs"},
+            {"value": "cats", "label_fr": "Chats", "label_ar": "قطط", "label_en": "Cats"},
+            {"value": "birds", "label_fr": "Oiseaux", "label_ar": "طيور", "label_en": "Birds"},
+            {"value": "horses", "label_fr": "Chevaux", "label_ar": "خيول", "label_en": "Horses"},
+            {"value": "sheep", "label_fr": "Moutons", "label_ar": "أغنام", "label_en": "Sheep"}
+          ]
+        },
+        {
+          "key": "breed",
+          "label_fr": "Race",
+          "label_ar": "السلالة",
+          "label_en": "Breed",
+          "type": "text",
+          "required": false,
+          "filterable": true,
+          "unit": "",
+          "order": 20,
+          "choices": []
+        }
+      ],
+      "children": []
+    },
+    {
+      "slug": "miscellaneous",
+      "name_fr": "Divers",
+      "name_ar": "متنوعة",
+      "name_en": "Miscellaneous",
+      "icon": "package",
+      "order": 150,
+      "attribute_definitions": [],
+      "children": []
+    }
+  ]
+}

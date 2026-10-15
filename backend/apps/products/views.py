@@ -1,12 +1,18 @@
-from django.db.models import Q
+from decimal import Decimal, InvalidOperation
+
+from django.db.models import DecimalField, Q
+from django.db.models.fields.json import KeyTextTransform
+from django.db.models.functions import Cast
+from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.catalog.models import AttributeDefinition, Category
 from apps.users.permissions import IsListingOwner, IsStoreOwner
 from core.exceptions import ApiError
 from core.idempotency import IdempotentPostMixin
@@ -23,6 +29,148 @@ from .serializers import (
     WishlistSerializer,
 )
 
+#: Numeric attribute comparisons (``?attr_km_min=…``) cast the stored jsonb
+#: to numeric; GIN cannot serve those, only the exact filters can (Phase 15
+#: owns search performance at catalogue scale).
+NUMERIC_ATTRIBUTE_TYPES = {AttributeDefinition.Type.NUMBER, AttributeDefinition.Type.YEAR}
+
+#: Casts of ``attributes_json`` values need an explicit precision: a bare
+#: ``DecimalField()`` renders ``CAST(… AS numeric(None, None))``, which
+#: PostgreSQL rejects outright ("invalid input syntax for type integer:
+#: none" — it reads the ``None`` modifiers as input). 20 digits is far beyond
+#: any attribute value; 6 decimals keeps fractional bounds exact.
+ATTRIBUTE_DECIMAL_FIELD = DecimalField(max_digits=20, decimal_places=6)
+
+
+def apply_catalog_filters(queryset, query_params):
+    """Phase 12 catalogue filters: ``?category=`` and ``?attr_<key>``.
+
+    - ``?category=<slug>`` matches the category **and every descendant**
+      (filtering the "Vehicles" sidebar must show the cars), via one
+      ``get_descendants()`` query on mptt's materialized path. An unknown or
+      deactivated slug yields an empty page, not a 404 — a stale bookmark
+      should not error.
+    - ``?attr_<key>=<value>`` filters on ``attributes_json`` for *filterable*
+      definitions inside the filtered subtree (any filterable definition when
+      no category filter is given). ``number``/``year`` attributes also accept
+      ``?attr_<key>_min=`` / ``?attr_<key>_max=``; ``range`` attributes accept
+      them as *overlap* bounds (a salary range matches any posting whose own
+      range intersects it).
+
+    Unknown or non-filterable keys raise a 400 instead of being ignored: a
+    typo'd filter that silently returns everything is a bug report weeks
+    later.
+    """
+    category_slug = query_params.get("category")
+    subtree_ids = None
+    if category_slug:
+        root = Category.objects.filter(slug=category_slug, is_active=True).first()
+        subtree_ids = (
+            list(root.get_descendants(include_self=True).values_list("id", flat=True))
+            if root is not None
+            else []
+        )
+        queryset = queryset.filter(category_id__in=subtree_ids)
+
+    definitions = AttributeDefinition.objects.filter(is_active=True, filterable=True)
+    if subtree_ids is not None:
+        definitions = definitions.filter(category_id__in=subtree_ids)
+    filterable = {definition.key: definition for definition in definitions}
+
+    for param, raw_value in query_params.items():
+        if not param.startswith("attr_"):
+            continue
+        body = param[len("attr_") :]
+        modifier = ""
+        for candidate in ("_min", "_max"):
+            if body.endswith(candidate):
+                body, modifier = body[: -len(candidate)], candidate
+
+        definition = filterable.get(body)
+        if definition is None:
+            raise ValidationError(
+                {param: _("Unknown or non-filterable attribute for this category.")}
+            )
+
+        if not modifier:
+            if definition.type in NUMERIC_ATTRIBUTE_TYPES:
+                # The query string is text; comparing it to the stored jsonb
+                # *number* would be string ≠ number forever. Compare through
+                # the same numeric cast the bounds use — an unparseable value
+                # falls through to the jsonb exact match, which never equals a
+                # number, so a bogus filter yields an empty page, not a 500.
+                try:
+                    number = Decimal(raw_value)
+                except InvalidOperation:
+                    number = None
+                if number is not None:
+                    exact_alias = f"attr_{body}_exact"
+                    queryset = queryset.annotate(
+                        **{
+                            exact_alias: Cast(
+                                KeyTextTransform(body, "attributes_json"),
+                                ATTRIBUTE_DECIMAL_FIELD,
+                            )
+                        }
+                    )
+                    queryset = queryset.filter(**{exact_alias: number})
+                    continue
+            value = raw_value
+            if definition.type == AttributeDefinition.Type.BOOLEAN:
+                if raw_value not in ("true", "false"):
+                    raise ValidationError({param: _("Must be true or false.")})
+                value = raw_value == "true"
+            queryset = queryset.filter(**{f"attributes_json__{body}": value})
+            continue
+
+        # Numeric / range bounds: cast the stored jsonb and compare. The cast
+        # must be *annotated* — `filter(low__lte=…)` names a field or an
+        # annotation, never a local variable — and each modifier gets its own
+        # alias so `?attr_x_min=` and `?attr_x_max=` in one request do not
+        # collide on a duplicate annotation name.
+        if definition.type == AttributeDefinition.Type.RANGE:
+            low_alias = f"attr_{body}{modifier}_low"
+            high_alias = f"attr_{body}{modifier}_high"
+            queryset = queryset.annotate(
+                **{
+                    low_alias: Cast(
+                        KeyTextTransform("min", KeyTextTransform(body, "attributes_json")),
+                        ATTRIBUTE_DECIMAL_FIELD,
+                    ),
+                    high_alias: Cast(
+                        KeyTextTransform("max", KeyTextTransform(body, "attributes_json")),
+                        ATTRIBUTE_DECIMAL_FIELD,
+                    ),
+                }
+            )
+            # Overlap: the posting's range intersects [min, max].
+            queryset = (
+                queryset.filter(**{f"{high_alias}__gte": raw_value})
+                if modifier == "_min"
+                else queryset.filter(**{f"{low_alias}__lte": raw_value})
+            )
+            continue
+
+        if definition.type not in NUMERIC_ATTRIBUTE_TYPES:
+            raise ValidationError(
+                {param: _("Only number, year and range attributes accept bounds.")}
+            )
+        numeric_alias = f"attr_{body}{modifier}_value"
+        queryset = queryset.annotate(
+            **{
+                numeric_alias: Cast(
+                    KeyTextTransform(body, "attributes_json"), ATTRIBUTE_DECIMAL_FIELD
+                ),
+            }
+        )
+        queryset = (
+            queryset.filter(**{f"{numeric_alias}__gte": raw_value})
+            if modifier == "_min"
+            else queryset.filter(**{f"{numeric_alias}__lte": raw_value})
+        )
+
+    return queryset
+
 
 class ProductListView(generics.ListAPIView):
     """Public list of all available products with search and filter"""
@@ -30,8 +178,17 @@ class ProductListView(generics.ListAPIView):
     serializer_class = ProductListSerializer
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["category", "is_available", "store__category"]
-    search_fields = ["name", "description", "category"]
+    # Phase 12: ``?category`` and ``?attr_<key>`` are handled by
+    # apply_catalog_filters (slug + subtree semantics the generic
+    # filterset cannot express); only the plain booleans stay here.
+    filterset_fields = ["is_available"]
+    search_fields = [
+        "name",
+        "description",
+        "category__name_fr",
+        "category__name_ar",
+        "category__name_en",
+    ]
     ordering_fields = ["created_at", "base_price", "name"]
     ordering = ["-created_at"]
     #: The catalogue is the feed people scroll, and it is the endpoint that
@@ -41,11 +198,12 @@ class ProductListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = (
             Product.objects.filter(is_available=True, store__is_active=True)
-            .select_related("store")
+            .select_related("store", "category")
             .prefetch_related("images")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
+        queryset = apply_catalog_filters(queryset, self.request.query_params)
 
         # Custom price range filter
         min_price = self.request.query_params.get("min_price")
@@ -70,7 +228,7 @@ class ProductDetailView(generics.RetrieveAPIView):
         return (
             super()
             .get_queryset()
-            .select_related("store")
+            .select_related("store", "category")
             .prefetch_related("images", "attributes", "reviews__user")
             .with_catalog_stats()
             .for_user(self.request.user)
@@ -84,7 +242,7 @@ def featured_products(request):
     """Get featured/recent products"""
     products = (
         Product.objects.filter(is_available=True, store__is_active=True)
-        .select_related("store")
+        .select_related("store", "category")
         .prefetch_related("images")
         .with_catalog_stats()
         .for_user(request.user)
@@ -107,7 +265,7 @@ class SellerProductListView(generics.ListAPIView):
 
         return (
             Product.objects.filter(store=self.request.user.store)
-            .select_related("store")
+            .select_related("store", "category")
             .prefetch_related("images", "attributes", "inventory")
             .with_catalog_stats()
             .for_user(self.request.user)
@@ -156,7 +314,7 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         return (
             Product.objects.filter(store=self.request.user.store)
-            .select_related("store")
+            .select_related("store", "category")
             .prefetch_related("images", "attributes")
             .with_catalog_stats()
             .for_user(self.request.user)
@@ -179,14 +337,13 @@ def search_products(request):
     Phase 10 exists to remove.
     """
     query = request.query_params.get("q", "")
-    category = request.query_params.get("category")
     min_price = request.query_params.get("min_price")
     max_price = request.query_params.get("max_price")
     in_stock = request.query_params.get("in_stock") == "true"
 
     products = (
         Product.objects.filter(is_available=True, store__is_active=True)
-        .select_related("store")
+        .select_related("store", "category")
         .prefetch_related("images")
         .with_catalog_stats()
         .for_user(request.user)
@@ -196,11 +353,14 @@ def search_products(request):
         products = products.filter(
             Q(name__icontains=query)
             | Q(description__icontains=query)
-            | Q(category__icontains=query)
+            | Q(category__name_fr__icontains=query)
+            | Q(category__name_ar__icontains=query)
+            | Q(category__name_en__icontains=query)
         )
 
-    if category:
-        products = products.filter(category=category)
+    # Phase 12: ?category=<slug> (whole subtree) + ?attr_<key>=… — the same
+    # helper the catalogue list uses.
+    products = apply_catalog_filters(products, request.query_params)
 
     if min_price:
         products = products.filter(base_price__gte=min_price)

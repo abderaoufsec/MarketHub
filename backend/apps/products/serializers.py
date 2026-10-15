@@ -1,5 +1,9 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from apps.catalog.models import Category
+from apps.catalog.serializers import CategoryMiniSerializer
+from apps.catalog.validation import validate_attributes
 from apps.stores.serializers import StoreSerializer
 from apps.users.plans import get_product_quota
 
@@ -140,6 +144,10 @@ class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model"""
 
     store = StoreSerializer(read_only=True)
+    # Phase 12: the category is the nested catalog node (read); writes go
+    # through ``category_id`` on ProductCreateUpdateSerializer. Null for
+    # legacy rows the FK migration could not file.
+    category = CategoryMiniSerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     attributes = ProductAttributeSerializer(many=True, read_only=True)
     # total_stock / average_rating / review_count / is_wishlisted are read
@@ -206,6 +214,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     store_name = serializers.CharField(source="store.store_name", read_only=True)
     store_slug = serializers.CharField(source="store.store_slug", read_only=True)
+    category = CategoryMiniSerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
     total_stock = serializers.IntegerField(read_only=True)
     average_rating = serializers.FloatField(read_only=True)
@@ -260,10 +269,28 @@ class PaginatedProductListSerializer(serializers.Serializer):
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
-    """Serializer for creating/updating products"""
+    """Serializer for creating/updating products.
+
+    Phase 12 contract: write ``category_id`` (an active catalog node; required
+    on create — a listing nobody can file is not publishable) and
+    ``attributes_json``, validated against the category's *effective*
+    attribute definitions (own + ancestors', deeper overriding) by
+    :func:`apps.catalog.validation.validate_attributes`. Unknown keys, missing
+    required keys and mistyped values are all rejected with per-key messages
+    under ``attributes_json`` so the dynamic form can highlight its inputs.
+    """
 
     images = ProductImageSerializer(many=True, required=False)
     attributes = ProductAttributeSerializer(many=True, required=False)
+    category = CategoryMiniSerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.filter(is_active=True),
+        source="category",
+        write_only=True,
+        # Required on create is enforced in validate(): one message, one
+        # place, and updates may legitimately leave the category alone.
+        required=False,
+    )
 
     class Meta:
         model = Product
@@ -272,12 +299,46 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             "description",
             "base_price",
             "category",
+            "category_id",
             "is_available",
             "low_stock_threshold",
             "attributes_json",
             "images",
             "attributes",
         ]
+
+    def validate(self, attrs):
+        if self.instance is None and attrs.get("category") is None:
+            raise serializers.ValidationError({"category_id": "A category is required."})
+
+        category = attrs.get("category")
+        if category is None and self.instance is not None:
+            category = self.instance.category
+
+        if "attributes_json" in attrs:
+            raw = attrs["attributes_json"]
+        elif (
+            self.instance is not None
+            and attrs.get("category") is not None
+            and attrs["category"] != self.instance.category
+        ):
+            # Re-filed without touching the attributes: what is stored must
+            # still validate under the new category (its required/known keys),
+            # or the listing would be quietly broken in its new subtree.
+            raw = self.instance.attributes_json or {}
+        else:
+            raw = None
+
+        if raw is not None:
+            try:
+                attrs["attributes_json"] = validate_attributes(category, raw)
+            except DjangoValidationError as exc:
+                if hasattr(exc, "message_dict"):
+                    raise serializers.ValidationError(
+                        {"attributes_json": exc.message_dict}
+                    ) from exc
+                raise serializers.ValidationError({"attributes_json": exc.messages}) from exc
+        return attrs
 
     def create(self, validated_data):
         images_data = validated_data.pop("images", [])

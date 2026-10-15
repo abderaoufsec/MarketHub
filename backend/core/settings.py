@@ -99,6 +99,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # GinIndex over Product.attributes_json (Phase 12) needs the postgres
+    # app registered; it contributes no models of its own.
+    "django.contrib.postgres",
     # Third party apps
     "rest_framework",
     "drf_spectacular",
@@ -113,6 +116,7 @@ INSTALLED_APPS = [
     "core",
     # Geography first: apps.users.Address references its Wilaya/Commune.
     "apps.geography",
+    "apps.catalog",
     "apps.users",
     "apps.stores",
     "apps.products",

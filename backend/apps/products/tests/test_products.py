@@ -5,11 +5,14 @@ from django.test import override_settings
 
 from apps.products.models import ProductReview
 from tests.factories import (
+    AttributeDefinitionFactory,
+    CategoryFactory,
     InventoryFactory,
     ProductFactory,
     ProductImageFactory,
     UserFactory,
     WishlistFactory,
+    default_category,
 )
 
 pytestmark = pytest.mark.django_db
@@ -30,7 +33,9 @@ def product_payload(**overrides):
         "name": "Samsung Galaxy S24",
         "description": "Brand new sealed phone.",
         "base_price": "45000.00",
-        "category": "electronics",
+        # Phase 12: the write contract is the catalog FK (``category_id``);
+        # read payloads carry the nested ``category`` object.
+        "category_id": default_category().id,
         "is_available": True,
         "low_stock_threshold": 3,
     }
@@ -56,14 +61,67 @@ def test_product_list_is_public(api_client, product, inventory):
 
 
 def test_product_list_filters_by_category_and_price(api_client, store):
-    ProductFactory(store=store, name="Cheap", category="electronics", base_price=100)
-    ProductFactory(store=store, name="Pricey", category="fashion", base_price=900)
+    electronics = CategoryFactory(slug="electronics", name_fr="Électronique")
+    fashion = CategoryFactory(slug="fashion", name_fr="Mode")
+    ProductFactory(store=store, name="Cheap", category=electronics, base_price=100)
+    ProductFactory(store=store, name="Pricey", category=fashion, base_price=900)
 
     by_category = api_client.get(LIST_URL, {"category": "electronics"})
     assert [p["name"] for p in by_category.data["results"]] == ["Cheap"]
 
     by_price = api_client.get(LIST_URL, {"min_price": 500, "max_price": 1000})
     assert [p["name"] for p in by_price.data["results"]] == ["Pricey"]
+
+
+def test_product_list_filters_by_numeric_and_range_attributes(api_client, store):
+    """``?attr_<key>_min=``/``_max=`` cast the stored jsonb to numeric.
+
+    The bounds are *annotations* (``filter(low__lte=…)`` would be naming a
+    field that does not exist), and each modifier annotates its own alias so
+    ``?attr_x_min=…&attr_x_max=…`` in one request cannot collide on a
+    duplicate annotation name. Range bounds are overlap bounds: a posting
+    matches when its own range intersects the requested window.
+    """
+    category = CategoryFactory(slug="vehicles", name_fr="Véhicules")
+    AttributeDefinitionFactory(category=category, key="mileage", type="number", filterable=True)
+    AttributeDefinitionFactory(category=category, key="budget", type="range", filterable=True)
+    AttributeDefinitionFactory(category=category, key="colour", type="text", filterable=True)
+
+    ProductFactory(
+        store=store,
+        name="City car",
+        category=category,
+        attributes_json={"mileage": 12000, "budget": {"min": 100, "max": 200}, "colour": "red"},
+    )
+    ProductFactory(
+        store=store,
+        name="Tourer",
+        category=category,
+        attributes_json={"mileage": 45000, "budget": {"min": 300, "max": 400}, "colour": "blue"},
+    )
+    ProductFactory(store=store, name="Bare", category=category)
+
+    exact_text = api_client.get(LIST_URL, {"attr_colour": "red"})
+    assert {p["name"] for p in exact_text.data["results"]} == {"City car"}
+
+    exact_number = api_client.get(LIST_URL, {"attr_mileage": 45000})
+    assert {p["name"] for p in exact_number.data["results"]} == {"Tourer"}
+
+    lower_bound = api_client.get(LIST_URL, {"attr_mileage_min": 20000})
+    assert {p["name"] for p in lower_bound.data["results"]} == {"Tourer"}
+
+    # Both modifiers at once: two annotations of the same attribute in one
+    # request, each under its own alias.
+    window = api_client.get(LIST_URL, {"attr_mileage_min": 1000, "attr_mileage_max": 50000})
+    assert {p["name"] for p in window.data["results"]} == {"City car", "Tourer"}
+
+    # Overlap: only Tourer's [300, 400] intersects [350, 500].
+    overlap = api_client.get(LIST_URL, {"attr_budget_min": 350, "attr_budget_max": 500})
+    assert {p["name"] for p in overlap.data["results"]} == {"Tourer"}
+
+    unknown = api_client.get(LIST_URL, {"attr_colour_typo": "red"})
+    assert unknown.status_code == 400
+    assert unknown.data["code"] == "validation_error"
 
 
 def test_product_list_search_param(api_client, store):
@@ -121,9 +179,11 @@ def test_featured_products(api_client, store):
 # Search endpoint
 # ---------------------------------------------------------------------------
 def test_search_by_query_category_and_price(api_client, store):
-    ProductFactory(store=store, name="Galaxy S24", category="phones", base_price=45000)
-    ProductFactory(store=store, name="Galaxy A15", category="phones", base_price=15000)
-    ProductFactory(store=store, name="Desk Lamp", category="home", base_price=2000)
+    phones = CategoryFactory(slug="phones", name_fr="Téléphones")
+    home = CategoryFactory(slug="home", name_fr="Maison")
+    ProductFactory(store=store, name="Galaxy S24", category=phones, base_price=45000)
+    ProductFactory(store=store, name="Galaxy A15", category=phones, base_price=15000)
+    ProductFactory(store=store, name="Desk Lamp", category=home, base_price=2000)
 
     response = api_client.get(SEARCH_URL, {"q": "galaxy", "category": "phones"})
     # Cursor-paginated like the catalogue (Phase 10): search used to return

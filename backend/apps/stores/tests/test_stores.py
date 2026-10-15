@@ -2,7 +2,12 @@
 
 import pytest
 
-from tests.factories import InventoryFactory, ProductFactory, StoreFactory
+from tests.factories import (
+    InventoryFactory,
+    ProductFactory,
+    StoreFactory,
+    default_category,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -16,7 +21,8 @@ def store_payload(**overrides):
     data = {
         "store_name": "Gadget Zone",
         "description": "Phones, tablets and accessories.",
-        "category": "electronics",
+        # Phase 12: the write contract is the catalog FK (``category_id``).
+        "category_id": default_category().id,
     }
     data.update(overrides)
     return data
@@ -99,14 +105,13 @@ def test_create_store_twice_is_rejected(seller_client):
 
 
 def test_create_store_rejects_unknown_category(seller_client):
-    response = seller_client.post(
-        CREATE_URL, store_payload(category="quantum-physics"), format="json"
-    )
+    response = seller_client.post(CREATE_URL, store_payload(category_id=999999), format="json")
 
     assert response.status_code == 400
     # Field errors arrive in the envelope's details, keyed by field name.
+    # Phase 12: the write contract is the catalog FK, ``category_id``.
     assert response.data["code"] == "validation_error"
-    assert "category" in response.data["details"]
+    assert "category_id" in response.data["details"]
 
 
 def test_my_store_round_trip(seller_client, store):

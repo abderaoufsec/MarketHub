@@ -1,16 +1,29 @@
 from rest_framework import serializers
 
+from apps.catalog.models import Category
+from apps.catalog.serializers import CategoryMiniSerializer
 from apps.users.serializers import UserSerializer
-from core.i18n import choice_label
 
 from .models import Store
 
 
 class StoreSerializer(serializers.ModelSerializer):
-    """Serializer for Store model"""
+    """Serializer for Store model.
+
+    Phase 12: ``category`` is the nested catalog object (read), ``category_id``
+    the write contract (same pattern as the address fields in Phase 11);
+    ``category_label`` keeps its name but now reads the category's
+    request-language display name instead of the retired choice list.
+    """
 
     owner = UserSerializer(read_only=True)
     product_count = serializers.SerializerMethodField()
+    category = CategoryMiniSerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.filter(is_active=True),
+        source="category",
+        write_only=True,
+    )
     category_label = serializers.SerializerMethodField()
 
     class Meta:
@@ -22,6 +35,7 @@ class StoreSerializer(serializers.ModelSerializer):
             "store_slug",
             "description",
             "category",
+            "category_id",
             "category_label",
             "logo_url",
             "banner_image_url",
@@ -33,7 +47,8 @@ class StoreSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "store_slug", "created_at", "updated_at"]
 
     def get_category_label(self, obj) -> str:
-        return choice_label(Store.CATEGORY_CHOICES, obj.category)
+        """Request-language name (fr fallback); legacy rows may have none."""
+        return obj.category.display_name if obj.category else ""
 
     def get_product_count(self, obj) -> int:
         """The ``product_count`` annotation when the queryset carries one.
@@ -54,11 +69,29 @@ class StoreSerializer(serializers.ModelSerializer):
 
 
 class StoreCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating a store"""
+    """Serializer for creating a store.
+
+    Phase 12: the category is chosen from the catalog tree — ``category_id``
+    (the FK), required: a store without a category cannot be browsed or
+    filtered. Legacy rows migrated with ``NULL`` stay readable; they are
+    re-filed through the update endpoint or the admin.
+    """
+
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.filter(is_active=True),
+        source="category",
+        required=True,
+    )
 
     class Meta:
         model = Store
-        fields = ["store_name", "description", "category", "logo_url", "banner_image_url"]
+        fields = [
+            "store_name",
+            "description",
+            "category_id",
+            "logo_url",
+            "banner_image_url",
+        ]
 
     def validate(self, attrs):
         user = self.context["request"].user

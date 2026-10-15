@@ -74,31 +74,36 @@ class StoreAdmin(admin.ModelAdmin):
     owner_link.short_description = "Owner"
 
     def category_badge(self, obj):
-        """Display category with color"""
-        if not obj:
+        """Display category with color (Phase 12: the FK's root slug picks
+        the color; the label is the node's French name)."""
+        if not obj or not obj.category:
             return "-"
 
         colors = {
+            "vehicles": "#2c3e50",
+            "real-estate": "#16a085",
+            "phones-tablets": "#8e44ad",
             "electronics": "#3498db",
             "fashion": "#e91e63",
-            "home": "#27ae60",
+            "home-garden": "#27ae60",
             "books": "#f39c12",
-            "sports": "#1abc9c",
-            "toys": "#9b59b6",
-            "food": "#e67e22",
-            "beauty": "#ff6b9d",
-            "other": "#95a5a6",
+            "sports-outdoors": "#1abc9c",
+            "toys-games": "#9b59b6",
+            "food-beverages": "#e67e22",
+            "beauty-health": "#ff6b9d",
+            "jobs": "#d35400",
+            "services": "#7f8c8d",
+            "animals": "#16a085",
+            "miscellaneous": "#95a5a6",
         }
-        color = colors.get(obj.category, "#95a5a6")
-        display = (
-            obj.get_category_display() if hasattr(obj, "get_category_display") else obj.category
-        )
+        root = obj.category.get_root()
+        color = colors.get(root.slug, "#95a5a6")
         return format_html(
             '<span style="background: {}; color: white; padding: 5px 12px; '
             "border-radius: 12px; font-size: 11px; font-weight: 600; "
             'text-transform: uppercase;">{}</span>',
             color,
-            display,
+            obj.category.name_fr,
         )
 
     category_badge.short_description = "Category"

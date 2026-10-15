@@ -12,6 +12,7 @@ import factory
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from apps.catalog.models import AttributeDefinition, Category
 from apps.geography.models import Commune, Wilaya
 from apps.inventory.models import Inventory, InventoryAuditLog
 from apps.orders.models import Cart, CartItem, Order, OrderItem
@@ -22,6 +23,53 @@ from apps.users import otp
 from apps.users.models import Address
 
 User = get_user_model()
+
+
+def default_category():
+    """The shared ``electronics`` root, created on first use.
+
+    Phase 12 turned ``Product.category``/``Store.category`` into catalog FKs,
+    so most tests need *a* valid category without caring which one. Tests
+    that do care (inheritance, filters, validation) build their own tree
+    with :class:`CategoryFactory`.
+    """
+    category, _ = Category.objects.get_or_create(
+        slug="electronics",
+        defaults={
+            "name_fr": "Électronique",
+            "name_ar": "إلكترونيات",
+            "name_en": "Electronics",
+            "parent": None,
+        },
+    )
+    return category
+
+
+class CategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Category
+        django_get_or_create = ("slug",)
+
+    slug = factory.Sequence(lambda n: f"category-{n}")
+    name_fr = factory.Sequence(lambda n: f"Catégorie {n}")
+    name_ar = factory.Sequence(lambda n: f"فئة {n}")
+    name_en = factory.Sequence(lambda n: f"Category {n}")
+    parent = None
+    is_active = True
+
+
+class AttributeDefinitionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AttributeDefinition
+
+    category = factory.SubFactory(CategoryFactory)
+    key = factory.Sequence(lambda n: f"attr_{n}")
+    label_fr = factory.Sequence(lambda n: f"Attribut {n}")
+    label_ar = "خاصية"
+    label_en = factory.Sequence(lambda n: f"Attribute {n}")
+    type = "text"
+    required = False
+    filterable = False
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -80,7 +128,7 @@ class StoreFactory(factory.django.DjangoModelFactory):
     owner = factory.SubFactory(SellerFactory)
     store_name = factory.Sequence(lambda n: f"Store {n}")
     description = "A store created by StoreFactory."
-    category = "electronics"
+    category = factory.LazyFunction(default_category)
     is_active = True
 
 
@@ -92,9 +140,22 @@ class ProductFactory(factory.django.DjangoModelFactory):
     name = factory.Sequence(lambda n: f"Product {n}")
     description = "A product created by ProductFactory."
     base_price = Decimal("100.00")
-    category = "electronics"
+    category = factory.LazyFunction(default_category)
     is_available = True
     low_stock_threshold = 5
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        """Accept a category *slug* string as well as a ``Category``.
+
+        Phase 12 made ``Product.category`` a catalog FK, but callers written
+        against the old string field still say ``category="electronics"``;
+        resolving the slug here (creating the node if needed) keeps those
+        call sites working instead of handing Django a raw string.
+        """
+        if isinstance(kwargs.get("category"), str):
+            kwargs["category"] = CategoryFactory(slug=kwargs["category"])
+        return super()._create(model_class, *args, **kwargs)
 
 
 class ProductImageFactory(factory.django.DjangoModelFactory):

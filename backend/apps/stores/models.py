@@ -9,18 +9,6 @@ class Store(models.Model):
     Each seller can have one store.
     """
 
-    CATEGORY_CHOICES = [
-        ("electronics", "Electronics"),
-        ("fashion", "Fashion"),
-        ("home", "Home & Garden"),
-        ("books", "Books"),
-        ("sports", "Sports & Outdoors"),
-        ("toys", "Toys & Games"),
-        ("food", "Food & Beverages"),
-        ("beauty", "Beauty & Personal Care"),
-        ("other", "Other"),
-    ]
-
     owner = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -30,7 +18,17 @@ class Store(models.Model):
     store_name = models.CharField(max_length=200, unique=True)
     store_slug = models.SlugField(max_length=250, unique=True, db_index=True)
     description = models.TextField()
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    # Phase 12: the 9 hardcoded CATEGORY_CHOICES became a FK into the catalog
+    # tree (the data migration maps each legacy value onto its root
+    # category). Nullable only for unmapped legacy rows; the API requires it
+    # on create.
+    category = models.ForeignKey(
+        "catalog.Category",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="stores",
+    )
     logo_url = models.URLField(blank=True, null=True)
     banner_image_url = models.URLField(blank=True, null=True)
     is_active = models.BooleanField(default=True)

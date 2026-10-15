@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import (
     Avg,
@@ -107,9 +108,21 @@ class Product(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.CharField(max_length=100)
+    # Phase 12: the free-text ``category`` CharField became a FK into the
+    # catalog tree. Nullable at the DB level only so rows migrated from the
+    # legacy free text survive; the API requires it on create.
+    category = models.ForeignKey(
+        "catalog.Category",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="products",
+    )
     is_available = models.BooleanField(default=True)
     low_stock_threshold = models.IntegerField(default=5)
+    # Dynamic per-category attributes (Phase 12), validated against the
+    # category's effective AttributeDefinitions by
+    # apps.catalog.validation.validate_attributes.
     attributes_json = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,6 +141,11 @@ class Product(models.Model):
             models.Index(fields=["category", "-created_at"], name="products_category_newest"),
             # Ordering only: the admin and any unfiltered page of the feed.
             models.Index(fields=["-created_at"], name="products_newest"),
+            # Phase 12: the dynamic attribute filters (?attr_<key>=…). GIN
+            # over the jsonb keys/values; numeric min/max filters cast the
+            # value and cannot use it (Phase 15's search work owns that
+            # scale), but exact enum/boolean/text filters can.
+            GinIndex(fields=["attributes_json"], name="products_attributes_gin"),
         ]
 
     def __str__(self):
@@ -162,7 +180,7 @@ def nested_product_queryset(user=None):
     return (
         Product.objects.with_catalog_stats()
         .for_user(user)
-        .select_related("store")
+        .select_related("store", "category")
         .prefetch_related("images")
     )
 

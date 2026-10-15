@@ -1,8 +1,15 @@
 Django>=5.0.0
 djangorestframework>=3.14.0
+# OpenAPI schema + /api/docs/ (Phase 9: core/urls.py, core/settings.py,
+# DEFAULT_SCHEMA_CLASS). 0.27 is the first release supporting Django 5.x
+# and DRF 3.14+, matching the floors above.
+drf-spectacular>=0.27.0
 djangorestframework-simplejwt>=5.3.0
 django-cors-headers>=4.3.0
 django-filter>=23.5
 psycopg2-binary>=2.9.9
 python-decouple>=3.8
 Pillow>=10.2.0
+# Category tree for the catalogue (apps/catalog: MPTTModel, DraggableMPTTAdmin).
+# Verified with 0.18.0 (the version in the active dev environment).
+django-mptt>=0.18.0

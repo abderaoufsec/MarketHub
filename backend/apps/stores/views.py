@@ -24,7 +24,7 @@ def _stores_with_product_counts():
     """
     return (
         Store.objects.filter(is_active=True)
-        .select_related("owner")
+        .select_related("owner", "category")
         .annotate(product_count=Count("products", distinct=True))
     )
 
@@ -214,13 +214,16 @@ def store_analytics(request):
         for row in sales_by_product
     ]
 
-    category_totals = list(
-        store.products.values("category").annotate(products=Count("id")).order_by("-products")
+    # Phase 12: category is a FK — group by the node's slug (the API's
+    # stable category identifier), not the surrogate id. Legacy rows the
+    # FK migration could not file land under "uncategorized".
+    category_totals = (
+        store.products.values("category__slug").annotate(products=Count("id")).order_by("-products")
     )
     grand_total = sum(row["products"] for row in category_totals)
     category_breakdown = [
         {
-            "category": row["category"],
+            "category": row["category__slug"] or "uncategorized",
             "percentage": round(row["products"] * 100 / grand_total, 1),
         }
         for row in category_totals

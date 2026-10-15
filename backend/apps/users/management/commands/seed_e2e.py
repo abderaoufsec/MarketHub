@@ -9,8 +9,10 @@ idempotent: re-running it updates the same rows instead of duplicating them.
 """
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from apps.catalog.models import Category
 from apps.inventory.models import Inventory
 from apps.products.models import Product
 from apps.stores.models import Store
@@ -65,15 +67,24 @@ class Command(BaseCommand):
         seller.set_password(PASSWORD)
         seller.save()
 
+        # Phase 12: the fixtures file the store under "electronics" and the
+        # listing under "phones-tablets"; the launch tree must exist first.
+        call_command("load_categories", verbosity=0)
+        electronics = Category.objects.get(slug="electronics")
+        phones = Category.objects.get(slug="phones-tablets")
+
         store, _ = Store.objects.get_or_create(
             owner=seller,
             defaults={
                 "store_name": "E2E Smoke Store",
                 "description": "Store used by the Playwright smoke suite.",
-                "category": "electronics",
+                "category": electronics,
                 "is_active": True,
             },
         )
+        if store.category_id != electronics.id:
+            store.category = electronics
+            store.save(update_fields=["category"])
 
         product, _ = Product.objects.get_or_create(
             store=store,
@@ -81,10 +92,13 @@ class Command(BaseCommand):
             defaults={
                 "description": "A phone listed by the e2e seed command.",
                 "base_price": 45000,
-                "category": "phones",
+                "category": phones,
                 "is_available": True,
             },
         )
+        if product.category_id != phones.id:
+            product.category = phones
+            product.save(update_fields=["category"])
         Inventory.objects.get_or_create(
             product=product,
             attribute_config={},
