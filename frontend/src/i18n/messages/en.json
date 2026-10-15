@@ -60,6 +60,15 @@
     "communeNeedsWilaya": "Choose a wilaya first",
     "loadError": "Could not load location data. Please retry."
   },
+  "catalog": {
+    "selectCategory": "Select a category",
+    "loadingCategories": "Loading categories…",
+    "loadError": "Could not load the category tree. Please retry.",
+    "selectValue": "Select a value",
+    "anyValue": "Any",
+    "rangeMin": "Min",
+    "rangeMax": "Max"
+  },
   "auth": {
     "login": {
       "title": "Sign in to your account",
@@ -565,6 +574,9 @@
         "lowStockHint": "You'll receive an alert when stock falls below this number",
         "availability": "Make this product available for purchase immediately",
         "requiredError": "Please fill in all required fields",
+        "categoryRequired": "Please choose a category",
+        "attributesTitle": "Category details",
+        "attributesHint": "The extra fields this category asks for — they power the search filters.",
         "submit": "Create Product",
         "submitting": "Creating..."
       }
@@ -589,6 +601,9 @@
         "lowStockHint": "You'll receive an alert when stock falls below this number",
         "availability": "Product is available for purchase",
         "requiredError": "Please fill in all required fields",
+        "categoryRequired": "Please choose a category",
+        "attributesTitle": "Category details",
+        "attributesHint": "The extra fields this category asks for — they power the search filters.",
         "submit": "Save Changes",
         "submitting": "Saving..."
       }

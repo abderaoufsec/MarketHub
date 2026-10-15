@@ -182,6 +182,20 @@ def resolve_message(exc, detail):
     return "The request could not be processed."
 
 
+def _detail_messages(value):
+    """Normalise one field's messages into ``[str]`` — or, for a compound
+    field, recurse into a nested ``{sub-key: [str]}`` map.
+
+    ``ProductCreateUpdateSerializer`` nests ``validate_attributes``' per-key
+    errors under ``attributes_json`` (Phase 12) so the dynamic form can
+    highlight the offending inputs; stringifying that dict would hand the
+    client a Python repr instead of messages.
+    """
+    if isinstance(value, dict):
+        return {str(key): _detail_messages(item) for key, item in value.items()}
+    return [str(message) for message in _as_messages(value)]
+
+
 def resolve_details(exc, detail):
     """Structured extras, normalised so ``details`` has one of three shapes:
     a dict of field messages, a JSON-serialisable payload, or ``None``."""
@@ -190,10 +204,7 @@ def resolve_details(exc, detail):
         return extra
     if isinstance(exc, ValidationError):
         if isinstance(detail, dict):
-            return {
-                str(key): [str(message) for message in _as_messages(value)]
-                for key, value in detail.items()
-            }
+            return {str(key): _detail_messages(value) for key, value in detail.items()}
         if isinstance(detail, (list, tuple)):
             return {"non_field_errors": [str(message) for message in _as_messages(detail)]}
         return None
@@ -203,10 +214,7 @@ def resolve_details(exc, detail):
         return {"wait": wait}
     if isinstance(detail, (dict, list, tuple)):
         if isinstance(detail, dict):
-            return {
-                str(key): [str(message) for message in _as_messages(value)]
-                for key, value in detail.items()
-            }
+            return {str(key): _detail_messages(value) for key, value in detail.items()}
         return [str(message) for message in _as_messages(detail)]
     return None
 

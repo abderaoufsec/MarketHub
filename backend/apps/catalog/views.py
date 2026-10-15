@@ -25,7 +25,10 @@ class CategoryTreeView(generics.ListAPIView):
 
     def get_queryset(self):
         # Products of every category inside the outer row's mptt span
-        # (same tree, lft/rght nested within), counted in one group.
+        # (same tree, lft/rght nested within), counted in ONE group: the
+        # `.values("tree_id")` is what makes it one row — an annotate() on
+        # the bare model queryset groups by that row's pk, which would hand
+        # LIMIT 1 a single node's count instead of the subtree total.
         subtree_counts = (
             Category.objects.filter(
                 tree_id=OuterRef("tree_id"),
@@ -33,6 +36,7 @@ class CategoryTreeView(generics.ListAPIView):
                 rght__lte=OuterRef("rght"),
             )
             .order_by()
+            .values("tree_id")
             .annotate(total=Count("products", filter=Q(products__is_available=True)))
             .values("total")[:1]
         )

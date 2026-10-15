@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { productsAPI } from '../../../../lib/api'
-import { apiErrorMessage } from '../../../../lib/errors'
+import { apiErrorMessage, apiFieldErrors } from '../../../../lib/errors'
+import { effectiveDefinitions } from '../../../../lib/catalog'
 import { useTranslations } from 'next-intl'
 import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
+import CategoryPicker from '../../../../components/common/CategoryPicker'
+import AttributeFields from '../../../../components/product/AttributeFields'
 
 export default function CreateProductPage() {
   const router = useRouter()
@@ -15,11 +18,13 @@ export default function CreateProductPage() {
   const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
+  const [categoryId, setCategoryId] = useState(null)
+  const [attributes, setAttributes] = useState({})
+  const [attributeErrors, setAttributeErrors] = useState({})
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     base_price: '',
-    category: '',
     is_available: true,
     low_stock_threshold: 5,
   })
@@ -30,12 +35,33 @@ export default function CreateProductPage() {
     }
   }, [authLoading, isAuthenticated, isSeller, router])
 
+  // Definitions come from the cached tree (client-side inheritance — see
+  // src/lib/catalog.js): switching category swaps the visible fields with
+  // no refetch, and the previous category's answers are dropped because
+  // they may not even be keys in the new subtree.
+  const definitions = effectiveDefinitions(categoryId)
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const handleCategoryChange = (nextId) => {
+    setCategoryId(nextId)
+    setAttributes({})
+    setAttributeErrors({})
+  }
+
+  const handleAttributeChange = (key, value) => {
+    setAttributeErrors((prev) => {
+      if (!prev[key]) return prev
+      const { [key]: _dropped, ...rest } = prev
+      return rest
+    })
+    setAttributes((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleSubmit = async (e) => {
@@ -45,17 +71,34 @@ export default function CreateProductPage() {
       setMessage({ type: 'error', text: t('create.form.requiredError') })
       return
     }
+    if (!categoryId) {
+      setMessage({ type: 'error', text: t('create.form.categoryRequired') })
+      return
+    }
 
     try {
       setLoading(true)
       setMessage(null)
-      await productsAPI.create(formData)
+      setAttributeErrors({})
+      // Blank answers (null / empty range) are dropped server-side; sending
+      // them is harmless and keeps this payload a plain diff of the form.
+      await productsAPI.create({
+        ...formData,
+        category_id: categoryId,
+        attributes_json: attributes,
+      })
       setMessage({ type: 'success', text: t('create.created') })
       setTimeout(() => {
         router.push('/seller/products')
       }, 1500)
     } catch (error) {
       console.error('Error creating product:', error)
+      // Per-key attribute messages highlight the offending inputs (Phase 12
+      // contract: details.attributes_json.{key}).
+      const keyErrors = apiFieldErrors(error).attributes_json
+      setAttributeErrors(
+        keyErrors && !Array.isArray(keyErrors) ? keyErrors : {}
+      )
       setMessage({
         type: 'error',
         text: apiErrorMessage(error, t('create.createError')),
@@ -169,22 +212,37 @@ export default function CreateProductPage() {
 
             <div>
               <label
-                htmlFor="category"
+                htmlFor="category-picker"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                {t('create.form.category')}
+                {t('create.form.category')}{' '}
+                <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder={t('create.form.categoryPlaceholder')}
+              <CategoryPicker
+                id="category-picker"
+                categoryId={categoryId}
+                onChange={handleCategoryChange}
+                required
               />
             </div>
           </div>
+
+          {definitions.length > 0 && (
+            <div className="border-t border-gray-100 pt-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                {t('create.form.attributesTitle')}
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                {t('create.form.attributesHint')}
+              </p>
+              <AttributeFields
+                definitions={definitions}
+                values={attributes}
+                errors={attributeErrors}
+                onChange={handleAttributeChange}
+              />
+            </div>
+          )}
 
           <div>
             <label

@@ -290,9 +290,10 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
+          {/* Phase 12: `category` is the nested {id, slug, name} object. */}
           {product.category && (
             <span className="inline-block mb-4 text-xs bg-blue-100 text-primary px-3 py-1 rounded-full">
-              {product.category}
+              {product.category.name || product.category}
             </span>
           )}
 
@@ -427,7 +428,7 @@ export default function ProductDetailPage() {
               <div className="flex">
                 <dt className="text-gray-600 w-32">{t('categoryInfoLabel')}</dt>
                 <dd className="text-gray-900 font-medium">
-                  {product.category || t('general')}
+                  {product.category?.name || product.category || t('general')}
                 </dd>
               </div>
               <div className="flex">

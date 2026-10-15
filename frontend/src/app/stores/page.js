@@ -19,11 +19,12 @@ export default function StoresPage() {
 
   useEffect(() => {
     if (searchTerm) {
-      const filtered = stores.filter(
-        (store) =>
-          store.store_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          store.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          store.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = stores.filter((store) =>
+        [store.store_name, store.category_label, store.description]
+          .filter(Boolean)
+          .some((value) =>
+            value.toLowerCase().includes(searchTerm.toLowerCase())
+          )
       )
       setFilteredStores(filtered)
     } else {
@@ -153,9 +154,9 @@ export default function StoresPage() {
                         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
                           {store.store_name}
                         </h3>
-                        {(store.category_label || store.category) && (
+                        {(store.category_label || store.category?.name) && (
                           <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                            {store.category_label || store.category}
+                            {store.category_label || store.category?.name}
                           </span>
                         )}
                       </div>

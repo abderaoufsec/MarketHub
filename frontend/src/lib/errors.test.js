@@ -167,6 +167,38 @@ describe('apiFieldErrors / apiFieldError', () => {
     })
   })
 
+  it('keeps a compound field’s per-key map (Phase 12 attributes_json)', () => {
+    // The dynamic form highlights the offending input *by attribute key*,
+    // so the nested map must survive normalisation instead of being
+    // stringified or dropped as a non-list value.
+    const dynamicFormError = axiosError(400, {
+      code: 'validation_error',
+      message: 'Fix the form.',
+      details: {
+        attributes_json: {
+          km: ['Must be a number.'],
+          bogus: ["Unknown attribute for 'cars'."],
+        },
+        category_id: ['A category is required.'],
+      },
+      request_id: 'req-7',
+    })
+
+    expect(apiFieldErrors(dynamicFormError)).toEqual({
+      attributes_json: {
+        km: ['Must be a number.'],
+        bogus: ["Unknown attribute for 'cars'."],
+      },
+      category_id: ['A category is required.'],
+    })
+    // The compound field is a map, not a message list — the singular helper
+    // answers null for it, and still returns the plain field's message.
+    expect(apiFieldError(dynamicFormError, 'attributes_json')).toBeNull()
+    expect(apiFieldError(dynamicFormError, 'category_id')).toBe(
+      'A category is required.'
+    )
+  })
+
   it('returns {} when the failure carries no field messages', () => {
     expect(
       apiFieldErrors(

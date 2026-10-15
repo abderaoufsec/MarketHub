@@ -49,13 +49,20 @@ def create_test_data():
 
     # Create Store
     print("\n🏪 Creating store...")
+    from apps.catalog.models import Category
+
+    electronics, _ = Category.objects.get_or_create(
+        slug="electronics",
+        defaults={"name_fr": "Électronique", "name_ar": "إلكترونيات", "name_en": "Electronics"},
+    )
     store, created = Store.objects.get_or_create(
         owner=seller,
         defaults={
             "store_name": "Electronics Plus",
             "store_slug": "electronics-plus",
             "description": "Your one-stop shop for quality electronics and gadgets",
-            "category": "Electronics",
+            # Phase 12: Store.category is a catalog FK, not free text.
+            "category": electronics,
             "is_active": True,
         },
     )
@@ -106,7 +113,8 @@ def create_test_data():
             defaults={
                 "description": data["description"],
                 "base_price": data["price"],
-                "category": "Electronics",
+                # Phase 12: Product.category is a catalog FK, not free text.
+                "category": electronics,
                 "is_available": True,
                 "low_stock_threshold": 10,
             },

@@ -38,7 +38,22 @@ test.describe('post a listing', () => {
       .getByLabel('Description')
       .fill('A phone listed by the Playwright smoke journey.')
     await page.getByLabel(/Price/).fill('99.50')
-    await page.getByLabel('Category').fill('phones')
+
+    // Phase 12: the category is a tree select, and picking a node renders
+    // that category's attribute fields below (brand/storage/condition are
+    // required on phones-tablets — the API rejects the create without them).
+    // Count, not visibility: <option> bounding boxes are unreliable closed.
+    await expect(
+      page.getByRole('option', { name: 'Phones & Tablets' })
+    ).toHaveCount(1)
+    await page
+      .getByLabel('Category')
+      .selectOption({ label: 'Phones & Tablets' })
+
+    await expect(page.locator('#attr-brand')).toBeVisible()
+    await page.selectOption('#attr-brand', 'samsung')
+    await page.selectOption('#attr-storage', '128')
+    await page.selectOption('#attr-condition', 'new')
 
     await page.getByRole('button', { name: 'Create Product' }).click()
 

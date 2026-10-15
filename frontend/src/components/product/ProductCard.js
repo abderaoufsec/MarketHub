@@ -89,13 +89,15 @@ export default function ProductCard({ product, index = 0 }) {
                 {price(product.base_price)}
               </motion.span>
             </div>
+            {/* Phase 12: `category` is the nested {id, slug, name} object —
+                render the localized name, and never a bare object. */}
             {product.category && (
               <motion.span
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="inline-block mt-2 text-xs bg-gradient-to-r from-primary/10 to-secondary/10 text-primary font-medium px-3 py-1 rounded-full w-fit"
               >
-                {product.category}
+                {product.category.name || product.category}
               </motion.span>
             )}
           </div>

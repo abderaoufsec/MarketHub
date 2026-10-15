@@ -191,6 +191,11 @@ export function apiErrorMessage(error, fallback = DEFAULT_MESSAGE) {
 /**
  * Field → messages map for a `validation_error` (`details`), normalised to
  * lists of strings. `{}` when the failure carries no field-level messages.
+ *
+ * One exception: a *compound* field (Phase 12's `attributes_json`, whose
+ * value is `{attribute key: [messages]}`) keeps its nested map instead of
+ * being flattened — that map is exactly what the dynamic form needs to
+ * highlight the offending input by key.
  */
 export function apiFieldErrors(error) {
   const { code, details } = parseApiError(error)
@@ -198,6 +203,15 @@ export function apiFieldErrors(error) {
 
   const fields = {}
   for (const [field, messages] of Object.entries(details)) {
+    if (isPlainObject(messages)) {
+      const nested = {}
+      for (const [key, items] of Object.entries(messages)) {
+        const list = (Array.isArray(items) ? items : [items]).filter(isText)
+        if (list.length > 0) nested[key] = list
+      }
+      if (Object.keys(nested).length > 0) fields[field] = nested
+      continue
+    }
     const list = (Array.isArray(messages) ? messages : [messages]).filter(
       isText
     )

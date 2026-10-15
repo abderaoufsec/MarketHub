@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { productsAPI } from '../../lib/api'
 import { Search, Filter, ChevronDown } from 'lucide-react'
@@ -9,23 +9,61 @@ import SkeletonLoader from '../../components/common/SkeletonLoader'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useTranslations } from 'next-intl'
+import {
+  fetchCategoryTree,
+  categoryBySlug,
+  effectiveDefinitions,
+} from '../../lib/catalog'
 
 export default function ProductsPage() {
   const t = useTranslations('products')
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [categoryTree, setCategoryTree] = useState([])
+  // `category` is a catalog *slug* since Phase 12 (`?category=<slug>` matches
+  // the node and every descendant server-side); attribute filters ride along
+  // as `attr_<key>` / `attr_<key>_min` / `attr_<key>_max`.
   const [filters, setFilters] = useState({
     category: '',
     min_price: '',
     max_price: '',
     in_stock: true,
+    attributes: {},
   })
   const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+    fetchCategoryTree()
+      .then((tree) => {
+        if (!cancelled) setCategoryTree(tree)
+      })
+      .catch(() => {
+        // Sidebar degrades to price/stock filters if the tree fails to load.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     fetchProducts()
   }, [search, filters])
+
+  // Filterable attributes of the *selected* category (its own +
+  // ancestors'), from the already-cached tree — no extra request when the
+  // sidebar re-renders on every keystroke.
+  const selectedNode = categoryBySlug(filters.category)
+  const attributeDefinitions = useMemo(
+    () =>
+      effectiveDefinitions(selectedNode?.id)
+        .filter((definition) => definition.filterable)
+        .filter((definition) =>
+          ['text', 'number', 'year', 'enum', 'range'].includes(definition.type)
+        ),
+    [selectedNode?.id]
+  )
 
   const fetchProducts = async () => {
     try {
@@ -36,6 +74,19 @@ export default function ProductsPage() {
         min_price: filters.min_price || undefined,
         max_price: filters.max_price || undefined,
         in_stock: filters.in_stock || undefined,
+      }
+      for (const [key, value] of Object.entries(filters.attributes)) {
+        if (value === '' || value == null) continue
+        if (typeof value === 'object') {
+          if (value.min != null && value.min !== '') {
+            params[`attr_${key}_min`] = value.min
+          }
+          if (value.max != null && value.max !== '') {
+            params[`attr_${key}_max`] = value.max
+          }
+        } else {
+          params[`attr_${key}`] = value
+        }
       }
       const response = await productsAPI.list(params)
       setProducts(response.data.results || response.data)
@@ -57,7 +108,45 @@ export default function ProductsPage() {
   }
 
   const handleFilterChange = (key, value) => {
-    setFilters({ ...filters, [key]: value })
+    setFilters((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleCategoryChange = (slug) => {
+    // Switching subtree invalidates attribute filters whose keys the new
+    // category may not even define (the API answers 400 for unknown keys).
+    setFilters((prev) => ({ ...prev, category: slug, attributes: {} }))
+  }
+
+  const handleAttributeChange = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      attributes: { ...prev.attributes, [key]: value },
+    }))
+  }
+
+  // Depth-first flatten with indent levels, like CategoryPicker does.
+  const categoryOptions = []
+  const pushCategories = (list, depth) => {
+    for (const node of list) {
+      categoryOptions.push(
+        <option key={node.slug} value={node.slug}>
+          {'\u00A0'.repeat(2 * depth) + node.name}
+        </option>
+      )
+      if (node.children?.length) pushCategories(node.children, depth + 1)
+    }
+  }
+  pushCategories(categoryTree, 0)
+
+  const resetFilters = () => {
+    setSearch('')
+    setFilters({
+      category: '',
+      min_price: '',
+      max_price: '',
+      in_stock: true,
+      attributes: {},
+    })
   }
 
   return (
@@ -130,18 +219,11 @@ export default function ProductsPage() {
               </label>
               <select
                 value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
               >
                 <option value="">{t('allCategories')}</option>
-                <option value="Electronics">
-                  {t('categories.electronics')}
-                </option>
-                <option value="Clothing">{t('categories.clothing')}</option>
-                <option value="Home">{t('categories.home')}</option>
-                <option value="Sports">{t('categories.sports')}</option>
-                <option value="Books">{t('categories.books')}</option>
-                <option value="Toys">{t('categories.toys')}</option>
+                {categoryOptions}
               </select>
             </div>
 
@@ -190,6 +272,19 @@ export default function ProductsPage() {
                 </span>
               </label>
             </div>
+
+            {/* Category-specific attribute filters (Phase 12): labels come
+                from the server, so admin edits show up with no deploy. */}
+            {attributeDefinitions.map((definition) => (
+              <AttributeFilter
+                key={definition.key}
+                definition={definition}
+                value={filters.attributes[definition.key]}
+                onChange={(value) =>
+                  handleAttributeChange(definition.key, value)
+                }
+              />
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
@@ -230,15 +325,7 @@ export default function ProductsPage() {
             <Link
               href="/products"
               className="inline-block text-primary hover:text-secondary font-semibold transition-colors"
-              onClick={() => {
-                setSearch('')
-                setFilters({
-                  category: '',
-                  min_price: '',
-                  max_price: '',
-                  in_stock: true,
-                })
-              }}
+              onClick={resetFilters}
             >
               {t('empty.clearFilters')}
             </Link>
@@ -246,5 +333,86 @@ export default function ProductsPage() {
         </motion.div>
       )}
     </motion.div>
+  )
+}
+
+/**
+ * One filterable attribute in the sidebar: text → text input, number/year →
+ * min/max bounds (`attr_k_min`/`_max`), enum → select, range → min/max
+ * overlap bounds. Booleans are deliberately not filterable inputs here —
+ * `?attr_flag=true` works, but a tri-state select adds more UI than it
+ * earns in the sidebar; Phase 15's facet pass can revisit.
+ */
+function AttributeFilter({ definition, value, onChange }) {
+  const tc = useTranslations('catalog')
+  const { key, label, type, unit, choices = [] } = definition
+
+  const labelNode = (
+    <span className="block text-sm font-medium text-gray-700 mb-2">
+      {label}
+      {unit ? <span className="text-gray-400"> ({unit})</span> : null}
+    </span>
+  )
+
+  if (type === 'enum') {
+    return (
+      <div>
+        {labelNode}
+        <select
+          value={typeof value === 'string' ? value : ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+        >
+          <option value="">{tc('anyValue')}</option>
+          {choices.map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
+  if (type === 'range' || type === 'number' || type === 'year') {
+    const bounds =
+      value && typeof value === 'object' ? value : { min: '', max: '' }
+    const commit = (next) => {
+      const empty = !next.min && !next.max
+      onChange(empty ? null : next)
+    }
+    return (
+      <div>
+        {labelNode}
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            placeholder={type === 'year' ? '1990' : tc('rangeMin')}
+            value={bounds.min ?? ''}
+            onChange={(e) => commit({ ...bounds, min: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+          />
+          <input
+            type="number"
+            placeholder={type === 'year' ? '2030' : tc('rangeMax')}
+            value={bounds.max ?? ''}
+            onChange={(e) => commit({ ...bounds, max: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+          />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {labelNode}
+      <input
+        type="text"
+        value={typeof value === 'string' ? value : ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+      />
+    </div>
   )
 }

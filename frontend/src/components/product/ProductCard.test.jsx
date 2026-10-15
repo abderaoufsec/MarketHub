@@ -54,7 +54,8 @@ const PRODUCT = {
   id: 42,
   name: 'Galaxy S24',
   base_price: '45000.00',
-  category: 'phones',
+  // Phase 12: the serializer nests the catalog FK as {id, slug, name}.
+  category: { id: 7, slug: 'phones', name: 'Téléphones' },
   store_name: 'TechStore Blida',
   is_available: true,
   primary_image: 'https://cdn.example.com/s24.jpg',
@@ -70,7 +71,19 @@ describe('ProductCard', () => {
     expect(screen.getByText('TechStore Blida')).toBeInTheDocument()
     // DZD via usePrice — never a bare "$" amount.
     expect(screen.getByText('DZD 45,000')).toBeInTheDocument()
+    // The localized name from the nested object — never "[object Object]".
+    expect(screen.getByText('Téléphones')).toBeInTheDocument()
+  })
+
+  it('falls back to a legacy string category, and hides a null one', () => {
+    const { rerender } = renderWithIntl(
+      <ProductCard product={{ ...PRODUCT, category: 'phones' }} />
+    )
     expect(screen.getByText('phones')).toBeInTheDocument()
+
+    rerender(<ProductCard product={{ ...PRODUCT, category: null }} />)
+    expect(screen.queryByText('phones')).not.toBeInTheDocument()
+    expect(screen.queryByText('[object Object]')).not.toBeInTheDocument()
   })
 
   it('links to the product detail page', () => {

@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../../../context/AuthContext'
 import { productsAPI } from '../../../../../lib/api'
-import { apiErrorMessage } from '../../../../../lib/errors'
+import { apiErrorMessage, apiFieldErrors } from '../../../../../lib/errors'
+import {
+  effectiveDefinitions,
+  fetchCategoryTree,
+} from '../../../../../lib/catalog'
 import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
@@ -14,6 +18,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
+import CategoryPicker from '../../../../../components/common/CategoryPicker'
+import AttributeFields from '../../../../../components/product/AttributeFields'
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -24,11 +30,15 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
+  const [categoryId, setCategoryId] = useState(null)
+  const [attributes, setAttributes] = useState({})
+  const [attributeErrors, setAttributeErrors] = useState({})
+  // Bumped when the category tree lands — see `definitions` below.
+  const [treeVersion, setTreeVersion] = useState(0)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     base_price: '',
-    category: '',
     is_available: true,
     low_stock_threshold: 5,
   })
@@ -43,6 +53,24 @@ export default function EditProductPage() {
       fetchProduct()
     }
   }, [authLoading, isAuthenticated, isSeller, productId])
+
+  // Warm the cached tree on mount (CategoryPicker fetches it too — the
+  // cache makes that a no-op), so the dynamic fields re-render when it
+  // arrives even if the product request already resolved.
+  useEffect(() => {
+    let cancelled = false
+    fetchCategoryTree()
+      .then(() => {
+        if (!cancelled) setTreeVersion((version) => version + 1)
+      })
+      .catch(() => {
+        // The picker renders its own load error; the form still works
+        // without attribute fields.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const fetchProduct = async () => {
     try {
@@ -61,11 +89,14 @@ export default function EditProductPage() {
         name: product.name || '',
         description: product.description || '',
         base_price: product.base_price || '',
-        category: product.category || '',
         is_available:
           product.is_available !== undefined ? product.is_available : true,
         low_stock_threshold: product.low_stock_threshold || 5,
       })
+      // Phase 12: `category` is the nested {id, slug, name} object; the form
+      // writes back `category_id`.
+      setCategoryId(product.category?.id ?? null)
+      setAttributes(product.attributes_json || {})
     } catch (error) {
       console.error('Error fetching product:', error)
       setMessage({
@@ -77,12 +108,43 @@ export default function EditProductPage() {
     }
   }
 
+  // Definitions come from the cached tree (client-side inheritance — see
+  // src/lib/catalog.js), so an edit form renders exactly the fields the
+  // product's current category asks for. Recomputed when the tree lands:
+  // the product request can resolve before it, and a bare read here would
+  // then return [] until some unrelated state change re-rendered the page.
+  const definitions = useMemo(
+    () => effectiveDefinitions(categoryId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `treeVersion`
+    // is the "the tree cache filled" signal: `effectiveDefinitions` reads
+    // the module-level cache, not React state, so it can't be a dep itself.
+    [categoryId, treeVersion]
+  )
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const handleCategoryChange = (nextId) => {
+    // The stored answers are kept: the server re-validates them against the
+    // new subtree on submit (ProductCreateUpdateSerializer.validate), and any
+    // key the new category doesn't know comes back under
+    // details.attributes_json — highlighted below by key.
+    setCategoryId(nextId)
+    setAttributeErrors({})
+  }
+
+  const handleAttributeChange = (key, value) => {
+    setAttributeErrors((prev) => {
+      if (!prev[key]) return prev
+      const { [key]: _dropped, ...rest } = prev
+      return rest
+    })
+    setAttributes((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleSubmit = async (e) => {
@@ -92,17 +154,30 @@ export default function EditProductPage() {
       setMessage({ type: 'error', text: t('edit.form.requiredError') })
       return
     }
+    if (!categoryId) {
+      setMessage({ type: 'error', text: t('edit.form.categoryRequired') })
+      return
+    }
 
     try {
       setSaving(true)
       setMessage(null)
-      await productsAPI.update(productId, formData)
+      setAttributeErrors({})
+      await productsAPI.update(productId, {
+        ...formData,
+        category_id: categoryId,
+        attributes_json: attributes,
+      })
       setMessage({ type: 'success', text: t('edit.updated') })
       setTimeout(() => {
         router.push('/seller/products')
       }, 1500)
     } catch (error) {
       console.error('Error updating product:', error)
+      const keyErrors = apiFieldErrors(error).attributes_json
+      setAttributeErrors(
+        keyErrors && !Array.isArray(keyErrors) ? keyErrors : {}
+      )
       setMessage({
         type: 'error',
         text: apiErrorMessage(error, t('edit.updateError')),
@@ -223,22 +298,37 @@ export default function EditProductPage() {
 
             <div>
               <label
-                htmlFor="category"
+                htmlFor="category-picker"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                {t('edit.form.category')}
+                {t('edit.form.category')}{' '}
+                <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder={t('edit.form.categoryPlaceholder')}
+              <CategoryPicker
+                id="category-picker"
+                categoryId={categoryId}
+                onChange={handleCategoryChange}
+                required
               />
             </div>
           </div>
+
+          {definitions.length > 0 && (
+            <div className="border-t border-gray-100 pt-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                {t('edit.form.attributesTitle')}
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                {t('edit.form.attributesHint')}
+              </p>
+              <AttributeFields
+                definitions={definitions}
+                values={attributes}
+                errors={attributeErrors}
+                onChange={handleAttributeChange}
+              />
+            </div>
+          )}
 
           <div>
             <label

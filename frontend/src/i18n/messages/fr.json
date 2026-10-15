@@ -60,6 +60,15 @@
     "communeNeedsWilaya": "Choisissez d'abord une wilaya",
     "loadError": "Impossible de charger les données de localisation. Veuillez réessayer."
   },
+  "catalog": {
+    "selectCategory": "Choisir une catégorie",
+    "loadingCategories": "Chargement des catégories…",
+    "loadError": "Impossible de charger l'arbre des catégories. Veuillez réessayer.",
+    "selectValue": "Choisir une valeur",
+    "anyValue": "Indifférent",
+    "rangeMin": "Min",
+    "rangeMax": "Max"
+  },
   "auth": {
     "login": {
       "title": "Connectez-vous à votre compte",
@@ -565,6 +574,9 @@
         "lowStockHint": "Vous recevrez une alerte lorsque le stock descendra sous ce nombre",
         "availability": "Rendre ce produit disponible à la vente immédiatement",
         "requiredError": "Veuillez remplir tous les champs obligatoires",
+        "categoryRequired": "Choisissez une catégorie",
+        "attributesTitle": "Détails de la catégorie",
+        "attributesHint": "Les champs supplémentaires demandés par cette catégorie — ils alimentent les filtres de recherche.",
         "submit": "Créer le produit",
         "submitting": "Création…"
       }
@@ -589,6 +601,9 @@
         "lowStockHint": "Vous recevrez une alerte lorsque le stock descendra sous ce nombre",
         "availability": "Le produit est disponible à la vente",
         "requiredError": "Veuillez remplir tous les champs obligatoires",
+        "categoryRequired": "Choisissez une catégorie",
+        "attributesTitle": "Détails de la catégorie",
+        "attributesHint": "Les champs supplémentaires demandés par cette catégorie — ils alimentent les filtres de recherche.",
         "submit": "Enregistrer les modifications",
         "submitting": "Enregistrement…"
       }

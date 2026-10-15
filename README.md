@@ -12,9 +12,9 @@ MarketHub is **under active development**. The core commerce flows work end-to-e
 
 | Area | State |
 |---|---|
-| Backend | 7 apps · 64 API paths / 76 operations · migrations in sync |
+| Backend | 8 apps · 65 API paths / 77 operations · migrations in sync |
 | Frontend | 22 pages (Next.js App Router) |
-| Tests | Backend: **403 passing** (1 strict xfail pinning a known defect) · Frontend: **83 unit + 5 e2e passing** |
+| Tests | Backend: **441 passing** (1 strict xfail pinning a known defect) · Frontend: **90 unit + 5 e2e passing** |
 | CI | **GitHub Actions** — backend, frontend and security-audit jobs on every push/PR |
 | API docs | **Swagger** at `/api/docs/`, ReDoc at `/api/redoc/` — generated from drf-spectacular (0 schema errors) |
 
@@ -31,6 +31,7 @@ MarketHub/
 │   ├── apps/
 │   │   ├── users/           # auth, profiles, addresses (wilaya/commune FKs)
 │   │   ├── geography/       # Wilaya & Commune reference data (69 wilayas)
+│   │   ├── catalog/         # category tree & dynamic attribute definitions
 │   │   ├── stores/          # seller stores & followers
 │   │   ├── products/        # catalog, reviews, wishlist
 │   │   ├── inventory/       # stock levels & audit log
@@ -103,6 +104,7 @@ Run migrations and start the server:
 ```bash
 python manage.py makemigrations
 python manage.py migrate
+python manage.py load_categories   # launch category tree (drives forms & filters)
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -113,6 +115,7 @@ API is now at <http://localhost:8000> — root routes:
 |---|---|
 | `/api/v1/auth/` | users — register, login, logout, profile, addresses |
 | `/api/v1/geography/` | geography — wilayas, communes (public read-only reference data) |
+| `/api/v1/catalog/` | catalog — category tree with attribute definitions (drives posting forms + filters) |
 | `/api/v1/stores/` | stores — public store list/detail, seller store management |
 | `/api/v1/products/` | products — catalog, reviews, wishlist |
 | `/api/v1/inventory/` | inventory — stock, low-stock, audit log |
@@ -224,6 +227,10 @@ Dependabot opens weekly PRs for pip, npm and GitHub Actions dependencies.
 4. Seller updates order status; refunds reverse the commission ledger.
 
 > A cart line whose price changed since it was added is rejected with `400` + `code: "price_changed"`. `POST /api/v1/orders/cart/refresh-prices/` accepts the current catalogue prices (the checkout page shows a "Prices have changed" banner and calls it).
+
+### Catalog (Phase 12)
+- **The category tree is data, not code.** `GET /api/v1/catalog/categories/` serves a translated tree (`Category`, django-mptt) with per-category `AttributeDefinition`s; the posting form, the filter sidebar and their labels all render from that one response — adding a category or a field in the admin is live with no deploy (`manage.py load_categories` seeds the 23-node launch tree).
+- Product and store categories are FKs to that tree (`category_id` on write, the nested localized `category` object on read). A product's `attributes_json` (JSONB, GIN-indexed) is validated server-side against its category's *effective* definitions — its own plus every ancestor's, deeper overriding the same key — and rejections come back **per key** under `details.attributes_json`. Filters accept `?category=<slug>` (whole subtree) and `?attr_<key>` / `?attr_<key>_min` / `?attr_<key>_max`.
 
 ### Localisation (Algeria)
 - **Three UI languages** — French (default), Arabic (RTL) and English — picked in the header and persisted in the `mh_locale` cookie. There is no `/<lang>/` URL segment yet (SEO routing is a later phase); the root layout reads the cookie server-side, so `<html lang dir>` and the message catalogue are right in the first byte and there is no flash. The API follows the same cookie through the `Accept-Language` header the client sends.

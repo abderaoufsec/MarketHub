@@ -132,9 +132,9 @@ export default function StoreDetailPage() {
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                       {store.store_name}
                     </h1>
-                    {(store.category_label || store.category) && (
+                    {(store.category_label || store.category?.name) && (
                       <span className="inline-block bg-blue-100 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                        {store.category_label || store.category}
+                        {store.category_label || store.category?.name}
                       </span>
                     )}
                   </div>

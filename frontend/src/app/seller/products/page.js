@@ -205,7 +205,7 @@ export default function SellerProductsPage() {
                       <span>
                         {t('products.card.category')}{' '}
                         <strong className="text-gray-900">
-                          {product.category}
+                          {product.category.name || product.category}
                         </strong>
                       </span>
                     )}

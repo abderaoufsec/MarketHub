@@ -10,18 +10,7 @@ import { Store, Save, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '../../../../components/common/LoadingSpinner'
-
-const CATEGORY_VALUES = [
-  'electronics',
-  'fashion',
-  'home',
-  'books',
-  'sports',
-  'toys',
-  'beauty',
-  'food',
-  'other',
-]
+import CategoryPicker from '../../../../components/common/CategoryPicker'
 
 export default function StoreSetupPage() {
   const router = useRouter()
@@ -29,10 +18,12 @@ export default function StoreSetupPage() {
   const { isAuthenticated, isSeller, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
+  // Phase 12: the store's category is a catalog FK — written as
+  // `category_id`, chosen from the live tree instead of a hardcoded list.
+  const [categoryId, setCategoryId] = useState(null)
   const [formData, setFormData] = useState({
     store_name: '',
     description: '',
-    category: '',
   })
 
   useEffect(() => {
@@ -49,7 +40,7 @@ export default function StoreSetupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.store_name || !formData.description || !formData.category) {
+    if (!formData.store_name || !formData.description || !categoryId) {
       const errorMsg = t('storeSetup.validation.required')
       setMessage({ type: 'error', text: errorMsg })
       toast.error(errorMsg)
@@ -76,7 +67,10 @@ export default function StoreSetupPage() {
       setLoading(true)
       setMessage(null)
       console.log('Submitting store data:', formData) // Debug log
-      const response = await storesAPI.create(formData)
+      const response = await storesAPI.create({
+        ...formData,
+        category_id: categoryId,
+      })
       const successMsg = t('storeSetup.created')
       setMessage({ type: 'success', text: successMsg })
       toast.success(successMsg)
@@ -90,7 +84,7 @@ export default function StoreSetupPage() {
       // seller needs to know *which* attribute the store was rejected for.
       const errorMsg =
         apiFieldError(error, 'store_name') ||
-        apiFieldError(error, 'category') ||
+        apiFieldError(error, 'category_id') ||
         apiFieldError(error, 'non_field_errors') ||
         apiErrorMessage(error, t('storeSetup.createError'))
 
@@ -235,29 +229,18 @@ export default function StoreSetupPage() {
               transition={{ delay: 0.6 }}
             >
               <label
-                htmlFor="category"
+                htmlFor="category-picker"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
                 {t('storeSetup.form.category')}{' '}
                 <span className="text-red-500">*</span>
               </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
+              <CategoryPicker
+                id="category-picker"
+                categoryId={categoryId}
+                onChange={setCategoryId}
                 required
-                className="input-field"
-              >
-                <option value="">
-                  {t('storeSetup.form.categoryPlaceholder')}
-                </option>
-                {CATEGORY_VALUES.map((value) => (
-                  <option key={value} value={value}>
-                    {t(`storeSetup.categories.${value}`)}
-                  </option>
-                ))}
-              </select>
+              />
             </motion.div>
 
             <motion.div
