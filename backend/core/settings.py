@@ -502,6 +502,15 @@ SOCIAL_HTTP_TIMEOUT = env_int("SOCIAL_HTTP_TIMEOUT", 10)
 # become real, upgradeable plans in Phase 21.
 MAX_PRODUCTS_PER_SELLER = env_int("MAX_PRODUCTS_PER_SELLER", 20)
 
+# Phase 13 — listings lifecycle. The wizard's publish path reads these; the
+# moderation flag routes publish through PENDING_REVIEW until an admin acts
+# (Phase 17 turns it on and fills the queue).
+LISTING_VALID_DAYS = env_int("LISTING_VALID_DAYS", 30)
+LISTINGS_REQUIRE_MODERATION = env_bool("LISTINGS_REQUIRE_MODERATION", False)
+MAX_ACTIVE_LISTINGS_PER_USER = env_int("MAX_ACTIVE_LISTINGS_PER_USER", 10)
+MAX_DRAFT_LISTINGS = env_int("MAX_DRAFT_LISTINGS", 20)
+MAX_IMAGES_PER_LISTING = env_int("MAX_IMAGES_PER_LISTING", 15)
+
 PLATFORM_COMMISSION_RATE = float(env_str("PLATFORM_COMMISSION_RATE", "0.15"))
 SITE_URL = env_str("SITE_URL", "http://localhost:8000")
 FRONTEND_URL = env_str("FRONTEND_URL", "http://localhost:3000")

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '../../context/AuthContext'
-import { ShoppingCart, User, Store, Menu, X, Heart } from 'lucide-react'
+import { ShoppingCart, User, Store, Menu, X, Heart, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -51,6 +51,16 @@ export default function Header() {
                 className="text-gray-700 hover:text-primary transition-colors font-medium"
               >
                 {t('nav.stores')}
+              </Link>
+            </motion.div>
+            {/* Phase 13: anyone can post — the wizard is not seller-only. */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/post"
+                className="btn-primary flex items-center gap-1 text-sm"
+              >
+                <Plus className="h-4 w-4" />
+                {t('nav.postAd')}
               </Link>
             </motion.div>
 
@@ -229,6 +239,15 @@ export default function Header() {
                     className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                   >
                     {t('nav.stores')}
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
+                  <Link
+                    href="/post"
+                    className="text-primary hover:text-secondary transition-colors font-medium block py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('nav.postAd')}
                   </Link>
                 </motion.div>
 

@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
-from django.db.models import DecimalField, Q
+from django.db.models import Count, DecimalField, Prefetch, Q
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
 from django.utils.translation import gettext_lazy as _
@@ -13,13 +13,26 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.catalog.models import AttributeDefinition, Category
+from apps.stores.models import Store
 from apps.users.permissions import IsListingOwner, IsStoreOwner
+from apps.users.plans import (
+    count_active_listings,
+    get_listing_quota,
+    get_plan,
+    get_product_quota,
+    max_draft_listings,
+)
 from core.exceptions import ApiError
 from core.idempotency import IdempotentPostMixin
 from core.pagination import FeedCursorPagination, WishlistCursorPagination
 
-from .models import Product, ProductReview, Wishlist
+from . import lifecycle
+from .duplicates import more_from_seller as _more_from_seller
+from .duplicates import similar_to
+from .lifecycle import ListingLifecycleError
+from .models import ListingStatus, Product, ProductReview, Wishlist, nested_product_queryset
 from .serializers import (
+    ListingActionSerializer,
     ProductCreateUpdateSerializer,
     ProductListSerializer,
     ProductReviewCreateSerializer,
@@ -172,6 +185,26 @@ def apply_catalog_filters(queryset, query_params):
     return queryset
 
 
+def apply_location_filters(queryset, query_params):
+    """Phase 13 location filters: ``?wilaya=<id>`` and ``?commune=<id>``.
+
+    Same philosophy as ``?category=``: an unknown id yields an empty page,
+    and a non-numeric one (a stale bookmark, a hand-edited URL) yields an
+    empty page too rather than a 500 from the ORM's int cast — the filter
+    form is the thing that must be correct, not every link that ever carried
+    the parameter.
+    """
+    wilaya = query_params.get("wilaya")
+    commune = query_params.get("commune")
+    if wilaya is not None:
+        queryset = queryset.filter(wilaya_id=int(wilaya)) if wilaya.isdigit() else queryset.none()
+    if commune is not None:
+        queryset = (
+            queryset.filter(commune_id=int(commune)) if commune.isdigit() else queryset.none()
+        )
+    return queryset
+
+
 class ProductListView(generics.ListAPIView):
     """Public list of all available products with search and filter"""
 
@@ -197,13 +230,16 @@ class ProductListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = (
-            Product.objects.filter(is_available=True, store__is_active=True)
-            .select_related("store", "category")
+            # ``public()`` is the whole visibility rule (live, available, not
+            # behind a dead store) — see ProductQuerySet.public.
+            Product.objects.public()
+            .select_related("store", "category", "seller", "wilaya")
             .prefetch_related("images")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
         queryset = apply_catalog_filters(queryset, self.request.query_params)
+        queryset = apply_location_filters(queryset, self.request.query_params)
 
         # Custom price range filter
         min_price = self.request.query_params.get("min_price")
@@ -220,7 +256,7 @@ class ProductListView(generics.ListAPIView):
 class ProductDetailView(generics.RetrieveAPIView):
     """Public view of a single product with reviews"""
 
-    queryset = Product.objects.filter(is_available=True, store__is_active=True)
+    queryset = Product.objects.public()
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
@@ -228,11 +264,17 @@ class ProductDetailView(generics.RetrieveAPIView):
         return (
             super()
             .get_queryset()
-            .select_related("store", "category")
+            .select_related("store", "category", "seller", "wilaya", "commune")
             .prefetch_related("images", "attributes", "reviews__user")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
+
+    def get_object(self):
+        obj = super().get_object()
+        # Lazy expiry (Phase 13): without the beat (Phase 22) a listing must
+        # not render ACTIVE the morning after its window closed.
+        return lifecycle.expire_if_due(obj)
 
 
 @extend_schema(responses={200: ProductListSerializer(many=True)})
@@ -241,8 +283,8 @@ class ProductDetailView(generics.RetrieveAPIView):
 def featured_products(request):
     """Get featured/recent products"""
     products = (
-        Product.objects.filter(is_available=True, store__is_active=True)
-        .select_related("store", "category")
+        Product.objects.public()
+        .select_related("store", "category", "seller", "wilaya")
         .prefetch_related("images")
         .with_catalog_stats()
         .for_user(request.user)
@@ -254,26 +296,57 @@ def featured_products(request):
 
 
 class SellerProductListView(generics.ListAPIView):
-    """List products for the authenticated seller"""
+    """The authenticated user's own listings — every kind.
+
+    Phase 13: ownership is the ``seller`` FK, so an individual's classifieds
+    and a store owner's SKUs land on one page (``?status=DRAFT`` etc. filters
+    it), instead of the endpoint returning nothing at all to anyone without a
+    store — which it did before, because "seller" used to mean "store owner".
+    """
 
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if not self.request.user.is_seller or not hasattr(self.request.user, "store"):
-            return Product.objects.none()
-
-        return (
-            Product.objects.filter(store=self.request.user.store)
-            .select_related("store", "category")
-            .prefetch_related("images", "attributes", "inventory")
+        # The store rides in through an annotated ``Prefetch`` instead of a
+        # join: ``StoreSerializer`` embeds the store's owner, its category
+        # *and* a ``product_count`` — a join can provide the first two but
+        # not the aggregate, and the fallback counts products *per row*. One
+        # extra query for the page, never one per store row (Phase 13,
+        # finding #15's sibling).
+        queryset = (
+            Product.objects.filter(seller=self.request.user)
+            .select_related("category", "seller", "wilaya", "commune")
+            .prefetch_related(
+                Prefetch(
+                    "store",
+                    queryset=Store.objects.select_related("owner", "category").annotate(
+                        product_count=Count("products")
+                    ),
+                ),
+                "images",
+                "attributes",
+                "inventory",
+                "reviews__user",
+            )
             .with_catalog_stats()
             .for_user(self.request.user)
         )
+        status_filter = self.request.query_params.get("status")
+        if status_filter:
+            if status_filter not in ListingStatus.values:
+                raise ValidationError({"status": _("Unknown listing status.")})
+            queryset = queryset.filter(status=status_filter)
+        return queryset
 
 
 class SellerProductCreateView(IdempotentPostMixin, generics.CreateAPIView):
-    """Create a new product (seller with a store only).
+    """Create a new store product (seller with a store only).
+
+    The *wizard* endpoint is :class:`ListingCreateView` (``/products/create/``)
+    — any signed-in user, draft-first, no store. This one keeps the Phase 6/12
+    store contract: immediate ``ACTIVE``, store quota, ``STORE_PRODUCT`` no
+    matter what the payload claims.
 
     docs/todo.md §0.3 #8: the two rejection checks used to raise
     ``permissions.PermissionDenied`` — an attribute that does not exist on
@@ -302,20 +375,62 @@ class SellerProductCreateView(IdempotentPostMixin, generics.CreateAPIView):
         serializer.save()
 
 
+class ListingCreateView(IdempotentPostMixin, generics.CreateAPIView):
+    """``POST /products/create/`` — the fast-posting wizard's save (Phase 13).
+
+    Any authenticated user, no store, no ``is_seller`` gate: posting a
+    classified is the marketplace's front door. The row is born ``DRAFT`` —
+    autosave calls this once, then PATCHes ``/products/seller/<id>/``; only
+    ``POST /products/<id>/lifecycle/ {action: "publish"}`` may take it live,
+    after the completeness/quota/duplicate gates.
+
+    The response is the *full* :class:`ProductSerializer`, not the write
+    serializer: the wizard needs ``id``, ``status`` and ``canonical_path``
+    back from the very first autosave.
+    """
+
+    serializer_class = ProductCreateUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    #: Distinct from the store endpoint's "listing" scope: same user, same
+    #: Idempotency-Key, two different bodies must not replay each other.
+    idempotency_scope = "classified"
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["listing_wizard"] = True
+        return context
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        # Serialize the *annotated* row, not the bare one: ProductSerializer
+        # reads total_stock / average_rating / review_count off queryset
+        # annotations (they are not columns), and a freshly created instance
+        # carries none — straight serialization is an AttributeError → 500.
+        instance = nested_product_queryset(request.user).get(pk=serializer.instance.pk)
+        output = ProductSerializer(instance, context=self.get_serializer_context())
+        headers = self.get_success_headers(output.data)
+        return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
 class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update, or delete a product (own store only)"""
+    """Retrieve, update, or delete one of *your* listings.
+
+    Phase 13: the queryset is ``seller=request.user`` — store products and
+    classifieds alike (the store-scoped filter pre-dated the seller FK and
+    returned 404 for every individual's own ad). Object-level ownership is
+    still checked by ``IsListingOwner`` behind it.
+    """
 
     serializer_class = ProductCreateUpdateSerializer
     permission_classes = [IsAuthenticated, IsListingOwner]
 
     def get_queryset(self):
-        if not self.request.user.is_seller or not hasattr(self.request.user, "store"):
-            return Product.objects.none()
-
         return (
-            Product.objects.filter(store=self.request.user.store)
-            .select_related("store", "category")
-            .prefetch_related("images", "attributes")
+            Product.objects.filter(seller=self.request.user)
+            .select_related("store", "category", "seller", "wilaya", "commune")
+            .prefetch_related("images", "attributes", "inventory")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -324,6 +439,105 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == "GET":
             return ProductSerializer
         return ProductCreateUpdateSerializer
+
+
+# ==================== LISTING LIFECYCLE (Phase 13) ====================
+
+
+class ListingLifecycleView(generics.GenericAPIView):
+    """``POST /products/<id>/lifecycle/ {action}`` — every status change.
+
+    One endpoint for publish/renew/mark-sold/archive/… so the transition
+    table in :mod:`apps.products.lifecycle` is the only authority: an
+    illegal edge (``renew`` on a live listing, ``archive`` by a stranger)
+    is a 400/404 from the same code path a future admin or beat job would
+    use, not a per-action view that drifts. Ownership is the queryset
+    (``seller=request.user``) plus ``IsListingOwner``.
+    """
+
+    permission_classes = [IsAuthenticated, IsListingOwner]
+
+    def get_queryset(self):
+        return (
+            Product.objects.filter(seller=self.request.user)
+            .select_related("store", "category", "seller", "wilaya", "commune")
+            .prefetch_related("images", "attributes", "reviews__user")
+            .with_catalog_stats()
+            .for_user(self.request.user)
+        )
+
+    def get_serializer_class(self):
+        return ProductSerializer
+
+    @extend_schema(request=ListingActionSerializer, responses={200: ProductSerializer})
+    def post(self, request, pk):
+        product = self.get_object()
+        action = (request.data.get("action") or "").strip()
+        # ``allow_duplicate`` carries the wizard's "publish anyway" confirmation
+        # past the similarity gate only — completeness and quota stay absolute.
+        # JSON ``true`` is the contract; the string form is accepted so a
+        # form-encoded client is not silently ignored.
+        allow_duplicate = request.data.get("allow_duplicate") in (True, "true")
+        try:
+            if action == "publish":
+                product = lifecycle.publish(product, allow_duplicate=allow_duplicate)
+            else:
+                product = lifecycle.transition(product, action)
+        except ListingLifecycleError:
+            # ApiError subclass: the envelope renders code=invalid_transition
+            # with {status, action} details the wizard turns into a sentence.
+            raise
+        serializer = self.get_serializer(product, context={"request": request})
+        return Response(serializer.data)
+
+
+@extend_schema(responses={200: ProductListSerializer(many=True)})
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def similar_listings(request, pk):
+    """ "Similar listings" — same category subtree, live, other sellers."""
+    product = generics.get_object_or_404(Product.objects.public().select_related("category"), pk=pk)
+    items = similar_to(product)
+    return Response(ProductListSerializer(items, many=True, context={"request": request}).data)
+
+
+@extend_schema(responses={200: ProductListSerializer(many=True)})
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def more_from_seller(request, pk):
+    """ "More from this seller" — their other live listings."""
+    product = generics.get_object_or_404(Product.objects.public().select_related("seller"), pk=pk)
+    items = _more_from_seller(product)
+    return Response(ProductListSerializer(items, many=True, context={"request": request}).data)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def seller_quota(request):
+    """The caller's listing allowances — what the wizard header and the
+    dashboard quota bar render.
+
+    Two numbers on purpose: ``listing_quota``/``active_listings`` govern the
+    wizard's *publish* gate (tiered per user, Phase 13), and
+    ``store_product_quota``/``store_products`` are the Phase 6 store-SKU cap
+    the seller dashboard has always shown (Phase 21 merges the arithmetic).
+    ``null`` quota = unlimited.
+    """
+    user = request.user
+    quota = get_listing_quota(user)
+    has_store = hasattr(user, "store")
+    return Response(
+        {
+            "plan": get_plan(user),
+            "active_listings": count_active_listings(user),
+            "listing_quota": quota,  # null = unlimited
+            "drafts": Product.objects.filter(seller=user, status=ListingStatus.DRAFT).count(),
+            "draft_limit": max_draft_listings(),
+            "store_products": user.store.products.count() if has_store else 0,
+            "store_product_quota": get_product_quota(user) if has_store else None,
+        }
+    )
 
 
 @extend_schema(responses={200: ProductSearchPageSerializer})
@@ -342,8 +556,8 @@ def search_products(request):
     in_stock = request.query_params.get("in_stock") == "true"
 
     products = (
-        Product.objects.filter(is_available=True, store__is_active=True)
-        .select_related("store", "category")
+        Product.objects.public()
+        .select_related("store", "category", "seller", "wilaya")
         .prefetch_related("images")
         .with_catalog_stats()
         .for_user(request.user)
@@ -361,6 +575,8 @@ def search_products(request):
     # Phase 12: ?category=<slug> (whole subtree) + ?attr_<key>=… — the same
     # helper the catalogue list uses.
     products = apply_catalog_filters(products, request.query_params)
+    # Phase 13: ?wilaya= / ?commune= — classifieds are location-first.
+    products = apply_location_filters(products, request.query_params)
 
     if min_price:
         products = products.filter(base_price__gte=min_price)
@@ -511,7 +727,9 @@ def add_to_wishlist(request):
         raise ApiError("product_id is required", code="product_id_required")
 
     try:
-        product = Product.objects.get(id=product_id, is_available=True)
+        # ``public()``: drafts and expired listings are not wishlistable —
+        # the old bare ``is_available=True`` would have accepted them.
+        product = Product.objects.public().get(id=product_id)
     except Product.DoesNotExist:
         # ``from None``: the client only needs to know the product is not
         # (available in) the catalogue, not that an ORM lookup failed.

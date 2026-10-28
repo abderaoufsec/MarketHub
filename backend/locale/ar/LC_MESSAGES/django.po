@@ -422,3 +422,107 @@ msgstr "يجب أن تكون السمات كائنًا."
 
 msgid "Attributes require a category to validate against."
 msgstr "تتطلب السمات وجود فئة للتحقق منها."
+
+# --- listing lifecycle (apps/products/lifecycle.py, serializers.py) --------
+msgid "The listing is not ready to publish."
+msgstr "الإعلان غير جاهز للنشر."
+
+msgid "Some attributes are invalid."
+msgstr "بعض الخصائص غير صالحة."
+
+msgid "Active listing quota reached."
+msgstr "تم بلوغ الحد الأقصى للإعلانات النشطة."
+
+msgid "You already have a very similar listing."
+msgstr "لديك إعلان مشابه جدًا بالفعل."
+
+msgid "Only a draft can be published."
+msgstr "لا يمكن نشر سوى مسودة."
+
+msgid "Store products are posted from your seller dashboard."
+msgstr "تُنشر منتجات المتجر من لوحة تحكم البائع."
+
+msgid "You have too many saved drafts."
+msgstr "لديك عدد كبير جدًا من المسودات المحفوظة."
+
+msgid "This commune does not belong to the selected wilaya."
+msgstr "هذه البلدية لا تنتمي إلى الولاية المختارة."
+
+msgid "A previous price only makes sense for a fixed or negotiable price."
+msgstr "السعر السابق لا يُقبل إلا مع سعر ثابت أو قابل للتفاوض."
+
+msgid "The previous price must be higher than the current price."
+msgstr "يجب أن يكون السعر السابق أعلى من السعر الحالي."
+
+msgid "A listing's type cannot change after creation."
+msgstr "لا يمكن تغيير نوع الإعلان بعد إنشائه."
+
+msgid "Unknown listing status."
+msgstr "حالة إعلان غير معروفة."
+
+msgid "This listing is not available for checkout."
+msgstr "هذا الإعلان غير متاح للشراء."
+
+msgid "This listing is no longer available."
+msgstr "هذا الإعلان لم يعد متاحًا."
+
+msgid "This Idempotency-Key was already used for a different checkout."
+msgstr "مفتاح Idempotency هذا استُخدم بالفعل لدفع مختلف."
+
+# --- listing choice labels (core.i18n.choice_label, *_label fields) --------
+msgid "Store product"
+msgstr "منتج متجر"
+
+msgid "For sale"
+msgstr "للبيع"
+
+msgid "Job"
+msgstr "وظيفة"
+
+msgid "Rent"
+msgstr "إيجار"
+
+msgid "Wanted"
+msgstr "مطلوب"
+
+msgid "Fixed"
+msgstr "ثابت"
+
+msgid "Negotiable"
+msgstr "قابل للتفاوض"
+
+msgid "On request"
+msgstr "عند الطلب"
+
+msgid "Free"
+msgstr "مجاني"
+
+msgid "Exchange"
+msgstr "مقايضة"
+
+msgid "Phone"
+msgstr "هاتف"
+
+msgid "Checkout"
+msgstr "الشراء عبر الإنترنت"
+
+msgid "Draft"
+msgstr "مسودة"
+
+msgid "Pending review"
+msgstr "قيد المراجعة"
+
+msgid "Active"
+msgstr "نشط"
+
+msgid "Expired"
+msgstr "منتهي"
+
+msgid "Sold"
+msgstr "مباع"
+
+msgid "Rejected"
+msgstr "مرفوض"
+
+msgid "Archived"
+msgstr "مؤرشف"

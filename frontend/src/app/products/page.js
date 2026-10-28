@@ -14,6 +14,7 @@ import {
   categoryBySlug,
   effectiveDefinitions,
 } from '../../lib/catalog'
+import { fetchWilayas } from '../../lib/geography'
 
 export default function ProductsPage() {
   const t = useTranslations('products')
@@ -21,6 +22,9 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [categoryTree, setCategoryTree] = useState([])
+  // Phase 13: `?wilaya=<id>` narrows the feed to one wilaya — the classifieds
+  // answer to "near me" (same empty-page-not-500 contract as ?category=).
+  const [wilayas, setWilayas] = useState([])
   // `category` is a catalog *slug* since Phase 12 (`?category=<slug>` matches
   // the node and every descendant server-side); attribute filters ride along
   // as `attr_<key>` / `attr_<key>_min` / `attr_<key>_max`.
@@ -29,6 +33,7 @@ export default function ProductsPage() {
     min_price: '',
     max_price: '',
     in_stock: true,
+    wilaya: '',
     attributes: {},
   })
   const [showFilters, setShowFilters] = useState(false)
@@ -41,6 +46,13 @@ export default function ProductsPage() {
       })
       .catch(() => {
         // Sidebar degrades to price/stock filters if the tree fails to load.
+      })
+    fetchWilayas()
+      .then((rows) => {
+        if (!cancelled) setWilayas(rows)
+      })
+      .catch(() => {
+        // …and to no location filter at all.
       })
     return () => {
       cancelled = true
@@ -74,6 +86,7 @@ export default function ProductsPage() {
         min_price: filters.min_price || undefined,
         max_price: filters.max_price || undefined,
         in_stock: filters.in_stock || undefined,
+        wilaya: filters.wilaya || undefined,
       }
       for (const [key, value] of Object.entries(filters.attributes)) {
         if (value === '' || value == null) continue
@@ -145,6 +158,7 @@ export default function ProductsPage() {
       min_price: '',
       max_price: '',
       in_stock: true,
+      wilaya: '',
       attributes: {},
     })
   }
@@ -272,6 +286,27 @@ export default function ProductsPage() {
                 </span>
               </label>
             </div>
+
+            {/* Phase 13: one wilaya, one feed. */}
+            {wilayas.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('wilayaFilter')}
+                </label>
+                <select
+                  value={filters.wilaya}
+                  onChange={(e) => handleFilterChange('wilaya', e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">{t('allWilayas')}</option>
+                  {wilayas.map((wilaya) => (
+                    <option key={wilaya.id} value={wilaya.id}>
+                      {wilaya.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Category-specific attribute filters (Phase 12): labels come
                 from the server, so admin edits show up with no deploy. */}

@@ -103,7 +103,7 @@ def _validate_value(definition, value, errors):
     return None
 
 
-def validate_attributes(category, attributes):
+def validate_attributes(category, attributes, *, enforce_required: bool = True):
     """Return the attributes dict to store, or raise ``ValidationError``.
 
     ``category`` is the category the product is being filed under — the
@@ -111,6 +111,13 @@ def validate_attributes(category, attributes):
     keys exist, which are required and how each value is typed. Without a
     category, no dynamic attributes can be validated, so any non-empty dict
     is rejected.
+
+    ``enforce_required=False`` (Phase 13 drafts) still rejects unknown keys
+    and mistyped values — the *shape* must be right the moment it is typed,
+    or the typo hides until publish — but lets required keys be absent: a
+    half-filled wizard autosave is a save, not a submission. The publish gate
+    calls this again with the flag on, which is where "required" becomes
+    absolute.
     """
     if attributes is None:
         attributes = {}
@@ -144,9 +151,10 @@ def validate_attributes(category, attributes):
         if stored is not None:
             cleaned[key] = stored
 
-    for definition in definitions.values():
-        if definition.required and definition.key not in cleaned:
-            errors.setdefault(definition.key, "This attribute is required.")
+    if enforce_required:
+        for definition in definitions.values():
+            if definition.required and definition.key not in cleaned:
+                errors.setdefault(definition.key, "This attribute is required.")
 
     if errors:
         # ``{attribute key: message}`` — the caller nests it under the

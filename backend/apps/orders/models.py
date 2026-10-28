@@ -86,6 +86,12 @@ class Order(models.Model):
     # Client-supplied key that makes a retried checkout idempotent: the same
     # key can create at most one order per store (docs/todo.md Phase 6).
     idempotency_key = models.CharField(max_length=64, blank=True, null=True)
+    # What the keyed request asked for — sha256(address:shipping_method) —
+    # so a retry that reuses the key with a *different* payload answers
+    # 409 idempotency_key_conflict instead of silently replaying the first
+    # order (Phase 13; ``null`` for orders placed before it, and for
+    # checkouts without a key, where replay never happens).
+    idempotency_fingerprint = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
         db_table = "orders"

@@ -77,3 +77,17 @@ class PaymentFailedError(OrderDomainError):
     """The gateway declined the charge; nothing was committed."""
 
     code = "payment_failed"
+
+
+class IdempotencyKeyConflictError(OrderDomainError):
+    """Same ``Idempotency-Key``, different checkout payload (Phase 13).
+
+    Shares its code with ``core.idempotency``'s POST-replay conflict — same
+    meaning to the client ("this key is taken by a different request"), here
+    caught in the domain layer where the address and shipping method of the
+    original checkout are still comparable. 409, because the original
+    *succeeded* and the retry is the one that must give up.
+    """
+
+    code = "idempotency_key_conflict"
+    status_code = 409

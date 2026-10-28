@@ -44,14 +44,18 @@ export default function LoginPage() {
             name: result.user.first_name || result.user.username || t('friend'),
           })
         )
-        // Redirect based on user type
-        setTimeout(() => {
-          if (result.user.is_seller) {
-            router.push('/seller/dashboard')
-          } else {
-            router.push('/products')
-          }
-        }, 500)
+        // Redirect based on user type — and do it *immediately*. The
+        // "welcome back" toast renders from the root-layout Toaster and
+        // survives the navigation; a delayed redirect used to fire after
+        // the user had already clicked onward (the header's "Post an ad",
+        // a product card) and teleported them to /products: the App Router
+        // commits a new URL only once the RSC payload arrives, so a 500ms
+        // timer could outlive the click and still win the race.
+        if (result.user.is_seller) {
+          router.push('/seller/dashboard')
+        } else {
+          router.push('/products')
+        }
       } else {
         // AuthContext failures are Phase 9 envelopes: `message` is the text
         // to show (already seeded with this page's fallback).
@@ -109,13 +113,13 @@ export default function LoginPage() {
             t('friend'),
         })
       )
-      setTimeout(() => {
-        if (response.data.user.is_seller) {
-          router.push('/seller/dashboard')
-        } else {
-          router.push('/products')
-        }
-      }, 500)
+      // Same immediate redirect as the password mode (see above): a delayed
+      // timer races any navigation the user makes the moment they are in.
+      if (response.data.user.is_seller) {
+        router.push('/seller/dashboard')
+      } else {
+        router.push('/products')
+      }
     } catch (err) {
       const detail = apiErrorMessage(err, t('invalidCode'))
       setError(detail)

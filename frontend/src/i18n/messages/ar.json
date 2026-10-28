@@ -12,7 +12,8 @@
       "register": "إنشاء حساب",
       "logout": "تسجيل الخروج",
       "openMenu": "فتح القائمة",
-      "closeMenu": "إغلاق القائمة"
+      "closeMenu": "إغلاق القائمة",
+      "postAd": "أضف إعلانًا"
     },
     "footer": {
       "tagline": "سوقك الإلكتروني الموثوق الذي يربط بين المشترين والبائعين.",
@@ -426,7 +427,22 @@
     "submitError": "ما قدرناش نبعثو الرأي",
     "deleteConfirm": "واش متأكد بلي بغيتي تمسح رأيك؟",
     "deleteSuccess": "تمسح الرأي بنجاح!",
-    "deleteError": "ما قدرناش نمسحو الرأي"
+    "deleteError": "ما قدرناش نمسحو الرأي",
+    "priceOnRequest": "السعر عند الطلب",
+    "priceFree": "مجاني",
+    "priceExchange": "مقايضة",
+    "negotiable": "قابل للتفاوض",
+    "contactSeller": "اتصل بالبائع",
+    "contactThroughChat": "التواصل عبر الدردشة فقط — نظام الرسائل قادم قريبًا.",
+    "whatsapp": "واتساب",
+    "contactInsteadOfCart": "اتصل بالبائع لإتمام الصفقة — الإعلانات الفردية لا تمر عبر سلة المشتريات.",
+    "notForSale": "لا يمكن إضافة هذا الإعلان إلى السلة حاليًا.",
+    "adNumber": "رقم الإعلان",
+    "expiresOnLabel": "ينتهي في",
+    "moreFromSeller": "إعلانات أخرى لهذا البائع",
+    "similarListings": "إعلانات مشابهة",
+    "wilayaFilter": "الولاية",
+    "allWilayas": "كل الولايات"
   },
   "profile": {
     "title": "ملفي الشخصي",
@@ -553,17 +569,50 @@
         "noneYet": "لا توجد منتجات حتى الآن",
         "noResultsHint": "جرّب تعديل كلمات البحث",
         "startHint": "ابدأ بإضافة منتجك الأول",
-        "addFirst": "أضف منتجك الأول"
+        "addFirst": "أضف منتجك الأول",
+        "postAdFirst": "أضف إعلانًا أولًا"
       },
       "card": {
         "price": "الثمن :",
         "category": "الفئة :",
         "viewPublic": "عرض الصفحة العمومية",
         "edit": "تعديل",
-        "delete": "حذف"
+        "delete": "حذف",
+        "priceOnRequest": "عند الطلب",
+        "location": "الموقع"
       },
       "deleteConfirm": "هل تريد فعلاً حذف هذا المنتج؟",
-      "deleteError": "تعذّر حذف المنتج"
+      "deleteError": "تعذّر حذف المنتج",
+      "postAd": "أضف إعلانًا",
+      "loadError": "تعذر تحميل إعلاناتك.",
+      "quotaLine": "تنشر {used} من {limit} إعلانًا نشطًا · {drafts} من {draftLimit} مسودة محفوظة",
+      "tabs": {
+        "all": "الكل",
+        "ACTIVE": "نشط",
+        "DRAFT": "مسودات",
+        "SOLD": "مبيعة",
+        "EXPIRED": "منتهية",
+        "ARCHIVED": "مؤرشفة"
+      },
+      "lifecycle": {
+        "publish": "نشر",
+        "mark_sold": "تعليم كمبيع",
+        "renew": "تجديد",
+        "relist": "إعادة النشر",
+        "archive": "أرشفة",
+        "restore": "إرجاع كمسودة",
+        "withdraw": "سحب",
+        "confirmMarkSold": "هل تريد تعليم هذا الإعلان كمبيع؟ سيغادر الكتالوج فورًا.",
+        "confirmArchive": "هل تريد أرشفة هذا الإعلان؟ سيعود مسودة عند استرجاعه.",
+        "publishDone": "تم نشر الإعلان",
+        "mark_soldDone": "تم تعليمه كمبيع",
+        "renewDone": "تم التجديد لفترة أخرى",
+        "relistDone": "تمت إعادة النشر",
+        "archiveDone": "تمت الأرشفة",
+        "restoreDone": "تم إعادته كمسودة",
+        "withdrawDone": "تم سحبه",
+        "failed": "هذا الإجراء غير ممكن حاليًا"
+      }
     },
     "create": {
       "back": "العودة إلى المنتجات",
@@ -727,5 +776,88 @@
     "addToCartError": "ما قدرناش نزيدوه للسلة",
     "viewProduct": "شوف المنتج",
     "loadError": "ما قدرناش نحمّلو قائمة الرغبات"
+  },
+  "post": {
+    "heading": "أضف إعلانًا",
+    "subtitle": "خمس خطوات سريعة — تُحفظ المسودة تلقائيًا أثناء التعبئة.",
+    "published": "إعلانك منشور الآن!",
+    "steps": {
+      "basics": "الأساسيات",
+      "photos": "الصور",
+      "details": "التفاصيل",
+      "location": "الموقع",
+      "publish": "السعر والنشر"
+    },
+    "fields": {
+      "type": "ماذا تنشر؟",
+      "name": "العنوان",
+      "description": "الوصف",
+      "category": "الفئة",
+      "photoUrl": "رابط الصورة",
+      "contactMode": "كيف يتواصل معك المشترون؟",
+      "details": "التفاصيل",
+      "priceMode": "التسعير",
+      "price": "السعر (دج)",
+      "oldPrice": "السعر القديم (دج)"
+    },
+    "placeholders": {
+      "name": "مثال: دراجة جبلية، 26 بوصة",
+      "description": "صف المنتج بصدق: الحالة، العمر، سبب البيع…",
+      "imageUrl": "https://example.com/photo.jpg"
+    },
+    "types": {
+      "FOR_SALE": "للبيع",
+      "SERVICE": "خدمة",
+      "JOB": "وظيفة",
+      "RENT": "إيجار",
+      "WANTED": "مطلوب"
+    },
+    "priceModes": {
+      "FIXED": "ثابت",
+      "NEGOTIABLE": "قابل للتفاوض",
+      "ON_REQUEST": "عند الطلب",
+      "FREE": "مجاني",
+      "EXCHANGE": "مقايضة"
+    },
+    "contactModes": {
+      "PHONE": "هاتف",
+      "WHATSAPP": "واتساب",
+      "CHAT": "دردشة",
+      "CHECKOUT": "شراء عبر المنصة"
+    },
+    "contactModeHint": "يظهر رقمك فقط للهاتف والواتساب، وفقط إذا كان موثقًا في ملفك.",
+    "photosHint": "الصق رابط صورة — إمكانية الرفع المباشر تصل في الإصدار القادم. الصورة الأولى هي الغلاف.",
+    "locationHint": "يصفّ المشترون حسب الولاية — الموقع الدقيق يجلب مكالمات أكثر.",
+    "noAttributes": "لا توجد تفاصيل إضافية لهذه الفئة.",
+    "addImage": "إضافة",
+    "primaryPhoto": "الغلاف",
+    "removeImage": "إزالة الصورة",
+    "back": "رجوع",
+    "continue": "متابعة",
+    "saving": "جارٍ الحفظ…",
+    "saved": "تم حفظ المسودة",
+    "publish": "نشر",
+    "quota": {
+      "active": "استخدمت {used} من {limit} إعلانًا نشطًا",
+      "unlimited": "إعلانات نشطة غير محدودة",
+      "drafts": "حُفظت {drafts} من {draftLimit} مسودة"
+    },
+    "duplicateWarning": "يبدو هذا الإعلان مطابقًا لإعلانك «{name}».",
+    "publishAnyway": "انشر على أي حال",
+    "viewExisting": "عرض ذلك الإعلان",
+    "dismiss": "العودة إلى التحرير",
+    "errors": {
+      "draftLimit": "عدد المسودات المحفوظة كبير — انشر واحدة أو احذفها أولًا.",
+      "generic": "حدث خطأ ما. حاول مرة أخرى.",
+      "saveFailed": "لم تُحفظ المسودة — تحقق من اتصالك وحاول مجددًا.",
+      "wrongListingType": "منتجات المتاجر تُنشر من لوحة بائعك.",
+      "nameRequired": "أعطِ إعلانك عنوانًا أولًا.",
+      "categoryRequired": "اختر فئة أولًا.",
+      "incomplete": "ما زال ينقص: {fields}",
+      "attributesInvalid": "بعض التفاصيل تحتاج تصحيحًا قبل النشر.",
+      "quotaReached": "لقد وصلت إلى حدك ({active} من {quota} إعلانًا نشطًا).",
+      "imageUrl": "يجب أن تبدأ روابط الصور بـ http:// أو https://",
+      "maxImages": "حتى {max} صورة لكل إعلان."
+    }
   }
 }

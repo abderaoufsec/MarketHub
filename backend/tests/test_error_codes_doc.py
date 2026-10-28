@@ -61,9 +61,10 @@ def test_the_collector_found_something():
 def test_every_source_code_is_documented():
     source = collect_codes()
     missing = sorted(code for code in source if code not in DOCUMENTED)
+    first_seen = ", ".join(loc for code in missing for loc in source[code])
     assert not missing, (
         f"{missing} are raised by the backend but absent from "
-        f"docs/error-codes.md (first seen at {', '.join(source[m] for m in missing)})"
+        f"docs/error-codes.md (first seen at {first_seen})"
     )
 
 

@@ -11,6 +11,7 @@ idempotent: re-running it updates the same rows instead of duplicating them.
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
 
 from apps.catalog.models import Category
 from apps.inventory.models import Inventory
@@ -26,6 +27,8 @@ PASSWORD = "E2e!SmokeTest123"
 PRODUCT_NAME = "E2E Test Phone"
 # Products created by the Playwright "post a listing" journey (timestamped).
 STALE_PRODUCT_PREFIX = "E2E Listing "
+# Classifieds the Playwright "post a classified" wizard journey creates.
+STALE_AD_PREFIX = "E2E Ad "
 
 
 class Command(BaseCommand):
@@ -90,6 +93,7 @@ class Command(BaseCommand):
             store=store,
             name=PRODUCT_NAME,
             defaults={
+                "seller": seller,
                 "description": "A phone listed by the e2e seed command.",
                 "base_price": 45000,
                 "category": phones,
@@ -99,6 +103,17 @@ class Command(BaseCommand):
         if product.category_id != phones.id:
             product.category = phones
             product.save(update_fields=["category"])
+        if product.seller_id is None:
+            # Row from before Phase 13's seller FK (its backfill may predate
+            # this command's first run on a long-lived dev database).
+            product.seller = store.owner
+            product.save(update_fields=["seller"])
+        if not product.slug:
+            # Phase 13: the canonical URL is /l/<slug>-<id>; give the seeded
+            # listing a real slug (publish would have) so the journey clicks
+            # through a URL users actually see.
+            product.slug = slugify(product.name)[:230]
+            product.save(update_fields=["slug"])
         Inventory.objects.get_or_create(
             product=product,
             attribute_config={},
@@ -113,12 +128,21 @@ class Command(BaseCommand):
             .filter(name__startswith=STALE_PRODUCT_PREFIX)
             .delete()
         )
+        # Same story for the wizard's classifieds: the buyer's free tier caps
+        # active listings (settings.MAX_ACTIVE_LISTINGS_PER_USER).
+        pruned_ads, _ = Product.objects.filter(
+            seller=buyer, name__startswith=STALE_AD_PREFIX
+        ).delete()
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Seeded buyer {BUYER_EMAIL}, seller {SELLER_EMAIL} "
                 f"(password {PASSWORD}), store '{store.store_name}', "
                 f"product '{product.name}' (id={product.pk})"
-                + (f", pruned {pruned} stale listing(s)." if pruned else ".")
+                + (
+                    f", pruned {pruned} stale listing(s) and {pruned_ads} stale ad(s)."
+                    if pruned or pruned_ads
+                    else "."
+                )
             )
         )

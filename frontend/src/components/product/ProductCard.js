@@ -26,7 +26,9 @@ export default function ProductCard({ product, index = 0 }) {
       whileHover={{ y: -8 }}
       className="h-full"
     >
-      <Link href={`/products/${product.id}`}>
+      {/* Phase 13: the canonical URL is /l/<slug>-<id>; /products/<id>
+          remains only for payloads that predate it. */}
+      <Link href={product.canonical_path || `/products/${product.id}`}>
         <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer h-full flex flex-col border border-gray-100 hover:border-primary/20 group">
           <div className="relative h-48 bg-gray-200 overflow-hidden">
             {imageLoading && !imageError && (
@@ -77,8 +79,11 @@ export default function ProductCard({ product, index = 0 }) {
               {product.name}
             </h3>
             <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+              {/* A classified has no store (store_name is null, not absent):
+                  its identity on the card is the person who posted it. */}
               {product.store_name ||
                 product.store?.store_name ||
+                product.seller_name ||
                 t('defaultStoreName')}
             </p>
             <div className="flex items-center justify-between mt-auto">
@@ -86,7 +91,9 @@ export default function ProductCard({ product, index = 0 }) {
                 whileHover={{ scale: 1.05 }}
                 className="text-xl font-bold text-primary"
               >
-                {price(product.base_price)}
+                {product.base_price == null
+                  ? t('priceOnRequest')
+                  : price(product.base_price)}
               </motion.span>
             </div>
             {/* Phase 12: `category` is the nested {id, slug, name} object —

@@ -17,7 +17,7 @@ from apps.geography.models import Commune, Wilaya
 from apps.inventory.models import Inventory, InventoryAuditLog
 from apps.orders.models import Cart, CartItem, Order, OrderItem
 from apps.payments.models import Transaction
-from apps.products.models import Product, ProductImage, ProductReview, Wishlist
+from apps.products.models import ListingType, Product, ProductImage, ProductReview, Wishlist
 from apps.stores.models import Store
 from apps.users import otp
 from apps.users.models import Address
@@ -137,6 +137,17 @@ class ProductFactory(factory.django.DjangoModelFactory):
         model = Product
 
     store = factory.SubFactory(StoreFactory)
+    # Phase 13: every listing has an owner. For a store product that is the
+    # store's owner (exactly what the data migration writes for legacy rows);
+    # pass seller=… alongside store=None to build a classified, or let the
+    # fallback mint one so the NOT NULL constraint can never trip in tests.
+    seller = factory.LazyAttribute(lambda o: o.store.owner if o.store else SellerFactory())
+    # …and the type follows the store: a row without one is a classified
+    # (``store_product_requires_store`` refuses the other shape), so
+    # ``ProductFactory(store=None, seller=user)`` builds exactly that.
+    listing_type = factory.LazyAttribute(
+        lambda o: ListingType.STORE_PRODUCT if o.store else ListingType.FOR_SALE
+    )
     name = factory.Sequence(lambda n: f"Product {n}")
     description = "A product created by ProductFactory."
     base_price = Decimal("100.00")

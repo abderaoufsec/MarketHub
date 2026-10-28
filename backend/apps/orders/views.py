@@ -33,7 +33,12 @@ from .serializers import (
     OrderSerializer,
     UpdateCartItemSerializer,
 )
-from .services import place_order, refresh_cart_prices, stock_error_for
+from .services import (
+    place_order,
+    purchasability_error,
+    refresh_cart_prices,
+    stock_error_for,
+)
 
 
 def _cart_with_products(user):
@@ -68,14 +73,23 @@ def _orders_for_render(orders, user):
 
 
 def _ensure_sellable(product, quantity, attributes):
-    """Raise ``insufficient_stock`` when ``quantity`` units cannot be sold.
+    """Raise ``product_unavailable``/``insufficient_stock`` when ``quantity``
+    units cannot be sold.
 
     Called before any cart write: an unsellable quantity must not create or
     grow a cart line that checkout would only reject later. Returns ``None``
     when the quantity *can* be sold. (Phase 9: this used to hand back a
     ``{"error": …, "code": "insufficient_stock"}`` Response; the envelope now
     comes from raising the same code the client already branches on.)
+
+    Phase 13: listing-level sellability is checked *first* — a classified, an
+    expired or a sold listing answers ``product_unavailable`` honestly, before
+    the inventory layer even looks at it (a classified has no inventory row at
+    all, which used to surface as ``insufficient_stock: available 0``).
     """
+    reason = purchasability_error(product)
+    if reason is not None:
+        raise ProductUnavailableError(reason)
     message = stock_error_for(product, attributes, quantity)
     if message is not None:
         raise InsufficientStockError(message)

@@ -12,7 +12,8 @@
       "register": "S'inscrire",
       "logout": "Déconnexion",
       "openMenu": "Ouvrir le menu",
-      "closeMenu": "Fermer le menu"
+      "closeMenu": "Fermer le menu",
+      "postAd": "Déposer une annonce"
     },
     "footer": {
       "tagline": "Votre place de marché en ligne de confiance, qui relie acheteurs et vendeurs.",
@@ -426,7 +427,22 @@
     "submitError": "Impossible de publier l'avis",
     "deleteConfirm": "Voulez-vous vraiment supprimer votre avis ?",
     "deleteSuccess": "Avis supprimé avec succès !",
-    "deleteError": "Impossible de supprimer l'avis"
+    "deleteError": "Impossible de supprimer l'avis",
+    "priceOnRequest": "Prix sur demande",
+    "priceFree": "Gratuit",
+    "priceExchange": "Échange",
+    "negotiable": "Négociable",
+    "contactSeller": "Contacter le vendeur",
+    "contactThroughChat": "Contact par chat uniquement — la messagerie arrive bientôt.",
+    "whatsapp": "WhatsApp",
+    "contactInsteadOfCart": "Contactez le vendeur pour conclure — les petites annonces ne passent pas par le panier.",
+    "notForSale": "Cette annonce ne peut pas être ajoutée au panier pour le moment.",
+    "adNumber": "Annonce n°",
+    "expiresOnLabel": "Expire le",
+    "moreFromSeller": "Autres annonces de ce vendeur",
+    "similarListings": "Annonces similaires",
+    "wilayaFilter": "Wilaya",
+    "allWilayas": "Toutes les wilayas"
   },
   "profile": {
     "title": "Mon profil",
@@ -553,17 +569,50 @@
         "noneYet": "Aucun produit pour le moment",
         "noResultsHint": "Essayez de modifier vos termes de recherche",
         "startHint": "Commencez par ajouter votre premier produit",
-        "addFirst": "Ajouter votre premier produit"
+        "addFirst": "Ajouter votre premier produit",
+        "postAdFirst": "Déposer d'abord une annonce"
       },
       "card": {
         "price": "Prix :",
         "category": "Catégorie :",
         "viewPublic": "Voir la page publique",
         "edit": "Modifier",
-        "delete": "Supprimer"
+        "delete": "Supprimer",
+        "priceOnRequest": "Sur demande",
+        "location": "Localisation"
       },
       "deleteConfirm": "Voulez-vous vraiment supprimer ce produit ?",
-      "deleteError": "Échec de la suppression du produit"
+      "deleteError": "Échec de la suppression du produit",
+      "postAd": "Déposer une annonce",
+      "loadError": "Impossible de charger vos annonces.",
+      "quotaLine": "{used} annonces actives publiées sur {limit} · {drafts} brouillons enregistrés sur {draftLimit}",
+      "tabs": {
+        "all": "Toutes",
+        "ACTIVE": "Actives",
+        "DRAFT": "Brouillons",
+        "SOLD": "Vendues",
+        "EXPIRED": "Expirées",
+        "ARCHIVED": "Archivées"
+      },
+      "lifecycle": {
+        "publish": "Publier",
+        "mark_sold": "Marquer vendu",
+        "renew": "Renouveler",
+        "relist": "Republier",
+        "archive": "Archiver",
+        "restore": "Repasser en brouillon",
+        "withdraw": "Retirer",
+        "confirmMarkSold": "Marquer cette annonce comme vendue ? Elle quitte immédiatement le catalogue.",
+        "confirmArchive": "Archiver cette annonce ? Elle reviendra en brouillon lorsque vous la restaurerez.",
+        "publishDone": "Annonce publiée",
+        "mark_soldDone": "Marquée comme vendue",
+        "renewDone": "Renouvelée pour une nouvelle période",
+        "relistDone": "Republiée",
+        "archiveDone": "Archivée",
+        "restoreDone": "Repassée en brouillon",
+        "withdrawDone": "Retirée",
+        "failed": "Cette action n'est pas possible pour le moment"
+      }
     },
     "create": {
       "back": "Retour aux produits",
@@ -727,5 +776,88 @@
     "addToCartError": "Impossible d'ajouter au panier",
     "viewProduct": "Voir le produit",
     "loadError": "Impossible de charger la liste d'envies"
+  },
+  "post": {
+    "heading": "Déposer une annonce",
+    "subtitle": "Cinq étapes rapides — votre brouillon est enregistré au fur et à mesure.",
+    "published": "Votre annonce est en ligne !",
+    "steps": {
+      "basics": "L'essentiel",
+      "photos": "Photos",
+      "details": "Détails",
+      "location": "Localisation",
+      "publish": "Prix et publication"
+    },
+    "fields": {
+      "type": "Que publiez-vous ?",
+      "name": "Titre",
+      "description": "Description",
+      "category": "Catégorie",
+      "photoUrl": "URL de la photo",
+      "contactMode": "Comment vous contacter ?",
+      "details": "Détails",
+      "priceMode": "Prix",
+      "price": "Prix (DZD)",
+      "oldPrice": "Ancien prix (DZD)"
+    },
+    "placeholders": {
+      "name": "ex. Vélo de montagne, 26 pouces",
+      "description": "Décrivez honnêtement votre article : état, âge, raison de la vente…",
+      "imageUrl": "https://exemple.com/photo.jpg"
+    },
+    "types": {
+      "FOR_SALE": "À vendre",
+      "SERVICE": "Service",
+      "JOB": "Emploi",
+      "RENT": "Location",
+      "WANTED": "Cherche"
+    },
+    "priceModes": {
+      "FIXED": "Fixe",
+      "NEGOTIABLE": "Négociable",
+      "ON_REQUEST": "Sur demande",
+      "FREE": "Gratuit",
+      "EXCHANGE": "Échange"
+    },
+    "contactModes": {
+      "PHONE": "Téléphone",
+      "WHATSAPP": "WhatsApp",
+      "CHAT": "Chat",
+      "CHECKOUT": "Paiement en ligne"
+    },
+    "contactModeHint": "Votre numéro n'est affiché que pour le téléphone et WhatsApp, et seulement s'il est vérifié dans votre profil.",
+    "photosHint": "Collez l'URL d'une photo — le téléversement arrive dans la prochaine version. La première photo sert de couverture.",
+    "locationHint": "Les acheteurs filtrent par wilaya — une localisation précise rapporte plus d'appels.",
+    "noAttributes": "Rien de plus à remplir pour cette catégorie.",
+    "addImage": "Ajouter",
+    "primaryPhoto": "Couverture",
+    "removeImage": "Retirer la photo",
+    "back": "Retour",
+    "continue": "Continuer",
+    "saving": "Enregistrement…",
+    "saved": "Brouillon enregistré",
+    "publish": "Publier",
+    "quota": {
+      "active": "{used} annonces actives sur {limit} utilisées",
+      "unlimited": "Annonces actives illimitées",
+      "drafts": "{drafts} brouillons sur {draftLimit} enregistrés"
+    },
+    "duplicateWarning": "Cela ressemble beaucoup à votre annonce « {name} ».",
+    "publishAnyway": "Publier quand même",
+    "viewExisting": "Voir cette annonce",
+    "dismiss": "Revenir à l'édition",
+    "errors": {
+      "draftLimit": "Trop de brouillons enregistrés — publiez ou supprimez-en un d'abord.",
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "saveFailed": "Brouillon non enregistré — vérifiez votre connexion et réessayez.",
+      "wrongListingType": "Les produits de boutique se publient depuis votre tableau de bord vendeur.",
+      "nameRequired": "Donnez d'abord un titre à votre annonce.",
+      "categoryRequired": "Choisissez d'abord une catégorie.",
+      "incomplete": "Il manque encore : {fields}",
+      "attributesInvalid": "Certains détails doivent être corrigés avant la publication.",
+      "quotaReached": "Vous avez atteint votre limite ({active} annonces actives sur {quota}).",
+      "imageUrl": "Les liens de photo doivent commencer par http:// ou https://",
+      "maxImages": "Jusqu'à {max} photos par annonce."
+    }
   }
 }

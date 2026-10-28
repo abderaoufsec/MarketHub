@@ -50,10 +50,26 @@ class IsStoreOwner(BasePermission):
 
 
 class IsListingOwner(IsStoreOwner):
-    """Ownership rule for listings/products — semantic alias of
-    ``IsStoreOwner`` used at call sites that mutate a listing."""
+    """Ownership rule for listings — the Phase 13 seller-first variant.
+
+    Any signed-in user may reach their own listing endpoints (an individual
+    posting a classified is not a store owner), and ownership is the
+    ``seller`` FK: the row says who owns it, not the store it may or may not
+    have. Rows from before the FK, and objects that hang off a store, fall
+    back to the store's owner.
+    """
 
     message = "You can only modify your own listings."
     #: Distinct from ``IsStoreOwner.code`` so a client can tell "wrong store"
     #: from "wrong listing" without parsing the (translated) message.
     code = "not_listing_owner"
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        seller_id = getattr(obj, "seller_id", None)
+        if seller_id is not None:
+            return seller_id == request.user.pk
+        return super().has_object_permission(request, view, obj)

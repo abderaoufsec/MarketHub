@@ -165,3 +165,40 @@ describe('ProductCard', () => {
     ).toBeInTheDocument()
   })
 })
+
+// Phase 13 of docs/todo.md — one catalogue, two sellers.
+describe('ProductCard (listings)', () => {
+  it('links to the canonical /l/<slug>-<id> URL when the API sends one', () => {
+    renderWithIntl(
+      <ProductCard
+        product={{ ...PRODUCT, canonical_path: '/l/galaxy-s24-42' }}
+      />
+    )
+
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/l/galaxy-s24-42')
+  })
+
+  it('names the seller when a classified has no store at all', () => {
+    // store_name is *null* (not absent) on classified rows — the dotted
+    // source resolves through the NULL store, so the key stays in the JSON.
+    renderWithIntl(
+      <ProductCard
+        product={{
+          ...PRODUCT,
+          store_name: null,
+          store: null,
+          seller_name: 'Amina',
+        }}
+      />
+    )
+
+    expect(screen.getByText('Amina')).toBeInTheDocument()
+    expect(screen.queryByText('TechStore Blida')).not.toBeInTheDocument()
+  })
+
+  it('shows "Price on request" when the row carries no price', () => {
+    renderWithIntl(<ProductCard product={{ ...PRODUCT, base_price: null }} />)
+
+    expect(screen.getByText('Price on request')).toBeInTheDocument()
+  })
+})

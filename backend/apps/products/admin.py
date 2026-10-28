@@ -25,19 +25,44 @@ class ProductImageInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    """Product Admin"""
+    """Product Admin — Phase 13 exposes the listing surface.
 
-    list_display = ["id", "name", "store", "base_price", "category", "is_available", "created_at"]
-    list_filter = ["is_available", "category", "created_at"]
-    search_fields = ["name", "description", "store__store_name"]
+    ``seller`` belongs to the *add* form on purpose: the column is NOT NULL
+    and only the form supplies it, so leaving it out would turn every admin
+    add into an IntegrityError.
+    """
+
+    list_display = [
+        "id",
+        "name",
+        "listing_type",
+        "status",
+        "store",
+        "seller",
+        "base_price",
+        "category",
+        "is_available",
+        "created_at",
+    ]
+    list_filter = ["status", "listing_type", "is_available", "category", "created_at"]
+    search_fields = ["name", "description", "store__store_name", "seller__email"]
     ordering = ["-created_at"]
     readonly_fields = ["created_at", "updated_at"]
 
     fieldsets = (
         ("Product Information", {"fields": ("name", "description", "category")}),
+        ("Listing", {"fields": ("seller", "listing_type", "status", "contact_mode", "slug")}),
         ("Store", {"fields": ("store",)}),
-        ("Pricing", {"fields": ("base_price",)}),
+        (
+            "Pricing",
+            {"fields": ("base_price", "price_mode", "old_price", "currency")},
+        ),
+        ("Location", {"fields": ("wilaya", "commune")}),
         ("Inventory", {"fields": ("is_available", "low_stock_threshold")}),
+        (
+            "Lifecycle",
+            {"fields": ("published_at", "expires_at", "sold_at"), "classes": ["collapse"]},
+        ),
         ("Additional Attributes", {"fields": ("attributes_json",), "classes": ["collapse"]}),
         ("Dates", {"fields": ("created_at", "updated_at"), "classes": ["collapse"]}),
     )

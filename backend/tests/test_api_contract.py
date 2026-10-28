@@ -74,8 +74,18 @@ def test_401_unauthenticated_envelope(api_client):
 
 
 def test_403_permission_denied_envelope(buyer_client, product):
-    """A logged-in caller who is not allowed to do *this*."""
-    response = buyer_client.put(f"/api/v1/products/seller/{product.id}/", {})
+    """A logged-in caller who is not allowed to do *this*.
+
+    Phase 13: the example moved from the listing-detail endpoint (whose
+    ownership is now the ``seller`` FK, so a stranger gets 404 from the
+    queryset rather than a role check) to the inventory update, which is
+    still gated on being a store owner.
+    """
+    response = buyer_client.post(
+        f"/api/v1/inventory/product/{product.id}/update/",
+        {"quantity_delta": 5, "action_type": "ADD"},
+        format="json",
+    )
 
     body = assert_envelope(response, status=403)
     assert body["code"] != "validation_error"

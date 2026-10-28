@@ -10,7 +10,7 @@ import AxiosMockAdapter from 'axios-mock-adapter'
 import Cookies from 'js-cookie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import api, { authAPI, cartAPI } from './api'
+import api, { authAPI, cartAPI, productsAPI } from './api'
 
 // The base URL (…/api/v1 since Phase 9) comes from NEXT_PUBLIC_API_URL; these
 // absolute URLs are the two calls that go around the shared axios instance.
@@ -264,5 +264,45 @@ describe('service endpoints', () => {
     expect(apiMock.history.put[0].url).toBe('/orders/cart/items/7/')
     expect(JSON.parse(apiMock.history.put[0].data)).toEqual({ quantity: 3 })
     expect(apiMock.history.put[0].headers['X-CSRFToken']).toBe('csrf-abc')
+  })
+
+  it('productsAPI Phase 13 endpoints target the listing routes', async () => {
+    Cookies.set('csrftoken', 'csrf-abc')
+    apiMock.onPost('/products/create/').reply(201, { id: 55 })
+    apiMock.onPost('/products/55/lifecycle/').reply(200, { id: 55 })
+    apiMock.onGet('/products/seller/quota/').reply(200, { listing_quota: 10 })
+    apiMock.onGet('/products/55/similar/').reply(200, [])
+    apiMock.onGet('/products/55/more-from-seller/').reply(200, [])
+    apiMock.onPatch('/products/seller/55/').reply(200, { id: 55 })
+    apiMock.onGet('/products/seller/list/').reply(200, { results: [] })
+
+    await productsAPI.createListing({ name: 'Vélo' })
+    await productsAPI.lifecycle(55, 'publish', { allow_duplicate: true })
+    await productsAPI.quota()
+    await productsAPI.similar(55)
+    await productsAPI.moreFromSeller(55)
+    await productsAPI.updateListing(55, { name: 'Vélo' })
+    await productsAPI.sellerList({ status: 'DRAFT' })
+
+    // The wizard's save is POST-once, then PATCH (a PUT would demand every
+    // required field the seller has not filled yet).
+    expect(apiMock.history.post.map((r) => r.url)).toEqual([
+      '/products/create/',
+      '/products/55/lifecycle/',
+    ])
+    expect(JSON.parse(apiMock.history.post[1].data)).toEqual({
+      action: 'publish',
+      allow_duplicate: true,
+    })
+    expect(apiMock.history.patch[0].url).toBe('/products/seller/55/')
+
+    // The dashboard tabs are a server-side status filter, not a client slice.
+    expect(apiMock.history.get.map((r) => r.url)).toEqual([
+      '/products/seller/quota/',
+      '/products/55/similar/',
+      '/products/55/more-from-seller/',
+      '/products/seller/list/',
+    ])
+    expect(apiMock.history.get[3].params).toEqual({ status: 'DRAFT' })
   })
 })

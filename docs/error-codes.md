@@ -132,6 +132,13 @@ raises first (`parse_error`, `http_method_not_allowed`, and the field-level
 | `store_not_found` | 404 | No store for this seller yet (my store, stats, analytics). |
 | `insufficient_stock` | 400 | Stock reservation or inventory adjustment would go negative. |
 | `seller_required` | 403 | Low-stock endpoint reached by a non-seller. |
+| `incomplete_listing` | 400 | `publish` on a draft missing required fields; `details.missing` lists the serializer fields to fix. |
+| `invalid_attributes` | 400 | `publish`: the draft's `attributes_json` fails its category's rules; `details.errors` is the per-key map. |
+| `quota_reached` | 400 | `publish` would exceed the seller's active-listing tier; `details` carries `{quota, active}`. |
+| `possible_duplicate` | 400 | The seller already posted a very similar listing; `details.duplicate_of` is its id. Retry with `allow_duplicate=true` intent on the client after an explicit confirmation. |
+| `wrong_listing_type` | 400 | The wizard was asked to create a `STORE_PRODUCT` (store SKUs go through `/products/seller/create/`). |
+| `draft_limit` | 400 | Too many saved drafts; `details.limit` is the cap (`MAX_DRAFT_LISTINGS`). |
+| `invalid_transition` | 400 | Lifecycle action is not allowed from this listing status (`details.action`, `details.status`). |
 
 ---
 
@@ -140,7 +147,7 @@ raises first (`parse_error`, `http_method_not_allowed`, and the field-level
 | Code | HTTP | Meaning |
 |---|---|---|
 | `empty_cart` | 400 | Checkout with nothing to buy. |
-| `product_unavailable` | 400 | A cart line's product was deleted or unpublished. |
+| `product_unavailable` | 400 | A cart line's product was deleted, unpublished, sold/expired/archived, or is a classified (never cartable — Phase 13). |
 | `price_changed` | 400 | Cart prices are stale. `details` lists `{product_id, old_price, new_price}`. |
 | `address_not_found` | 400 | Shipping address unknown or not the buyer's. |
 | `insufficient_stock` | 400 | Reservation lost the race; the affected lines are listed. |

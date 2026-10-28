@@ -150,10 +150,27 @@ export const productsAPI = {
   getById: (id) => api.get(`/products/seller/${id}/`), // For seller to get their own product
   create: (data) => api.post('/products/seller/create/', data),
   update: (id, data) => api.put(`/products/seller/${id}/`, data),
+  // Partial update — the wizard's autosave sends only the steps filled so
+  // far, which a PUT (full validation) would reject.
+  updateListing: (id, data) => api.patch(`/products/seller/${id}/`, data),
   delete: (id) => api.delete(`/products/seller/${id}/`),
   featured: () => api.get('/products/featured/'),
-  sellerList: () => api.get('/products/seller/list/'),
+  // Accepts `?status=ACTIVE|DRAFT|…` since Phase 13 (the dashboard's tabs).
+  sellerList: (params) => api.get('/products/seller/list/', { params }),
   search: (params) => api.get('/products/search/', { params }),
+
+  // ---- Phase 13: listings (individuals + stores, one catalogue) ----
+  // The wizard's save: creates a DRAFT owned by the caller, store not needed.
+  createListing: (data) => api.post('/products/create/', data),
+  // The lifecycle state machine — publish / mark_sold / renew / archive /
+  // relist / approve / reject / withdraw. `data` may carry
+  // `{ allow_duplicate: true }` to confirm past the duplicate warning.
+  lifecycle: (id, action, data = {}) =>
+    api.post(`/products/${id}/lifecycle/`, { action, ...data }),
+  // How many listings the current user may still publish, plus draft cap.
+  quota: () => api.get('/products/seller/quota/'),
+  similar: (id) => api.get(`/products/${id}/similar/`),
+  moreFromSeller: (id) => api.get(`/products/${id}/more-from-seller/`),
 }
 
 export const ordersAPI = {

@@ -423,3 +423,107 @@ msgstr "Les attributs doivent être un objet."
 
 msgid "Attributes require a category to validate against."
 msgstr "Les attributs nécessitent une catégorie pour être validés."
+
+# --- listing lifecycle (apps/products/lifecycle.py, serializers.py) --------
+msgid "The listing is not ready to publish."
+msgstr "L'annonce n'est pas prête à être publiée."
+
+msgid "Some attributes are invalid."
+msgstr "Certains attributs sont invalides."
+
+msgid "Active listing quota reached."
+msgstr "Quota d'annonces actives atteint."
+
+msgid "You already have a very similar listing."
+msgstr "Vous avez déjà une annonce très similaire."
+
+msgid "Only a draft can be published."
+msgstr "Seul un brouillon peut être publié."
+
+msgid "Store products are posted from your seller dashboard."
+msgstr "Les produits de boutique se publient depuis votre tableau de bord vendeur."
+
+msgid "You have too many saved drafts."
+msgstr "Vous avez trop de brouillons enregistrés."
+
+msgid "This commune does not belong to the selected wilaya."
+msgstr "Cette commune n'appartient pas à la wilaya sélectionnée."
+
+msgid "A previous price only makes sense for a fixed or negotiable price."
+msgstr "Un prix précédent n'a de sens que pour un prix fixe ou négociable."
+
+msgid "The previous price must be higher than the current price."
+msgstr "Le prix précédent doit être supérieur au prix actuel."
+
+msgid "A listing's type cannot change after creation."
+msgstr "Le type d'une annonce ne peut pas changer après sa création."
+
+msgid "Unknown listing status."
+msgstr "Statut d'annonce inconnu."
+
+msgid "This listing is not available for checkout."
+msgstr "Cette annonce n'est pas disponible à l'achat."
+
+msgid "This listing is no longer available."
+msgstr "Cette annonce n'est plus disponible."
+
+msgid "This Idempotency-Key was already used for a different checkout."
+msgstr "Cette clé d'idempotence a déjà été utilisée pour un autre paiement."
+
+# --- listing choice labels (core.i18n.choice_label, *_label fields) --------
+msgid "Store product"
+msgstr "Produit de boutique"
+
+msgid "For sale"
+msgstr "À vendre"
+
+msgid "Job"
+msgstr "Emploi"
+
+msgid "Rent"
+msgstr "Location"
+
+msgid "Wanted"
+msgstr "Cherche"
+
+msgid "Fixed"
+msgstr "Fixe"
+
+msgid "Negotiable"
+msgstr "Négociable"
+
+msgid "On request"
+msgstr "Sur demande"
+
+msgid "Free"
+msgstr "Gratuit"
+
+msgid "Exchange"
+msgstr "Échange"
+
+msgid "Phone"
+msgstr "Téléphone"
+
+msgid "Checkout"
+msgstr "Achat en ligne"
+
+msgid "Draft"
+msgstr "Brouillon"
+
+msgid "Pending review"
+msgstr "En attente de validation"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Expired"
+msgstr "Expiré"
+
+msgid "Sold"
+msgstr "Vendu"
+
+msgid "Rejected"
+msgstr "Rejeté"
+
+msgid "Archived"
+msgstr "Archivé"

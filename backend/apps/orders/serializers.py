@@ -52,7 +52,10 @@ class AddToCartSerializer(serializers.Serializer):
     def validate_product_id(self, value):
         from apps.products.models import Product
 
-        if not Product.objects.filter(id=value, is_available=True).exists():
+        # ``purchasable()`` = live + store product + active store (Phase 13):
+        # a classified was never cartable — before Phase 13 that fell out of
+        # "no inventory row", which answered a confusing insufficient_stock.
+        if not Product.objects.purchasable().filter(id=value).exists():
             raise serializers.ValidationError("Product not found or not available")
         return value
 

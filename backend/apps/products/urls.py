@@ -8,8 +8,18 @@ urlpatterns = [
     path("featured/", views.featured_products, name="product-featured"),
     path("search/", views.search_products, name="product-search"),
     path("<int:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
-    # Seller endpoints
+    # Listing lifecycle (Phase 13)
+    path("<int:pk>/lifecycle/", views.ListingLifecycleView.as_view(), name="listing-lifecycle"),
+    path("<int:pk>/similar/", views.similar_listings, name="listing-similar"),
+    path(
+        "<int:pk>/more-from-seller/",
+        views.more_from_seller,
+        name="listing-more-from-seller",
+    ),
+    # Seller endpoints (any signed-in user owns *their* listings — Phase 13)
+    path("create/", views.ListingCreateView.as_view(), name="listing-create"),
     path("seller/list/", views.SellerProductListView.as_view(), name="seller-product-list"),
+    path("seller/quota/", views.seller_quota, name="seller-quota"),
     path("seller/create/", views.SellerProductCreateView.as_view(), name="seller-product-create"),
     path("seller/<int:pk>/", views.SellerProductDetailView.as_view(), name="seller-product-detail"),
     # Review endpoints

@@ -28,7 +28,9 @@ test.describe('search and open a listing', () => {
     await expect(card).toBeVisible()
     await card.click()
 
-    await expect(page).toHaveURL(/\/products\/\d+/)
+    // Phase 13: the card links to the canonical /l/<slug>-<id> URL, and the
+    // detail page normalizes any legacy /products/<id> to the same place.
+    await expect(page).toHaveURL(/\/l\/.+-\d+/)
     await expect(
       page.getByRole('heading', { level: 1, name: SEEDED_PRODUCT })
     ).toBeVisible()

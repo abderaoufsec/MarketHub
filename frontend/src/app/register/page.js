@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
@@ -69,6 +69,12 @@ function RegisterForm() {
   const [otpSent, setOtpSent] = useState(false)
   const [otpCode, setOtpCode] = useState('')
   const [otpBusy, setOtpBusy] = useState(false)
+
+  // The "next: /login" nudge waits 3s so the success message reads first;
+  // cancel it if the user leaves the page inside that window instead of
+  // teleporting them back (same stale-timer rule as the login page).
+  const redirectTimer = useRef(null)
+  useEffect(() => () => clearTimeout(redirectTimer.current), [])
 
   const sendOtp = async () => {
     const phone = formData.phone_number.trim()
@@ -169,7 +175,7 @@ function RegisterForm() {
         setSuccessMessage(message)
         toast.success(t('created', { message }))
         setSuccess(true)
-        setTimeout(() => {
+        redirectTimer.current = setTimeout(() => {
           router.push('/login')
         }, 3000)
       } else {

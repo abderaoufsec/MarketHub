@@ -10,8 +10,15 @@ transactional rules are unit-testable:
   FAILED order with reserved stock;
 * stock is reserved with row locks held, and the payment is captured by the
   single authoritative path in :mod:`apps.payments.services`.
+
+Phase 13 (docs/todo.md §0.3 #14): the cart is read **inside** that block,
+under ``select_for_update()``. Validation used to run on a snapshot taken
+before the transaction opened, so a concurrent add/quantity/price change
+could rewrite the cart between "this is fine" and the charge — a classic
+TOCTOU where the validated lines and the ordered lines were different carts.
 """
 
+import hashlib
 from collections import defaultdict
 
 from django.db import IntegrityError, transaction
@@ -22,6 +29,7 @@ from apps.users.models import Address
 
 from .exceptions import (
     EmptyCartError,
+    IdempotencyKeyConflictError,
     InsufficientStockError,
     PaymentFailedError,
     PriceChangedError,
@@ -29,6 +37,36 @@ from .exceptions import (
     ShippingAddressNotFoundError,
 )
 from .models import CartItem, Order, OrderItem
+
+
+def purchasability_error(product) -> str | None:
+    """Why this listing cannot enter (or complete) checkout, or ``None``.
+
+    Phase 13: only a live ``STORE_PRODUCT`` with a store is buyable.
+    Classifieds are contact-first and carry no inventory; a SOLD/EXPIRED/
+    ARCHIVED store product stopped being buyable the moment its status moved.
+    """
+    from apps.products.models import ListingStatus, ListingType
+
+    if product.listing_type != ListingType.STORE_PRODUCT or product.store_id is None:
+        return "This listing is not available for checkout."
+    if product.status != ListingStatus.ACTIVE or not product.is_available:
+        return "This listing is no longer available."
+    return None
+
+
+def checkout_fingerprint(shipping_address, shipping_method) -> str:
+    """Digest of what the client *asked* for in this checkout (Phase 13).
+
+    The cart lines are server-side and cannot differ between two requests of
+    one Idempotency-Key — the first success empties the cart — so the parts
+    the client controls are the address and the shipping method. Reusing a
+    finished key with either changed is a different order wearing an old
+    order's receipt: it answers 409 ``idempotency_key_conflict`` instead of
+    silently replaying yesterday's address.
+    """
+    raw = f"{shipping_address.pk}:{shipping_method or 'standard'}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 def stock_error_for(product, selected_attributes, quantity):
@@ -84,11 +122,11 @@ def refresh_cart_prices(user):
 
 
 def _validate_cart(cart_items):
-    """Fail fast before anything is written: availability and current price."""
+    """Fail fast before anything is written: sellability and current price."""
     unavailable = [
         {"product_id": item.product_id, "product_name": item.product.name}
         for item in cart_items
-        if not item.product.is_available
+        if not item.product.is_available or purchasability_error(item.product) is not None
     ]
     if unavailable:
         raise ProductUnavailableError(
@@ -112,6 +150,20 @@ def _replayed_checkout(user, idempotency_key):
     return existing or None
 
 
+def _ensure_same_payload(replay, fingerprint):
+    """The retry must be asking for what the original asked for (Phase 13).
+
+    ``None`` on the stored side is a pre-Phase-13 order: no fingerprint to
+    compare, so it replays as it always did.
+    """
+    stored = replay[0].idempotency_fingerprint
+    if stored is not None and stored != fingerprint:
+        raise IdempotencyKeyConflictError(
+            "This Idempotency-Key was already used for a different checkout.",
+            details={"idempotency_fingerprint": fingerprint},
+        )
+
+
 def place_order(*, user, shipping_address_id, shipping_method="standard", idempotency_key=None):
     """Turn the buyer's cart into per-store orders and charge them once.
 
@@ -125,30 +177,49 @@ def place_order(*, user, shipping_address_id, shipping_method="standard", idempo
     if shipping_address is None:
         raise ShippingAddressNotFoundError("Shipping address not found")
 
+    fingerprint = checkout_fingerprint(shipping_address, shipping_method)
+
     # A retry of an already-completed checkout replays before anything else:
     # its cart has been emptied by the first attempt, and re-validating it
     # would answer "empty cart" instead of the orders the client asked for.
     if idempotency_key:
         replay = _replayed_checkout(user, idempotency_key)
         if replay is not None:
+            _ensure_same_payload(replay, fingerprint)
             return replay, True
-
-    cart_items = list(
-        CartItem.objects.filter(cart__user=user)
-        .select_related("product", "product__store")
-        .order_by("product__store_id", "product_id", "id")
-    )
-    if not cart_items:
-        raise EmptyCartError("Cart is empty")
-
-    _validate_cart(cart_items)
-
-    items_by_store = defaultdict(list)
-    for item in cart_items:
-        items_by_store[item.product.store_id].append(item)
 
     try:
         with transaction.atomic():
+            # Phase 13 (#14): read the cart HERE, under a row lock. The old
+            # read sat outside the transaction, so a concurrent add, quantity
+            # change, remove or *price change* could rewrite the cart between
+            # validation and capture — the classic TOCTOU where the validated
+            # lines and the ordered lines were different carts.
+            #
+            # ``of=("self",)`` locks the CartItem rows only. It must: since
+            # Phase 13 made ``Product.store`` nullable, the
+            # ``select_related("product__store")`` join is a LEFT OUTER JOIN
+            # and Postgres refuses to lock across one. It is also the right
+            # lock: the price charged is ``item.product.base_price`` from this
+            # same loaded snapshot that ``_validate_cart`` just compared
+            # against, so there is no second read for a price edit to race,
+            # and the authoritative oversell guard is the inventory-row lock
+            # inside ``reserve_inventory_for_order``.
+            cart_items = list(
+                CartItem.objects.select_for_update(of=("self",))
+                .filter(cart__user=user)
+                .select_related("product", "product__store")
+                .order_by("product__store_id", "product_id", "id")
+            )
+            if not cart_items:
+                raise EmptyCartError("Cart is empty")
+
+            _validate_cart(cart_items)
+
+            items_by_store = defaultdict(list)
+            for item in cart_items:
+                items_by_store[item.product.store_id].append(item)
+
             orders = []
             # Ascending store id (and, inside the reservation, ascending
             # product id) gives every concurrent checkout the same lock order,
@@ -167,6 +238,7 @@ def place_order(*, user, shipping_address_id, shipping_method="standard", idempo
                     order_status="PENDING",
                     payment_status="PENDING",
                     idempotency_key=idempotency_key,
+                    idempotency_fingerprint=fingerprint if idempotency_key else None,
                 )
 
                 for item in items:
@@ -202,7 +274,10 @@ def place_order(*, user, shipping_address_id, shipping_method="standard", idempo
                 orders.append(order)
 
             # Only reached when every store's stock and payment succeeded.
-            CartItem.objects.filter(cart__user=user).delete()
+            # Exactly the lines we ordered, not the whole cart: an item added
+            # to this cart while the checkout held the lock was never part of
+            # the charge, and deleting it would lose the buyer's addition.
+            CartItem.objects.filter(pk__in=[item.pk for item in cart_items]).delete()
     except IntegrityError:
         # A concurrent request retried the same idempotency key: the unique
         # constraint on (idempotency_key, store) rejected our insert and the
@@ -210,6 +285,7 @@ def place_order(*, user, shipping_address_id, shipping_method="standard", idempo
         if idempotency_key:
             replay = _replayed_checkout(user, idempotency_key)
             if replay is not None:
+                _ensure_same_payload(replay, fingerprint)
                 return replay, True
         raise
 

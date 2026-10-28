@@ -36,19 +36,24 @@ def other_seller_client(db):
 # Listings (products)
 # ---------------------------------------------------------------------------
 def test_buyer_cannot_update_a_listing(buyer_client, product):
+    # Phase 13: listing ownership is the ``seller`` FK for *every* user — an
+    # individual's classified and a store owner's SKU are managed through the
+    # same endpoint, so there is no longer a "must be a store owner" role to
+    # fail with 403. The buyer simply does not own it: the queryset never
+    # exposes it, hence 404 (identical to the other-seller case below).
     response = buyer_client.put(
         f"/api/v1/products/seller/{product.id}/",
         {"name": "Hijacked", "description": "x", "base_price": "1.00", "category": "phones"},
         format="json",
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 def test_buyer_cannot_delete_a_listing(buyer_client, product):
     response = buyer_client.delete(f"/api/v1/products/seller/{product.id}/")
 
-    assert response.status_code == 403
+    assert response.status_code == 404
     product.refresh_from_db()
     assert product.is_available in (True, False)  # row untouched
 
