@@ -455,7 +455,16 @@
       "title": "Sécurité",
       "changePassword": "Modifier le mot de passe",
       "changePasswordText": "Mettez à jour votre mot de passe",
-      "change": "Modifier"
+      "change": "Modifier",
+      "cancel": "Annuler",
+      "currentPasswordLabel": "Mot de passe actuel",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "confirmPasswordLabel": "Confirmer le nouveau mot de passe",
+      "passwordsDoNotMatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "changePasswordSuccess": "Mot de passe modifié. Les autres sessions ont été déconnectées.",
+      "changePasswordFailed": "Impossible de modifier le mot de passe.",
+      "submit": "Changer le mot de passe",
+      "submitting": "Enregistrement…"
     },
     "actions": {
       "title": "Actions du compte",

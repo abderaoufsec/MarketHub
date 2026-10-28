@@ -158,9 +158,12 @@ export default function OrderDetailPage() {
         {/* Store Info */}
         {order.store_name && (
           <div className="pt-4 border-t border-gray-200">
-            {order.store ? (
+            {/* Link only when the payload carries a slug — ``order.store`` is
+                just the FK id, so a slug-less store must fall back to plain
+                text rather than a dead /stores/undefined link. */}
+            {order.store_slug ? (
               <Link
-                href={`/stores/${order.store.store_slug || order.store.store_slug}`}
+                href={`/stores/${order.store_slug}`}
                 className="flex items-center gap-2 text-gray-700 hover:text-primary w-fit"
               >
                 <Store className="h-5 w-5" />

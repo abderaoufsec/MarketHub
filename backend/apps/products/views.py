@@ -20,11 +20,11 @@ from core.pagination import FeedCursorPagination, WishlistCursorPagination
 
 from .models import Product, ProductReview, Wishlist
 from .serializers import (
-    PaginatedProductListSerializer,
     ProductCreateUpdateSerializer,
     ProductListSerializer,
     ProductReviewCreateSerializer,
     ProductReviewSerializer,
+    ProductSearchPageSerializer,
     ProductSerializer,
     WishlistSerializer,
 )
@@ -326,7 +326,7 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         return ProductCreateUpdateSerializer
 
 
-@extend_schema(responses={200: PaginatedProductListSerializer})
+@extend_schema(responses={200: ProductSearchPageSerializer})
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def search_products(request):

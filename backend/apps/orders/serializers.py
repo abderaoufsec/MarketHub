@@ -97,6 +97,9 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     shipping_address = AddressSerializer(read_only=True)
     store_name = serializers.CharField(source="store.store_name", read_only=True)
+    # Exposed so the order page can link to /stores/<slug>; the raw ``store``
+    # field is only the FK id and carries no slug.
+    store_slug = serializers.CharField(source="store.store_slug", read_only=True)
     order_status_label = serializers.SerializerMethodField()
     payment_status_label = serializers.SerializerMethodField()
 
@@ -107,6 +110,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "user",
             "store",
             "store_name",
+            "store_slug",
             "order_date",
             "total_amount",
             "shipping_address",

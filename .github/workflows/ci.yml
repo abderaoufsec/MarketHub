@@ -139,7 +139,10 @@ jobs:
       - name: Production build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+          # The base URL must include the API version segment: lib/api.js uses
+          # it verbatim as axios' baseURL and appends /auth/..., /products/...
+          # to it (same value as frontend/.env.example).
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
 
   audits:
     name: Security audits

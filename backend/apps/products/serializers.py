@@ -255,12 +255,17 @@ class ProductListSerializer(serializers.ModelSerializer):
         return _is_wishlisted(obj, self.context.get("request"))
 
 
-class PaginatedProductListSerializer(serializers.Serializer):
+class ProductSearchPageSerializer(serializers.Serializer):
     """``{next, previous, results}`` — the page envelope of FeedCursorPagination.
 
     ``search_products`` is a ``@api_view``, so there is no view object for
     drf-spectacular to read ``pagination_class`` off; without this the docs
     would advertise a bare array for a body that is actually a page.
+
+    The name is deliberately *not* ``PaginatedProductListSerializer``: drf-
+    specticular auto-names pagination wrappers ``Paginated{Result}List``, so
+    that class name collided with the generated ``PaginatedProductList``
+    component (W001, two identities one name).
     """
 
     next = serializers.URLField(allow_null=True, read_only=True)

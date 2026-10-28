@@ -455,7 +455,16 @@
       "title": "Security",
       "changePassword": "Change Password",
       "changePasswordText": "Update your account password",
-      "change": "Change"
+      "change": "Change",
+      "cancel": "Cancel",
+      "currentPasswordLabel": "Current password",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm new password",
+      "passwordsDoNotMatch": "The new passwords do not match.",
+      "changePasswordSuccess": "Password changed. Other sessions have been signed out.",
+      "changePasswordFailed": "Could not change the password.",
+      "submit": "Change password",
+      "submitting": "Saving…"
     },
     "actions": {
       "title": "Account Actions",

@@ -186,11 +186,17 @@ export default function SellerOrdersPage() {
                   <h4 className="text-sm font-medium text-gray-700 mb-2">
                     {t('orders.shippingTitle')}
                   </h4>
+                  {/* Phase 11: an address is a street line plus a wilaya and
+                      an optional commune — the free-text city/state/postal
+                      trio no longer exists on the model. */}
                   <p className="text-sm text-gray-600">
-                    {order.shipping_address.address_line1},{' '}
-                    {order.shipping_address.city},{' '}
-                    {order.shipping_address.state_province}{' '}
-                    {order.shipping_address.postal_code}
+                    {[
+                      order.shipping_address.address_line1,
+                      order.shipping_address.commune?.name,
+                      order.shipping_address.wilaya?.name,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
                   </p>
                 </div>
               )}

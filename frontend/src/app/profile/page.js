@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '../../context/AuthContext'
-import { apiErrorMessage } from '../../lib/errors'
+import { authAPI } from '../../lib/api'
+import { apiErrorMessage, apiFieldError } from '../../lib/errors'
 import { Mail, Phone, Save, AlertCircle, CheckCircle, Lock } from 'lucide-react'
 
 /**
@@ -37,6 +38,18 @@ export default function ProfilePage() {
     email: '',
     // The API default is 'fr'; never send an empty value.
     preferred_language: 'fr',
+  })
+  // Inline change-password form on the security card. The button here used to
+  // have no onClick at all — a dead affordance in a security card is worse
+  // than none, so it now drives a real form backed by
+  // POST /api/v1/auth/change-password/ (Phase 7).
+  const [passwordFormOpen, setPasswordFormOpen] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState(null)
+  const [passwords, setPasswords] = useState({
+    old_password: '',
+    new_password: '',
+    new_password_confirm: '',
   })
 
   useEffect(() => {
@@ -87,6 +100,47 @@ export default function ProfilePage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault()
+    setPasswordMessage(null)
+    if (passwords.new_password !== passwords.new_password_confirm) {
+      setPasswordMessage({
+        type: 'error',
+        text: t('security.passwordsDoNotMatch'),
+      })
+      return
+    }
+    try {
+      setPasswordLoading(true)
+      await authAPI.changePassword(passwords)
+      // Every other session is revoked server-side and this device gets a
+      // fresh cookie pair; collapse the form and confirm inline.
+      setPasswordMessage({
+        type: 'success',
+        text: t('security.changePasswordSuccess'),
+      })
+      setPasswords({
+        old_password: '',
+        new_password: '',
+        new_password_confirm: '',
+      })
+      setPasswordFormOpen(false)
+    } catch (error) {
+      setPasswordMessage({
+        type: 'error',
+        // Field errors win over the envelope message: the wrong-current-
+        // password case carries the `old_password_incorrect` code (Phase 7)
+        // and a mismatch/validation lands on the new-password field.
+        text:
+          apiFieldError(error, 'old_password') ||
+          apiFieldError(error, 'new_password') ||
+          apiErrorMessage(error, t('security.changePasswordFailed')),
+      })
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -290,6 +344,22 @@ export default function ProfilePage() {
               {t('security.title')}
             </h2>
             <div className="space-y-4">
+              {passwordMessage && (
+                <div
+                  className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+                    passwordMessage.type === 'success'
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-red-50 text-red-700'
+                  }`}
+                >
+                  {passwordMessage.type === 'success' ? (
+                    <CheckCircle className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                  )}
+                  <span>{passwordMessage.text}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="bg-gray-100 p-2 rounded-lg">
@@ -304,10 +374,106 @@ export default function ProfilePage() {
                     </p>
                   </div>
                 </div>
-                <button className="text-primary hover:text-secondary font-medium text-sm">
-                  {t('security.change')}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPasswordMessage(null)
+                    setPasswordFormOpen((open) => !open)
+                  }}
+                  aria-expanded={passwordFormOpen}
+                  className="text-primary hover:text-secondary font-medium text-sm"
+                >
+                  {passwordFormOpen
+                    ? t('security.cancel')
+                    : t('security.change')}
                 </button>
               </div>
+
+              {passwordFormOpen && (
+                <form
+                  onSubmit={handlePasswordSubmit}
+                  className="space-y-3 p-4 border border-gray-200 rounded-lg"
+                >
+                  <div>
+                    <label
+                      htmlFor="old_password"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {t('security.currentPasswordLabel')}
+                    </label>
+                    <input
+                      id="old_password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={passwords.old_password}
+                      onChange={(e) =>
+                        setPasswords((prev) => ({
+                          ...prev,
+                          old_password: e.target.value,
+                        }))
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="new_password"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {t('security.newPasswordLabel')}
+                    </label>
+                    <input
+                      id="new_password"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      minLength={8}
+                      value={passwords.new_password}
+                      onChange={(e) =>
+                        setPasswords((prev) => ({
+                          ...prev,
+                          new_password: e.target.value,
+                        }))
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="new_password_confirm"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {t('security.confirmPasswordLabel')}
+                    </label>
+                    <input
+                      id="new_password_confirm"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      minLength={8}
+                      value={passwords.new_password_confirm}
+                      onChange={(e) =>
+                        setPasswords((prev) => ({
+                          ...prev,
+                          new_password_confirm: e.target.value,
+                        }))
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-white bg-primary hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Save className="h-4 w-4" />
+                    {passwordLoading
+                      ? t('security.submitting')
+                      : t('security.submit')}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 

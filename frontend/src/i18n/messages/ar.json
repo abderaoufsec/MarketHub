@@ -455,7 +455,16 @@
       "title": "الأمان",
       "changePassword": "تغيير كلمة المرور",
       "changePasswordText": "قم بتحديث كلمة مرور حسابك",
-      "change": "تغيير"
+      "change": "تغيير",
+      "cancel": "إلغاء",
+      "currentPasswordLabel": "كلمة المرور الحالية",
+      "newPasswordLabel": "كلمة المرور الجديدة",
+      "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة",
+      "passwordsDoNotMatch": "كلمتا المرور الجديدتان غير متطابقتين.",
+      "changePasswordSuccess": "تم تغيير كلمة المرور. تم تسجيل الخروج من الجلسات الأخرى.",
+      "changePasswordFailed": "تعذر تغيير كلمة المرور.",
+      "submit": "تغيير كلمة المرور",
+      "submitting": "جارٍ الحفظ…"
     },
     "actions": {
       "title": "إجراءات الحساب",

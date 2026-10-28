@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import { storesAPI, productsAPI, ordersAPI } from '../../../lib/api'
+import { parseApiError } from '../../../lib/errors'
 import { usePrice } from '../../../lib/currency'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -73,7 +74,9 @@ export default function SellerDashboard() {
         const statsResponse = await storesAPI.getStats()
         setStats(statsResponse.data)
       } catch (error) {
-        if (error.response?.status === 404) {
+        // 404 here means "this seller has no store yet" — a normal state the
+        // page renders a setup prompt for, not an error worth surfacing.
+        if (parseApiError(error).status === 404) {
           setStore(null)
         }
       }

@@ -66,7 +66,6 @@ export default function StoreSetupPage() {
     try {
       setLoading(true)
       setMessage(null)
-      console.log('Submitting store data:', formData) // Debug log
       const response = await storesAPI.create({
         ...formData,
         category_id: categoryId,
