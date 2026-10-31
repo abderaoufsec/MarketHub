@@ -173,6 +173,35 @@ export const productsAPI = {
   moreFromSeller: (id) => api.get(`/products/${id}/more-from-seller/`),
 }
 
+// ==================== MEDIA API (Phase 14) ====================
+export const mediaAPI = {
+  // Multipart upload: the server sniffs the real type, strips EXIF, builds
+  // the responsive variants and hashes the image. The browser already
+  // compressed it (`lib/imageCompression`), so this is one small request.
+  upload: (file, onProgress) => {
+    const body = new FormData()
+    body.append('file', file)
+    return api.post('/media/images/', body, {
+      // Let the browser add the multipart boundary.
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress:
+        typeof onProgress === 'function'
+          ? (event) => {
+              if (!event.total) return
+              onProgress(Math.round((event.loaded * 100) / event.total))
+            }
+          : undefined,
+    })
+  },
+  // How to upload straight to the bucket (`mode: "s3"`) or through the API
+  // (`mode: "direct"`, the local-storage default).
+  presign: (data) => api.post('/media/images/presign/', data),
+  // Process an object that went directly to the bucket.
+  importObject: (data) => api.post('/media/images/import/', data),
+  // Owner-only; refused with `image_in_use` while a listing uses it.
+  remove: (id) => api.delete(`/media/images/${id}/`),
+}
+
 export const ordersAPI = {
   list: () => api.get('/orders/'),
   get: (id) => api.get(`/orders/${id}/`),

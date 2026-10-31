@@ -826,7 +826,7 @@
       "CHECKOUT": "Checkout"
     },
     "contactModeHint": "Your number is shown only for phone and WhatsApp, and only if it is verified in your profile.",
-    "photosHint": "Paste a photo URL — uploads arrive in the next release. The first photo is the cover.",
+    "photosHint": "Listings with real photos sell faster. Add up to 15 ? the first is the cover.",
     "locationHint": "Buyers filter by wilaya — a precise location gets more calls.",
     "noAttributes": "Nothing extra to fill for this category.",
     "addImage": "Add",
@@ -858,6 +858,24 @@
       "quotaReached": "You are at your limit ({active} of {quota} active listings).",
       "imageUrl": "Photo links must start with http:// or https://",
       "maxImages": "Up to {max} photos per ad."
+    },
+    "photoUrlToggle": "Or paste an image URL"
+  },
+  "media": {
+    "title": "Photos",
+    "hint": "Add up to {max} photos from your phone. Drag to reorder ? the first is the cover.",
+    "add": "Add photos",
+    "uploading": "Uploading...",
+    "count": "{count}/{max} photos",
+    "cover": "Cover",
+    "makeCover": "Make cover",
+    "remove": "Remove photo",
+    "uploaded": "Uploaded photo",
+    "maxReached": "You can add up to {max} photos.",
+    "errors": {
+      "unsupported": "That file is not a JPEG, PNG, WebP or GIF image.",
+      "tooLarge": "That image is too large.",
+      "uploadFailed": "The photo could not be uploaded. Try again."
     }
   }
 }

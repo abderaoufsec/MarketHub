@@ -54,6 +54,7 @@ vi.mock('../../lib/api', () => ({
     lifecycle: mocks.lifecycle,
     quota: mocks.quota,
   },
+  mediaAPI: { upload: vi.fn() },
 }))
 
 vi.mock('react-hot-toast', () => ({
@@ -118,7 +119,7 @@ async function walkToPublishStep() {
   })
   fireEvent.click(screen.getByRole('button', { name: 'pick-category' }))
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-  await screen.findByText(/paste a photo url/i)
+  await screen.findByText(/real photos sell faster/i)
 
   // photos → details → location → price (autosave PATCH at each boundary)
   fireEvent.click(screen.getByRole('button', { name: /continue/i }))

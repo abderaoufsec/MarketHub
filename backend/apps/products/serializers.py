@@ -9,6 +9,7 @@ from apps.catalog.serializers import CategoryMiniSerializer
 from apps.catalog.validation import validate_attributes
 from apps.geography.models import Commune, Wilaya
 from apps.geography.serializers import CommuneSerializer, WilayaSerializer
+from apps.media.models import Image
 from apps.stores.serializers import StoreSerializer
 from apps.users.plans import get_product_quota, max_draft_listings
 from core.exceptions import ApiError
@@ -60,12 +61,81 @@ def _is_wishlisted(product, request):
     return False
 
 
+def _attach_images(product, images_data) -> None:
+    """Create the listing's photos, defaulting the first one to the cover.
+
+    The wizard sends ``images: [{upload_id: 1}, {upload_id: 2}]`` without a
+    cover flag; without this default the listing would have photos but no
+    ``primary_image``, and every card would render the placeholder. An
+    explicit ``is_primary`` from the client wins.
+    """
+    rows = [ProductImage(product=product, **data) for data in images_data]
+    if rows and not any(row.is_primary for row in rows):
+        rows[0].is_primary = True
+    for row in rows:
+        row.save()
+
+
 class ProductImageSerializer(serializers.ModelSerializer):
-    """Serializer for ProductImage model"""
+    """One listing photo: an uploaded ``Image`` (Phase 14) or an external URL.
+
+    Writes take ``upload_id`` — the id returned by ``POST /media/images/``;
+    reads add the resolved ``url`` (card variant, or the external URL) plus
+    the LQIP/dimensions ``next/image`` needs. ``image_url`` stays writable so
+    legacy listings and URL-only clients keep working, and is blank for
+    upload-backed rows.
+    """
+
+    upload_id = serializers.PrimaryKeyRelatedField(
+        queryset=Image.objects.all(),
+        source="upload",
+        required=False,
+        allow_null=True,
+    )
+    url = serializers.SerializerMethodField()
+    full_url = serializers.SerializerMethodField()
+    lqip = serializers.CharField(read_only=True)
+    width = serializers.IntegerField(read_only=True)
+    height = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ProductImage
-        fields = ["id", "image_url", "is_primary", "sort_order"]
+        fields = [
+            "id",
+            "image_url",
+            "upload_id",
+            "url",
+            "full_url",
+            "lqip",
+            "width",
+            "height",
+            "is_primary",
+            "sort_order",
+        ]
+
+    def get_url(self, obj) -> str | None:
+        return obj.url_for("card", request=self.context.get("request"))
+
+    def get_full_url(self, obj) -> str | None:
+        """The detail variant: the gallery must not upscale a 640px card."""
+        return obj.url_for("full", request=self.context.get("request"))
+
+    def validate(self, attrs):
+        upload = attrs.get("upload")
+        image_url = attrs.get("image_url")
+        if image_url is None and self.instance is not None:
+            image_url = self.instance.image_url
+        if not image_url and upload is None:
+            raise serializers.ValidationError(
+                "Provide an uploaded image (upload_id) or an image URL."
+            )
+        if upload is not None:
+            request = self.context.get("request")
+            if request is not None and upload.owner_id != request.user.id:
+                raise serializers.ValidationError(
+                    {"upload_id": "That image does not belong to you."}
+                )
+        return attrs
 
 
 class ProductAttributeSerializer(serializers.ModelSerializer):
@@ -168,10 +238,14 @@ class WishlistSerializer(serializers.ModelSerializer):
         ``.filter(...)`` would bypass the cache and query per wishlist line.
         """
         images = list(obj.product.images.all())  # prefetched: no query on the list path
-        primary = next((image.image_url for image in images if image.is_primary), None)
+        request = self.context.get("request")
+        primary = next(
+            (image.url_for("card", request=request) for image in images if image.is_primary),
+            None,
+        )
         if primary is not None:
             return primary
-        return images[0].image_url if images else None
+        return images[0].url_for("card", request=request) if images else None
 
 
 class ListingActionSerializer(serializers.Serializer):
@@ -365,6 +439,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     seller_name = serializers.SerializerMethodField()
     category = CategoryMiniSerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
+    primary_image_lqip = serializers.SerializerMethodField()
     total_stock = serializers.IntegerField(read_only=True)
     average_rating = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
@@ -395,6 +470,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "seller_name",
             "wilaya_name",
             "primary_image",
+            "primary_image_lqip",
             "total_stock",
             "created_at",
             "average_rating",
@@ -402,16 +478,26 @@ class ProductListSerializer(serializers.ModelSerializer):
             "is_wishlisted",
         ]
 
+    def _primary_image_row(self, obj):
+        """The cover row, from the prefetched ``images`` (ordered primary-first)."""
+        return next((image for image in obj.images.all() if image.is_primary), None)
+
     def get_primary_image(self, obj) -> str | None:
         """The primary image, read from the prefetched ``images``.
 
         The old ``obj.images.filter(is_primary=True).first()`` bypassed the
         ``prefetch_related("images")`` cache and ran one query per row.
-        The cache is already ordered ``-is_primary, sort_order``, but the
-        fallback still has to be explicit: this endpoint returns no image at
-        all when a product has none flagged primary.
+        ``url_for("card")`` resolves an uploaded photo to its card variant
+        (and leaves legacy external URLs untouched), so the grid never
+        downloads 1920px files.
         """
-        return next((image.image_url for image in obj.images.all() if image.is_primary), None)
+        image = self._primary_image_row(obj)
+        return image.url_for("card", request=self.context.get("request")) if image else None
+
+    def get_primary_image_lqip(self, obj) -> str:
+        """Inline blur-up placeholder for the card (empty for URL images)."""
+        image = self._primary_image_row(obj)
+        return image.lqip if image else ""
 
     def get_is_wishlisted(self, obj) -> bool:
         """Annotation-backed — see :func:`_is_wishlisted`."""
@@ -715,8 +801,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         product = Product.objects.create(**validated_data)
 
         # Create images
-        for image_data in images_data:
-            ProductImage.objects.create(product=product, **image_data)
+        _attach_images(product, images_data)
 
         # Create attributes
         for attr_data in attributes_data:
@@ -743,8 +828,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         # Update images if provided
         if images_data is not None:
             instance.images.all().delete()
-            for image_data in images_data:
-                ProductImage.objects.create(product=instance, **image_data)
+            _attach_images(instance, images_data)
 
         # Update attributes if provided
         if attributes_data is not None:

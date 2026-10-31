@@ -22,6 +22,7 @@ import {
 import Link from 'next/link'
 import ReviewModal from './ReviewModal'
 import ProductCard from './ProductCard'
+import SafeImage from '../common/SafeImage'
 import toast from 'react-hot-toast'
 import { useLocale, useTranslations } from 'next-intl'
 import { intlLocale } from '../../i18n/config'
@@ -50,6 +51,7 @@ export default function ProductDetail({ productId }) {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [brokenImages, setBrokenImages] = useState({})
   const [quantity, setQuantity] = useState(1)
   const [selectedAttributes, setSelectedAttributes] = useState({})
   const [addingToCart, setAddingToCart] = useState(false)
@@ -249,8 +251,15 @@ export default function ProductDetail({ productId }) {
   }
 
   const images = product.images || []
-  const mainImage =
-    images[selectedImage]?.image_url || '/placeholder-product.jpg'
+  const selected = images[selectedImage]
+  // Uploaded photos resolve to the card/detail variants; legacy rows still
+  // carry only an external URL. A failed load falls back to the placeholder.
+  const frameUrl = selected?.full_url || selected?.url || selected?.image_url
+  const mainImage = brokenImages[selectedImage]
+    ? '/placeholder-product.jpg'
+    : frameUrl || '/placeholder-product.jpg'
+  const markBroken = (index) =>
+    setBrokenImages((current) => ({ ...current, [index]: true }))
   const priceMode = product.price_mode || 'FIXED'
   const hasPrice =
     product.base_price !== null && product.base_price !== undefined
@@ -291,21 +300,23 @@ export default function ProductDetail({ productId }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Images */}
         <div>
-          <div className="bg-gray-100 rounded-lg overflow-hidden mb-4 aspect-square">
-            <img
+          <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 aspect-square">
+            <SafeImage
               src={mainImage}
               alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.src = '/placeholder-product.jpg'
-              }}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+              blurDataURL={selected?.lqip}
+              className="object-cover"
+              onError={() => markBroken(selectedImage)}
             />
           </div>
           {images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
               {images.map((img, index) => (
                 <button
-                  key={index}
+                  key={img.id || index}
                   onClick={() => setSelectedImage(index)}
                   className={`border-2 rounded-lg overflow-hidden transition-all ${
                     selectedImage === index
@@ -313,13 +324,17 @@ export default function ProductDetail({ productId }) {
                       : 'border-gray-300'
                   }`}
                 >
-                  <img
-                    src={img.image_url}
+                  <SafeImage
+                    src={
+                      brokenImages[index]
+                        ? '/placeholder-product.jpg'
+                        : img.thumb_url || img.url || img.image_url
+                    }
                     alt={`${product.name} ${index + 1}`}
+                    width={160}
+                    height={80}
                     className="w-full h-20 object-cover"
-                    onError={(e) => {
-                      e.target.src = '/placeholder-product.jpg'
-                    }}
+                    onError={() => markBroken(index)}
                   />
                 </button>
               ))}

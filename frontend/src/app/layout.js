@@ -30,6 +30,21 @@ export const metadata = {
   title: `${SITE_NAME} - Your Online Marketplace`,
   description:
     'Connect sellers and buyers through a simple, secure online marketplace',
+  // Phase 14: the public/ assets that make the site installable and
+  // shareable. `favicon.ico` is served from public/ automatically; naming it
+  // here pins the other sizes for browsers and iOS.
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+}
+
+export const viewport = {
+  themeColor: '#007BFF',
 }
 
 export default function RootLayout({ children }) {

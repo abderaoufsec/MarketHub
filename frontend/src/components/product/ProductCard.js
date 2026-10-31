@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { usePrice } from '../../lib/currency'
+import SafeImage from '../common/SafeImage'
 
 export default function ProductCard({ product, index = 0 }) {
   const t = useTranslations('products')
@@ -35,10 +36,13 @@ export default function ProductCard({ product, index = 0 }) {
               <div className="absolute inset-0 bg-gray-200 animate-pulse" />
             )}
             {!imageError ? (
-              <img
+              <SafeImage
                 src={imageUrl}
                 alt={product.name}
-                className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                blurDataURL={product.primary_image_lqip}
+                className={`object-cover transition-all duration-500 group-hover:scale-110 ${
                   imageLoading ? 'opacity-0' : 'opacity-100'
                 }`}
                 onLoad={() => setImageLoading(false)}
@@ -46,7 +50,6 @@ export default function ProductCard({ product, index = 0 }) {
                   setImageError(true)
                   setImageLoading(false)
                 }}
-                loading="lazy"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">

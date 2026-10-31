@@ -11,6 +11,7 @@ import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import CategoryPicker from '../../../../components/common/CategoryPicker'
 import AttributeFields from '../../../../components/product/AttributeFields'
+import ImageUploader from '../../../../components/media/ImageUploader'
 
 export default function CreateProductPage() {
   const router = useRouter()
@@ -21,6 +22,7 @@ export default function CreateProductPage() {
   const [categoryId, setCategoryId] = useState(null)
   const [attributes, setAttributes] = useState({})
   const [attributeErrors, setAttributeErrors] = useState({})
+  const [images, setImages] = useState([])
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -86,6 +88,11 @@ export default function CreateProductPage() {
         ...formData,
         category_id: categoryId,
         attributes_json: attributes,
+        images: images.map((image) =>
+          image.upload_id
+            ? { upload_id: image.upload_id }
+            : { image_url: image.image_url }
+        ),
       })
       setMessage({ type: 'success', text: t('create.created') })
       setTimeout(() => {
@@ -186,6 +193,10 @@ export default function CreateProductPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               placeholder={t('create.form.descriptionPlaceholder')}
             />
+          </div>
+
+          <div className="border-t border-gray-100 pt-6">
+            <ImageUploader images={images} onChange={setImages} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

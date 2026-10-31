@@ -16,7 +16,6 @@ import {
   Send,
   Check,
   AlertTriangle,
-  X,
   Loader2,
 } from 'lucide-react'
 import { productsAPI } from '../../lib/api'
@@ -26,6 +25,7 @@ import { useAuth } from '../../context/AuthContext'
 import CategoryPicker from '../../components/common/CategoryPicker'
 import LocationPicker from '../../components/common/LocationPicker'
 import AttributeFields from '../../components/product/AttributeFields'
+import ImageUploader from '../../components/media/ImageUploader'
 
 /**
  * The fast-posting wizard (Phase 13 of docs/todo.md): "anyone can post in
@@ -138,7 +138,16 @@ export default function PostListingPage() {
       price_mode: form.priceMode,
     }
     if (form.categoryId) data.category_id = form.categoryId
-    if (form.images.length) data.images = form.images
+    if (form.images.length) {
+      // Only the write contract goes back: an uploaded photo is referenced
+      // by id, a legacy one by URL. The preview fields (url, lqip, width…)
+      // are read-only and would be noise in a draft that autosaves often.
+      data.images = form.images.map((image) =>
+        image.upload_id
+          ? { upload_id: image.upload_id }
+          : { image_url: image.image_url }
+      )
+    }
     if (form.wilayaId) data.wilaya_id = form.wilayaId
     if (form.communeId) data.commune_id = form.communeId
     if (form.basePrice !== '') data.base_price = form.basePrice
@@ -259,10 +268,6 @@ export default function PostListingPage() {
     }
     setField({ images: [...form.images, { image_url: url }] })
     setImageUrl('')
-  }
-
-  const removeImage = (index) => {
-    setField({ images: form.images.filter((_, i) => i !== index) })
   }
 
   if (authLoading || !isAuthenticated) {
@@ -406,65 +411,42 @@ export default function PostListingPage() {
 
         {/* ---- Step 2: photos ---- */}
         {stepKey === 'photos' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <p className="text-sm text-gray-600">{t('photosHint')}</p>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                aria-label={t('fields.photoUrl')}
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addImage()
-                  }
-                }}
-                placeholder={t('placeholders.imageUrl')}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
-              />
-              <button
-                type="button"
-                onClick={addImage}
-                className="btn-primary flex items-center gap-2"
-              >
-                <ImagePlus className="h-4 w-4" />
-                {t('addImage')}
-              </button>
-            </div>
-            {form.images.length > 0 && (
-              <ul className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {form.images.map((image, index) => (
-                  <li
-                    key={`${image.image_url}-${index}`}
-                    className="relative border border-gray-200 rounded-lg overflow-hidden group"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.image_url}
-                      alt=""
-                      className="w-full h-24 object-cover"
-                      onError={(e) => {
-                        e.target.src = '/placeholder-product.jpg'
-                      }}
-                    />
-                    {index === 0 && (
-                      <span className="absolute bottom-1 start-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded-full">
-                        {t('primaryPhoto')}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      aria-label={t('removeImage')}
-                      className="absolute top-1 end-1 p-1 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3 text-red-600" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ImageUploader
+              images={form.images}
+              onChange={(images) => setField({ images })}
+              max={MAX_IMAGES}
+            />
+            <details className="text-sm">
+              <summary className="cursor-pointer text-gray-600">
+                {t('photoUrlToggle')}
+              </summary>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="url"
+                  aria-label={t('fields.photoUrl')}
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addImage()
+                    }
+                  }}
+                  placeholder={t('placeholders.imageUrl')}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-primary focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={addImage}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  {t('addImage')}
+                </button>
+              </div>
+            </details>
           </div>
         )}
 

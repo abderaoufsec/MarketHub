@@ -119,6 +119,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.users",
     "apps.stores",
+    "apps.media",
     "apps.products",
     "apps.inventory",
     "apps.orders",
@@ -311,9 +312,63 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Media files
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# -----------------------------------------------------------------------------
+# Media pipeline (Phase 14)
+# -----------------------------------------------------------------------------
+# Uploads are stored through Django's default storage, so the same pipeline
+# serves local disk in dev/tests (served by Django while DEBUG=True) and any
+# S3-compatible bucket in production (MinIO locally, Cloudflare R2/AWS S3 in
+# the cloud). Point MEDIA_STORAGE_BACKEND at
+# "storages.backends.s3.S3Storage" (pip install django-storages[s3]) and set
+# the AWS_* values below; nothing else changes.
+MEDIA_URL = env_str("MEDIA_URL", "/media/")
+MEDIA_ROOT = Path(env_str("MEDIA_ROOT", str(BASE_DIR / "media")))
+
+MEDIA_STORAGE_BACKEND = env_str(
+    "MEDIA_STORAGE_BACKEND", "django.core.files.storage.FileSystemStorage"
+)
+STORAGES = {
+    "default": {"BACKEND": MEDIA_STORAGE_BACKEND},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+AWS_STORAGE_BUCKET_NAME = env_str("AWS_STORAGE_BUCKET_NAME", "")
+AWS_ACCESS_KEY_ID = env_str("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = env_str("AWS_SECRET_ACCESS_KEY", "")
+AWS_S3_REGION_NAME = env_str("AWS_S3_REGION_NAME", "")
+AWS_S3_ENDPOINT_URL = env_str("AWS_S3_ENDPOINT_URL", "")
+# CDN host that fronts the bucket (e.g. cdn.markethub.dz). Empty = bucket URL.
+AWS_S3_CUSTOM_DOMAIN = env_str("AWS_S3_CUSTOM_DOMAIN", "")
+AWS_S3_ADDRESSING_STYLE = env_str("AWS_S3_ADDRESSING_STYLE", "")
+# Public objects by default; turn on when the bucket is private and every
+# read must be a short-lived signed URL.
+AWS_QUERYSTRING_AUTH = env_bool("AWS_QUERYSTRING_AUTH", False)
+AWS_S3_FILE_OVERWRITE = False
+
+# Bytes per upload (the client compresses before sending; this is the hard
+# ceiling a hostile client cannot exceed), dimension bounds, and the
+# decompression-bomb guard.
+MEDIA_MAX_UPLOAD_BYTES = env_int("MEDIA_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
+MEDIA_MAX_DIMENSION = env_int("MEDIA_MAX_DIMENSION", 8000)
+MEDIA_MIN_DIMENSION = env_int("MEDIA_MIN_DIMENSION", 64)
+MEDIA_MAX_PIXELS = env_int("MEDIA_MAX_PIXELS", 40_000_000)
+
+# Responsive variants, widest last. Each is WebP; the source is re-encoded to
+# an EXIF-free JPEG for maximum compatibility (downloads, old browsers).
+MEDIA_VARIANT_WIDTHS = {
+    "thumb": 320,
+    "card": 640,
+    "detail": 1280,
+    "full": 1920,
+}
+MEDIA_IMAGE_QUALITY = env_int("MEDIA_IMAGE_QUALITY", 82)
+# Draw a small "MarketHub" wordmark on the detail/full variants. Off by
+# default: it reduces competitor image theft at the cost of a visible mark.
+MEDIA_WATERMARK = env_bool("MEDIA_WATERMARK", False)
+# Dotted path to a malware scanner: callable(raw_bytes, mime, filename) that
+# raises (or returns {"infected": True}) to reject an upload. Empty = no
+# scanner configured; size/MIME/dimension checks still apply.
+MEDIA_SCAN_HOOK = env_str("MEDIA_SCAN_HOOK", "")
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

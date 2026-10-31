@@ -26,9 +26,11 @@ export default defineConfig({
     include: ['src/**/*.test.{js,jsx}'],
     exclude: ['node_modules', '.next', 'e2e'],
     // env.js validates NEXT_PUBLIC_API_URL at import time (Phase 2); give the
-    // unit tests a deterministic value instead of relying on .env.local.
+    // unit tests a deterministic value instead of relying on .env.local. The
+    // media host is the Phase 14 CDN allow-list (`lib/media.js`).
     env: {
       NEXT_PUBLIC_API_URL: 'http://api.test/api/v1',
+      NEXT_PUBLIC_MEDIA_HOSTS: 'https://cdn.test',
     },
     coverage: {
       provider: 'v8',

@@ -30,7 +30,14 @@ from . import lifecycle
 from .duplicates import more_from_seller as _more_from_seller
 from .duplicates import similar_to
 from .lifecycle import ListingLifecycleError
-from .models import ListingStatus, Product, ProductReview, Wishlist, nested_product_queryset
+from .models import (
+    ListingStatus,
+    Product,
+    ProductImage,
+    ProductReview,
+    Wishlist,
+    nested_product_queryset,
+)
 from .serializers import (
     ListingActionSerializer,
     ProductCreateUpdateSerializer,
@@ -53,6 +60,17 @@ NUMERIC_ATTRIBUTE_TYPES = {AttributeDefinition.Type.NUMBER, AttributeDefinition.
 #: none" — it reads the ``None`` modifiers as input). 20 digits is far beyond
 #: any attribute value; 6 decimals keeps fractional bounds exact.
 ATTRIBUTE_DECIMAL_FIELD = DecimalField(max_digits=20, decimal_places=6)
+
+
+def _images_prefetch(lookup: str = "images") -> Prefetch:
+    """Images *and* their upload in one extra query.
+
+    ``ProductImage.display_url`` walks to ``upload`` for the card URL and the
+    LQIP; without ``select_related`` that walk is one query per image, and a
+    catalogue page would trade its N+1 for a bigger one. One Prefetch object
+    keeps the query count constant for every list path.
+    """
+    return Prefetch(lookup, queryset=ProductImage.objects.select_related("upload"))
 
 
 def apply_catalog_filters(queryset, query_params):
@@ -234,7 +252,7 @@ class ProductListView(generics.ListAPIView):
             # behind a dead store) — see ProductQuerySet.public.
             Product.objects.public()
             .select_related("store", "category", "seller", "wilaya")
-            .prefetch_related("images")
+            .prefetch_related(_images_prefetch())
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -265,7 +283,7 @@ class ProductDetailView(generics.RetrieveAPIView):
             super()
             .get_queryset()
             .select_related("store", "category", "seller", "wilaya", "commune")
-            .prefetch_related("images", "attributes", "reviews__user")
+            .prefetch_related(_images_prefetch(), "attributes", "reviews__user")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -285,7 +303,7 @@ def featured_products(request):
     products = (
         Product.objects.public()
         .select_related("store", "category", "seller", "wilaya")
-        .prefetch_related("images")
+        .prefetch_related(_images_prefetch())
         .with_catalog_stats()
         .for_user(request.user)
         .order_by("-created_at")[:12]
@@ -324,7 +342,7 @@ class SellerProductListView(generics.ListAPIView):
                         product_count=Count("products")
                     ),
                 ),
-                "images",
+                _images_prefetch(),
                 "attributes",
                 "inventory",
                 "reviews__user",
@@ -430,7 +448,7 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         return (
             Product.objects.filter(seller=self.request.user)
             .select_related("store", "category", "seller", "wilaya", "commune")
-            .prefetch_related("images", "attributes", "inventory")
+            .prefetch_related(_images_prefetch(), "attributes", "inventory")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -461,7 +479,7 @@ class ListingLifecycleView(generics.GenericAPIView):
         return (
             Product.objects.filter(seller=self.request.user)
             .select_related("store", "category", "seller", "wilaya", "commune")
-            .prefetch_related("images", "attributes", "reviews__user")
+            .prefetch_related(_images_prefetch(), "attributes", "reviews__user")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -558,7 +576,7 @@ def search_products(request):
     products = (
         Product.objects.public()
         .select_related("store", "category", "seller", "wilaya")
-        .prefetch_related("images")
+        .prefetch_related(_images_prefetch())
         .with_catalog_stats()
         .for_user(request.user)
     )
@@ -701,7 +719,7 @@ class WishlistListView(generics.ListAPIView):
         return (
             Wishlist.objects.filter(user=self.request.user)
             .select_related("product", "product__store")
-            .prefetch_related("product__images")
+            .prefetch_related(_images_prefetch("product__images"))
         )
 
 

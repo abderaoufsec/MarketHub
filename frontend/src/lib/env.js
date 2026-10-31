@@ -28,6 +28,7 @@ const RAW_ENV = {
   NEXT_PUBLIC_SITE_NAME: process.env.NEXT_PUBLIC_SITE_NAME,
   NEXT_PUBLIC_ENABLE_SEARCH: process.env.NEXT_PUBLIC_ENABLE_SEARCH,
   NEXT_PUBLIC_ENABLE_2FA: process.env.NEXT_PUBLIC_ENABLE_2FA,
+  NEXT_PUBLIC_MEDIA_HOSTS: process.env.NEXT_PUBLIC_MEDIA_HOSTS,
 }
 
 function requiredString(name) {
@@ -70,12 +71,23 @@ export const SITE_NAME = optionalString('NEXT_PUBLIC_SITE_NAME', 'MarketHub')
 export const ENABLE_SEARCH = optionalBool('NEXT_PUBLIC_ENABLE_SEARCH', true)
 export const ENABLE_2FA = optionalBool('NEXT_PUBLIC_ENABLE_2FA', false)
 
+/**
+ * Comma-separated origins of the media bucket/CDN (Phase 14). The same list
+ * feeds `next.config.js`'s `remotePatterns`: only these hosts (plus the API
+ * origin) may be resized through `next/image`.
+ */
+export const MEDIA_HOSTS = optionalString('NEXT_PUBLIC_MEDIA_HOSTS', '')
+  .split(',')
+  .map((host) => host.trim())
+  .filter(Boolean)
+
 const env = {
   API_URL,
   SITE_URL,
   SITE_NAME,
   ENABLE_SEARCH,
   ENABLE_2FA,
+  MEDIA_HOSTS,
 }
 
 export default env

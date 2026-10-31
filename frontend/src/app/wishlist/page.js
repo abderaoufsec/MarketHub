@@ -9,6 +9,7 @@ import { Heart, ShoppingCart, Trash2, Package } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslations } from 'next-intl'
 import { usePrice } from '../../lib/currency'
+import SafeImage from '../../components/common/SafeImage'
 
 export default function WishlistPage() {
   const t = useTranslations('wishlist')
@@ -168,9 +169,11 @@ export default function WishlistPage() {
             >
               {/* Product Image */}
               <div className="relative group">
-                <img
+                <SafeImage
                   src={item.product_image || '/placeholder-product.jpg'}
                   alt={item.product_name}
+                  width={640}
+                  height={480}
                   className="w-full h-64 object-cover cursor-pointer"
                   onClick={() => router.push(`/products/${item.product}`)}
                 />

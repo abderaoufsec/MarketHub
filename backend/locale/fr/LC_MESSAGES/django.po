@@ -527,3 +527,43 @@ msgstr "Rejeté"
 
 msgid "Archived"
 msgstr "Archivé"
+
+# --- media pipeline (apps/media) --------------------------------------------
+msgid "That image is too large."
+msgstr "Cette image est trop volumineuse."
+
+msgid "The uploaded file is empty."
+msgstr "Le fichier envoyé est vide."
+
+msgid "Unsupported image format. Use JPEG, PNG, WebP or GIF."
+msgstr "Format d'image non pris en charge. Utilisez JPEG, PNG, WebP ou GIF."
+
+msgid "That image has too many pixels."
+msgstr "Cette image contient trop de pixels."
+
+msgid "That image's dimensions are outside the allowed range."
+msgstr "Les dimensions de cette image sont hors de la plage autorisée."
+
+msgid "That file is not a readable image."
+msgstr "Ce fichier n'est pas une image lisible."
+
+msgid "That image could not be scanned, so it was not accepted."
+msgstr "Cette image n'a pas pu être analysée, elle n'a donc pas été acceptée."
+
+msgid "That image was rejected by the security scanner."
+msgstr "Cette image a été rejetée par le scanner de sécurité."
+
+msgid "This image is used by a listing. Remove it from the listing first."
+msgstr "Cette image est utilisée par une annonce. Retirez-la d'abord de l'annonce."
+
+msgid "That object key is not an upload."
+msgstr "Cette clé d'objet n'est pas un envoi."
+
+msgid "That upload could not be found."
+msgstr "Cet envoi est introuvable."
+
+msgid "Provide an uploaded image (upload_id) or an image URL."
+msgstr "Fournissez une image téléversée (upload_id) ou l'URL d'une image."
+
+msgid "That image does not belong to you."
+msgstr "Cette image ne vous appartient pas."

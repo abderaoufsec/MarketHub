@@ -140,6 +140,17 @@ raises first (`parse_error`, `http_method_not_allowed`, and the field-level
 | `draft_limit` | 400 | Too many saved drafts; `details.limit` is the cap (`MAX_DRAFT_LISTINGS`). |
 | `invalid_transition` | 400 | Lifecycle action is not allowed from this listing status (`details.action`, `details.status`). |
 
+### Media uploads (`apps/media`)
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `unsupported_image` | 400 | The bytes are not a JPEG/PNG/WebP/GIF. The real format is sniffed from magic bytes — the filename and `Content-Type` are ignored. `details.allowed` lists the formats. |
+| `image_too_large` | 413 | The upload exceeds `MEDIA_MAX_UPLOAD_BYTES` (default 10 MB); `details.limit_bytes` says the ceiling. |
+| `image_dimensions` | 400 | Width/height outside `MEDIA_MIN_DIMENSION`…`MEDIA_MAX_DIMENSION`, or more pixels than `MEDIA_MAX_PIXELS`. |
+| `upload_rejected` | 400 | The configured malware scanner (`MEDIA_SCAN_HOOK`) rejected the file — or could not run, in which case the upload fails closed. |
+| `image_in_use` | 409 | Deleting an upload that a listing still references. Remove it from the listing first. |
+| `image_not_found` | 404 | `POST /media/images/import/` was given an object key outside `uploads/`, or the object no longer exists. |
+
 ---
 
 ## 5. Cart, checkout & orders (`apps/orders`)

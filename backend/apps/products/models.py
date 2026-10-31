@@ -390,11 +390,24 @@ class ProductAttribute(models.Model):
 
 class ProductImage(models.Model):
     """
-    Stores URLs for product images
+    One photo on a listing.
+
+    Two sources, one row shape: an uploaded ``Image`` (Phase 14 — processed,
+    EXIF-free, responsive variants) or a legacy external ``image_url``. The
+    URL the clients render comes from :attr:`display_url`, which prefers the
+    upload's card-sized variant; the check constraint guarantees every row
+    has at least one source.
     """
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
-    image_url = models.URLField()
+    upload = models.ForeignKey(
+        "media.Image",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="product_images",
+    )
+    image_url = models.URLField(blank=True, default="")
     is_primary = models.BooleanField(default=False)
     sort_order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -402,6 +415,12 @@ class ProductImage(models.Model):
     class Meta:
         db_table = "product_images"
         ordering = ["-is_primary", "sort_order"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(image_url="") | Q(upload__isnull=False),
+                name="product_image_has_source",
+            )
+        ]
 
     def __str__(self):
         return f"{self.product.name} - Image {self.id}"
@@ -413,6 +432,46 @@ class ProductImage(models.Model):
                 is_primary=False
             )
         super().save(*args, **kwargs)
+
+    # ----- resolved URLs: one place decides which variant a client sees ----
+
+    def url_for(self, variant: str = "card", request=None) -> str | None:
+        """Absolute URL for ``variant`` when a request is available.
+
+        The API returns absolute URLs (the frontend runs on another origin),
+        so serializers pass their request through. ``request=None`` keeps a
+        relative path for internal callers (admin, management commands).
+        """
+        if self.upload_id and self.upload:
+            return self.upload.url_for(variant, request=request) or (self.image_url or None)
+        return self.image_url or None
+
+    @property
+    def display_url(self) -> str | None:
+        """Card-sized image for grids (upload) or the stored external URL."""
+        return self.url_for("card")
+
+    @property
+    def full_url(self) -> str | None:
+        """Detail-sized image; the gallery enlarges this one."""
+        return self.url_for("full")
+
+    @property
+    def lqip(self) -> str:
+        return self.upload.lqip if self.upload_id and self.upload else ""
+
+    @property
+    def width(self) -> int | None:
+        return self.upload.width if self.upload_id and self.upload else None
+
+    @property
+    def height(self) -> int | None:
+        return self.upload.height if self.upload_id and self.upload else None
+
+    @property
+    def phash(self) -> str:
+        """Perceptual hash of the photographed pixels (Phase 17 input)."""
+        return self.upload.phash if self.upload_id and self.upload else ""
 
 
 class ProductReview(models.Model):

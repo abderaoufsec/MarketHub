@@ -18,6 +18,7 @@ API_V1_URLPATTERNS = [
     path("geography/", include("apps.geography.urls")),
     path("catalog/", include("apps.catalog.urls")),
     path("stores/", include("apps.stores.urls")),
+    path("media/", include("apps.media.urls")),
     path("products/", include("apps.products.urls")),
     path("inventory/", include("apps.inventory.urls")),
     path("orders/", include("apps.orders.urls")),

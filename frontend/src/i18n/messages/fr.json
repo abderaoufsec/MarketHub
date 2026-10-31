@@ -826,7 +826,7 @@
       "CHECKOUT": "Paiement en ligne"
     },
     "contactModeHint": "Votre numéro n'est affiché que pour le téléphone et WhatsApp, et seulement s'il est vérifié dans votre profil.",
-    "photosHint": "Collez l'URL d'une photo — le téléversement arrive dans la prochaine version. La première photo sert de couverture.",
+    "photosHint": "Les annonces avec de vraies photos se vendent plus vite. Ajoutez-en jusqu'? 15 ? la premi?re est la couverture.",
     "locationHint": "Les acheteurs filtrent par wilaya — une localisation précise rapporte plus d'appels.",
     "noAttributes": "Rien de plus à remplir pour cette catégorie.",
     "addImage": "Ajouter",
@@ -858,6 +858,24 @@
       "quotaReached": "Vous avez atteint votre limite ({active} annonces actives sur {quota}).",
       "imageUrl": "Les liens de photo doivent commencer par http:// ou https://",
       "maxImages": "Jusqu'à {max} photos par annonce."
+    },
+    "photoUrlToggle": "Ou collez l'URL d'une image"
+  },
+  "media": {
+    "title": "Photos",
+    "hint": "Ajoutez jusqu'? {max} photos depuis votre t?l?phone. Glissez pour r?ordonner ? la premi?re est la couverture.",
+    "add": "Ajouter des photos",
+    "uploading": "Envoi...",
+    "count": "{count}/{max} photos",
+    "cover": "Couverture",
+    "makeCover": "Mettre en couverture",
+    "remove": "Retirer la photo",
+    "uploaded": "Photo t?l?vers?e",
+    "maxReached": "Vous pouvez ajouter jusqu'? {max} photos.",
+    "errors": {
+      "unsupported": "Ce fichier n'est pas une image JPEG, PNG, WebP ou GIF.",
+      "tooLarge": "Cette image est trop volumineuse.",
+      "uploadFailed": "La photo n'a pas pu ?tre envoy?e. R?essayez."
     }
   }
 }

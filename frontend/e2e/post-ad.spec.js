@@ -6,11 +6,15 @@
 // rows so the free-tier listing quota is never hit. The shared fixture pins
 // `mh_locale=en` (Phase 11: default UI is French).
 const { test, expect } = require('./fixtures')
+const path = require('path')
 
 const BUYER = {
   email: 'e2e-buyer@example.com',
   password: 'E2e!SmokeTest123',
 }
+
+// A real JPEG the browser uploads through the Phase 14 pipeline.
+const PHOTO = path.join(__dirname, 'fixtures', 'e2e-photo.jpg')
 
 test.describe('post a classified', () => {
   test('an individual can publish an ad in the wizard', async ({ page }) => {
@@ -45,20 +49,20 @@ test.describe('post a classified', () => {
       .selectOption({ label: 'Phones & Tablets' })
     await page.getByRole('button', { name: 'Continue' }).click()
 
-    // Step 2 — photos: paste one cover URL (uploads land in Phase 14).
-    await expect(page.getByText('Paste a photo URL')).toBeVisible()
-    await page
-      .getByLabel('Photo URL')
-      .fill('https://cdn.example.com/e2e-bike.jpg')
-    await page.getByRole('button', { name: 'Add', exact: true }).click()
-    // exact: the step hint also says "the first photo is the cover"
-    await expect(page.getByText('Cover', { exact: true })).toBeVisible()
+    // Step 2 — photos: upload a real file; the pipeline stores the variants
+    // and the grid marks the first photo as the cover.
+    await expect(
+      page.getByText('Listings with real photos sell faster.')
+    ).toBeVisible()
+    await page.locator('input[type="file"]').setInputFiles(PHOTO)
+    await expect(page.getByText('Cover', { exact: true })).toBeVisible({
+      timeout: 60_000,
+    })
+    await expect(page.locator('img[src*="thumb"]').first()).toBeVisible()
     await page.getByRole('button', { name: 'Continue' }).click()
 
     // Step 3 — details: the category's attribute fields plus contact mode.
-    await expect(
-      page.getByText('How should buyers reach you?')
-    ).toBeVisible()
+    await expect(page.getByText('How should buyers reach you?')).toBeVisible()
     await expect(page.locator('#attr-brand')).toBeVisible()
     await page.selectOption('#attr-brand', 'samsung')
     await page.selectOption('#attr-storage', '128')
@@ -82,5 +86,8 @@ test.describe('post a classified', () => {
     await expect(
       page.getByRole('heading', { name: 'Contact the seller' })
     ).toBeVisible()
+    // The uploaded photo is on the public page, as the detail WebP variant
+    // (the wizard already proved the `thumb` variant during upload).
+    await expect(page.locator('img[src*="full.webp"]').first()).toBeVisible()
   })
 })

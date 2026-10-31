@@ -20,6 +20,7 @@ import {
 import Link from 'next/link'
 import CategoryPicker from '../../../../../components/common/CategoryPicker'
 import AttributeFields from '../../../../../components/product/AttributeFields'
+import ImageUploader from '../../../../../components/media/ImageUploader'
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -33,6 +34,7 @@ export default function EditProductPage() {
   const [categoryId, setCategoryId] = useState(null)
   const [attributes, setAttributes] = useState({})
   const [attributeErrors, setAttributeErrors] = useState({})
+  const [images, setImages] = useState([])
   // Bumped when the category tree lands — see `definitions` below.
   const [treeVersion, setTreeVersion] = useState(0)
   const [formData, setFormData] = useState({
@@ -97,6 +99,21 @@ export default function EditProductPage() {
       // writes back `category_id`.
       setCategoryId(product.category?.id ?? null)
       setAttributes(product.attributes_json || {})
+      // Existing photos come back as uploads (upload_id) or legacy URLs; the
+      // uploader round-trips both, and the payload below sends the same ids.
+      setImages(
+        (product.images || [])
+          .map((image) => ({
+            upload_id: image.upload_id || undefined,
+            image_url: image.image_url || undefined,
+            url: image.url,
+            thumb_url: image.thumb_url || image.url,
+            lqip: image.lqip || '',
+            width: image.width,
+            height: image.height,
+          }))
+          .filter((image) => image.upload_id || image.image_url)
+      )
     } catch (error) {
       console.error('Error fetching product:', error)
       setMessage({
@@ -167,6 +184,11 @@ export default function EditProductPage() {
         ...formData,
         category_id: categoryId,
         attributes_json: attributes,
+        images: images.map((image) =>
+          image.upload_id
+            ? { upload_id: image.upload_id }
+            : { image_url: image.image_url }
+        ),
       })
       setMessage({ type: 'success', text: t('edit.updated') })
       setTimeout(() => {
@@ -272,6 +294,10 @@ export default function EditProductPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               placeholder={t('edit.form.descriptionPlaceholder')}
             />
+          </div>
+
+          <div className="border-t border-gray-100 pt-6">
+            <ImageUploader images={images} onChange={setImages} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

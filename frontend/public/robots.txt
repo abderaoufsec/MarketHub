@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /seller/
+Disallow: /admin/
+
+# Sitemaps arrive with the SEO phase.

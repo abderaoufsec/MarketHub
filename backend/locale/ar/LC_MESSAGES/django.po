@@ -526,3 +526,43 @@ msgstr "مرفوض"
 
 msgid "Archived"
 msgstr "مؤرشف"
+
+# --- media pipeline (apps/media) --------------------------------------------
+msgid "That image is too large."
+msgstr "هذه الصورة كبيرة جدًا."
+
+msgid "The uploaded file is empty."
+msgstr "الملف المرفوع فارغ."
+
+msgid "Unsupported image format. Use JPEG, PNG, WebP or GIF."
+msgstr "صيغة الصورة غير مدعومة. استخدم JPEG أو PNG أو WebP أو GIF."
+
+msgid "That image has too many pixels."
+msgstr "تحتوي هذه الصورة على عدد كبير جدًا من البكسلات."
+
+msgid "That image's dimensions are outside the allowed range."
+msgstr "أبعاد هذه الصورة خارج النطاق المسموح به."
+
+msgid "That file is not a readable image."
+msgstr "هذا الملف ليس صورة قابلة للقراءة."
+
+msgid "That image could not be scanned, so it was not accepted."
+msgstr "تعذّر فحص هذه الصورة، لذلك لم يتم قبولها."
+
+msgid "That image was rejected by the security scanner."
+msgstr "تم رفض هذه الصورة من قِبل ماسح الأمان."
+
+msgid "This image is used by a listing. Remove it from the listing first."
+msgstr "هذه الصورة مستخدمة في إعلان. أزلها من الإعلان أولاً."
+
+msgid "That object key is not an upload."
+msgstr "مفتاح الكائن هذا ليس ملفًا مرفوعًا."
+
+msgid "That upload could not be found."
+msgstr "تعذّر العثور على هذا الملف المرفوع."
+
+msgid "Provide an uploaded image (upload_id) or an image URL."
+msgstr "قدّم صورة مرفوعة (upload_id) أو رابط صورة."
+
+msgid "That image does not belong to you."
+msgstr "هذه الصورة لا تخصّك."

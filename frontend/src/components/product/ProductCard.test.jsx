@@ -166,6 +166,42 @@ describe('ProductCard', () => {
   })
 })
 
+// Phase 14 of docs/todo.md — our uploads take the optimiser path.
+describe('ProductCard (media pipeline)', () => {
+  it('routes our own media through next/image, with the stored LQIP', () => {
+    renderWithIntl(
+      <ProductCard
+        product={{
+          ...PRODUCT,
+          primary_image: 'http://api.test/media/listings/abc/card.webp',
+          primary_image_lqip: 'data:image/webp;base64,abc123',
+        }}
+      />
+    )
+
+    const image = screen.getByRole('img')
+    // next/image rewrites the URL into its optimiser endpoint...
+    expect(image.getAttribute('src')).toContain('/_next/image')
+  })
+
+  it('renders an arbitrary external URL plainly, never through the optimiser', () => {
+    renderWithIntl(
+      <ProductCard
+        product={{
+          ...PRODUCT,
+          primary_image: 'https://someone-elses-host.example/photo.jpg',
+        }}
+      />
+    )
+
+    // Only the API origin and configured CDNs may be proxied (remotePatterns).
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://someone-elses-host.example/photo.jpg'
+    )
+  })
+})
+
 // Phase 13 of docs/todo.md — one catalogue, two sellers.
 describe('ProductCard (listings)', () => {
   it('links to the canonical /l/<slug>-<id> URL when the API sends one', () => {

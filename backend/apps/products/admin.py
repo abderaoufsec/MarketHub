@@ -20,7 +20,7 @@ class ProductImageInline(admin.TabularInline):
 
     model = ProductImage
     extra = 1
-    fields = ["image_url", "is_primary", "sort_order"]
+    fields = ["upload", "image_url", "is_primary", "sort_order"]
 
 
 @admin.register(Product)

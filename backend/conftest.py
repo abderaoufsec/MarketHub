@@ -25,6 +25,28 @@ from tests.factories import (
 
 
 # ---------------------------------------------------------------------------
+# Media storage (Phase 14)
+# ---------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def isolated_media_root(tmp_path, settings):
+    """Point MEDIA_ROOT at a per-test directory.
+
+    The upload pipeline writes through Django's default storage, so without
+    this every test that uploads a photo would litter ``backend/media/`` with
+    variants (and the dev database's real files would mix with test data).
+    The LazyObject is reset before and after so the storage instance never
+    keeps a directory from a previous test.
+    """
+    from django.core.files.storage import default_storage
+    from django.utils.functional import empty
+
+    settings.MEDIA_ROOT = tmp_path / "media"
+    default_storage._wrapped = empty
+    yield
+    default_storage._wrapped = empty
+
+
+# ---------------------------------------------------------------------------
 # Clients
 # ---------------------------------------------------------------------------
 @pytest.fixture
