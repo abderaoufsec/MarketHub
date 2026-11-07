@@ -1,5 +1,5 @@
 Django>=6.1.2
-djangorestframework>=3.14.0
+djangorestframework>=3.18.3
 # OpenAPI schema + /api/docs/ (Phase 9: core/urls.py, core/settings.py,
 # DEFAULT_SCHEMA_CLASS). 0.27 is the first release supporting Django 5.x
 # and DRF 3.14+, matching the floors above.
