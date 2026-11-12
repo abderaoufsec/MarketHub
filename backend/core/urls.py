@@ -20,6 +20,8 @@ API_V1_URLPATTERNS = [
     path("stores/", include("apps.stores.urls")),
     path("media/", include("apps.media.urls")),
     path("products/", include("apps.products.urls")),
+    # Phase 16: /messages/conversations/, offers, blocks, reports.
+    path("messages/", include("apps.messaging.urls")),
     # Phase 15: /search/ (facets + cursor), /search/suggestions/,
     # /search/recent/ and /search/saved/.
     path("search/", include("apps.search.urls")),

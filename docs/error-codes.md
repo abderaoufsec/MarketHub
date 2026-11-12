@@ -153,7 +153,38 @@ raises first (`parse_error`, `http_method_not_allowed`, and the field-level
 
 ---
 
-## 5. Cart, checkout & orders (`apps/orders`)
+## 5. Contact, chat & offers (`apps/messaging`)
+
+Phase 16. Public listing payloads expose `phone_available` (a boolean), never
+the number; `POST /products/<id>/reveal-phone/` is authenticated, throttled and
+writes a `PhoneReveal` audit row.
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `cannot_contact_yourself` | 400 | A user tried to chat/reveal/block/report their own listing or account. |
+| `user_blocked` | 403 | Either party blocked the other; all new contact is refused. |
+| `phone_not_available` | 400 | The listing is chat-only, or the seller has no verified number. |
+| `empty_message` | 400 | A message had neither text nor an image. |
+| `message_too_long` | 400 | The body exceeds `CHAT_MAX_MESSAGE_LENGTH`; `details.max_length` is the cap. |
+| `spam_filtered` | 400 | The first message contained a phone number or link. `details.reasons` lists `phone_number` / `link`. |
+| `message_flood` | 429 | The same body was sent repeatedly inside the duplicate window; `details.wait` is the window in seconds. |
+| `offer_not_allowed` | 400 | The listing is not `NEGOTIABLE`; offers do not apply. |
+| `open_offer_exists` | 409 | One PENDING offer already exists in this conversation. Accept, counter, decline or withdraw it first. |
+| `offer_not_pending` | 409 | Accept/decline/counter/withdraw on an offer that is already resolved. |
+| `offer_action_not_allowed` | 403 | The creator tried to accept/decline their own offer (only the recipient responds), or a non-creator tried to withdraw it. |
+| `report_target_required` | 400 | No person, listing, conversation or message was named in a report. |
+| `invalid_report_target` | 400 | The reported user/content does not exist or is not the caller's conversation. |
+| `cannot_report_yourself` | 400 | Self-reports are refused. |
+
+`image_not_found` (404) is reused when a chat attachment is missing or owned by
+someone else, and `not_found` (404) hides an offer id outside the caller's
+conversations. The generic `validation_error` covers malformed report/offer
+payloads and cursors, and `permission_denied` (403) covers service-layer
+participant guards.
+
+---
+
+## 6. Cart, checkout & orders (`apps/orders`)
 
 | Code | HTTP | Meaning |
 |---|---|---|
@@ -170,7 +201,7 @@ raises first (`parse_error`, `http_method_not_allowed`, and the field-level
 
 ---
 
-## 6. Payments (`apps/payments`)
+## 7. Payments (`apps/payments`)
 
 | Code | HTTP | Meaning |
 |---|---|---|
@@ -187,7 +218,7 @@ raises first (`parse_error`, `http_method_not_allowed`, and the field-level
 
 ---
 
-## 7. Idempotency
+## 8. Idempotency
 
 Endpoints that move money or create a listing honour **`Idempotency-Key`**
 (header) and, for checkout and simulated payment, the body field of the same
@@ -208,7 +239,7 @@ Covered: `POST /api/v1/orders/checkout/`, `POST /api/v1/payments/simulate/`,
 
 ---
 
-## 8. Versioning
+## 9. Versioning
 
 The API is served under **`/api/v1/`** only. `X-API-Version: v1` is set on
 every API response. An unversioned path (`/api/products/`) or a version that
@@ -220,7 +251,7 @@ Adding `v2` means mounting a second URL prefix and adding `"v2"` to
 
 ---
 
-## 9. Stability
+## 10. Stability
 
 - **`code` is an API surface.** Renaming one is a breaking change; add a new
   code and keep the old one working for a release instead.

@@ -90,7 +90,7 @@ def test_the_doc_is_linked_from_the_docs_index():
     assert "error-codes.md" in index, "docs/README.md does not link the reference"
 
 
-@pytest.mark.parametrize("section", ["## 2.", "## 7.", "## 8."])
+@pytest.mark.parametrize("section", ["## 2.", "## 8.", "## 9."])
 def test_the_doc_covers_the_contract_machinery(section):
     """The envelope, idempotency and versioning sections are the part of the
     contract every client reads first."""

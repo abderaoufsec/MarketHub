@@ -708,7 +708,7 @@ def test_autosave_echoing_the_unchanged_type_still_saves(buyer_client, buyer):
     assert changed.status_code == 400
 
 
-def test_the_seller_phone_shows_only_when_invited(api_client, seller):
+def test_the_seller_phone_is_never_in_the_public_listing(api_client, seller):
     listing = ProductFactory(
         store=None,
         seller=seller,
@@ -721,20 +721,27 @@ def test_the_seller_phone_shows_only_when_invited(api_client, seller):
     seller.phone_verified_at = timezone.now()
     seller.save(update_fields=["phone_number", "phone_verified_at"])
 
-    # PHONE *is* the consent: a verified number is shown…
-    assert api_client.get(f"{LIST_URL}{listing.pk}/").data["seller_phone"] == "+213555123400"
+    # PHONE *is* the consent, but consent only lights the reveal button; the
+    # number itself is not part of the public payload (Phase 16 anti-scrape).
+    data = api_client.get(f"{LIST_URL}{listing.pk}/").data
+    assert "seller_phone" not in data
+    assert data["phone_available"] is True
 
-    # …until the seller switches to another contact mode…
+    # …until the seller switches to chat-only…
     listing.contact_mode = ContactMode.CHAT
     listing.save(update_fields=["contact_mode", "updated_at"])
-    assert api_client.get(f"{LIST_URL}{listing.pk}/").data["seller_phone"] is None
+    data = api_client.get(f"{LIST_URL}{listing.pk}/").data
+    assert "seller_phone" not in data
+    assert data["phone_available"] is False
 
     # …or the number was never verified.
     listing.contact_mode = ContactMode.PHONE
     listing.save(update_fields=["contact_mode", "updated_at"])
     seller.phone_verified_at = None
     seller.save(update_fields=["phone_verified_at"])
-    assert api_client.get(f"{LIST_URL}{listing.pk}/").data["seller_phone"] is None
+    data = api_client.get(f"{LIST_URL}{listing.pk}/").data
+    assert "seller_phone" not in data
+    assert data["phone_available"] is False
 
 
 # ---------------------------------------------------------------------------

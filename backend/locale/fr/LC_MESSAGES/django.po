@@ -571,3 +571,98 @@ msgstr "Fournissez une image téléversée (upload_id) ou l'URL d'une image."
 
 msgid "That image does not belong to you."
 msgstr "Cette image ne vous appartient pas."
+
+# --- contact & chat (apps/messaging) ---
+
+msgid "Choose the person, listing, or message you want to report."
+msgstr "Choisissez la personne, l'annonce ou le message ? signaler."
+
+msgid "Enter a counter-offer amount."
+msgstr "Saisissez le montant de votre contre-offre."
+
+msgid "Only the person who made the offer can withdraw it."
+msgstr "Seule la personne ayant fait l'offre peut la retirer."
+
+msgid "Phone numbers and links are not allowed in the first message."
+msgstr "Les num?ros de t?l?phone et les liens ne sont pas autoris?s dans le premier message."
+
+msgid "That conversation is not yours."
+msgstr "Cette conversation ne vous appartient pas."
+
+msgid "That listing could not be found."
+msgstr "Cette annonce est introuvable."
+
+msgid "That message could not be found."
+msgstr "Ce message est introuvable."
+
+msgid "That message is not part of your conversation."
+msgstr "Ce message ne fait pas partie de votre conversation."
+
+msgid "That message is too long."
+msgstr "Ce message est trop long."
+
+msgid "That offer action is not supported."
+msgstr "Cette action sur l'offre n'est pas prise en charge."
+
+msgid "That offer could not be found."
+msgstr "Cette offre est introuvable."
+
+msgid "That user could not be found."
+msgstr "Cet utilisateur est introuvable."
+
+msgid "The other person must respond to this offer."
+msgstr "L'autre personne doit r?pondre ? cette offre."
+
+msgid "The seller chose chat only for this listing."
+msgstr "Le vendeur a choisi la messagerie uniquement pour cette annonce."
+
+msgid "The seller has not verified a phone number for this listing."
+msgstr "Le vendeur n'a pas v?rifi? de num?ro de t?l?phone pour cette annonce."
+
+msgid "There is already an open offer in this conversation."
+msgstr "Une offre est d?j? en attente dans cette conversation."
+
+msgid "This listing does not accept offers."
+msgstr "Cette annonce n'accepte pas les offres."
+
+msgid "This offer is no longer open."
+msgstr "Cette offre n'est plus ouverte."
+
+msgid "Write a message or attach a photo."
+msgstr "?crivez un message ou joignez une photo."
+
+msgid "You are sending the same message repeatedly. Please wait before trying again."
+msgstr "Vous envoyez le m?me message plusieurs fois. Veuillez patienter avant de r?essayer."
+
+msgid "You cannot block yourself."
+msgstr "Vous ne pouvez pas vous bloquer vous-m?me."
+
+msgid "You cannot contact this user because one of you blocked the other."
+msgstr "Vous ne pouvez pas contacter cet utilisateur car l'un de vous a bloqu? l'autre."
+
+msgid "You cannot report yourself."
+msgstr "Vous ne pouvez pas vous signaler vous-m?me."
+
+msgid "You cannot reveal your own phone number."
+msgstr "Vous ne pouvez pas r?v?ler votre propre num?ro de t?l?phone."
+
+msgid "You cannot start a conversation about your own listing."
+msgstr "Vous ne pouvez pas d?marrer une conversation sur votre propre annonce."
+
+msgid "You do not have access to this conversation."
+msgstr "Vous n'avez pas acc?s ? cette conversation."
+
+msgid "New message"
+msgstr "Nouveau message"
+
+msgid "New message about {listing}"
+msgstr "Nouveau message à propos de {listing}"
+
+msgid "Sent a photo"
+msgstr "Photo envoyée"
+
+msgid "Sent a price offer"
+msgstr "Offre de prix envoyée"
+
+msgid "{sender} sent you a message about {listing}:\n\n{preview}\n\nReply here: {link}\n\nStay safe: never pay in advance or share verification codes."
+msgstr "{sender} vous a envoyé un message à propos de {listing} :\n\n{preview}\n\nRépondez ici : {link}\n\nRestez prudent : ne payez jamais d'avance et ne partagez pas vos codes de vérification."

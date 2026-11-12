@@ -15,6 +15,14 @@ from django.utils import timezone
 from apps.catalog.models import AttributeDefinition, Category
 from apps.geography.models import Commune, Wilaya
 from apps.inventory.models import Inventory, InventoryAuditLog
+from apps.media.models import Image
+from apps.messaging.models import (
+    Conversation,
+    Message,
+    Offer,
+    Report,
+    UserBlock,
+)
 from apps.orders.models import Cart, CartItem, Order, OrderItem
 from apps.payments.models import Transaction
 from apps.products.models import ListingType, Product, ProductImage, ProductReview, Wishlist
@@ -196,6 +204,76 @@ class WishlistFactory(factory.django.DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     product = factory.SubFactory(ProductFactory)
+
+
+class ImageFactory(factory.django.DjangoModelFactory):
+    """An already-processed upload (Phase 14), without touching real bytes."""
+
+    class Meta:
+        model = Image
+
+    owner = factory.SubFactory(UserFactory)
+    file = "listings/test-chat.jpg"
+    original_name = "test-chat.jpg"
+    mime_type = "image/jpeg"
+    size_bytes = 1024
+    width = 800
+    height = 600
+    variants = factory.LazyFunction(
+        lambda: {
+            "thumb": "listings/test-chat.jpg",
+            "card": "listings/test-chat.jpg",
+            "detail": "listings/test-chat.jpg",
+            "full": "listings/test-chat.jpg",
+        }
+    )
+    status = Image.Status.READY
+
+
+class ConversationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Conversation
+
+    listing = factory.SubFactory(ProductFactory, store=None)
+    buyer = factory.SubFactory(UserFactory)
+    seller = factory.LazyAttribute(lambda o: o.listing.seller)
+
+
+class MessageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Message
+
+    conversation = factory.SubFactory(ConversationFactory)
+    sender = factory.LazyAttribute(lambda o: o.conversation.buyer)
+    body = "Is this still available?"
+    kind = "TEXT"
+
+
+class OfferFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Offer
+
+    conversation = factory.SubFactory(ConversationFactory)
+    created_by = factory.LazyAttribute(lambda o: o.conversation.buyer)
+    amount = Decimal("90.00")
+    currency = "DZD"
+
+
+class UserBlockFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = UserBlock
+
+    blocker = factory.SubFactory(UserFactory)
+    blocked = factory.SubFactory(UserFactory)
+
+
+class ReportFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Report
+
+    reporter = factory.SubFactory(UserFactory)
+    reported_user = factory.SubFactory(UserFactory)
+    reason = "SPAM"
 
 
 class InventoryFactory(factory.django.DjangoModelFactory):

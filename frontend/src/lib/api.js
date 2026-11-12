@@ -173,6 +173,36 @@ export const productsAPI = {
   quota: () => api.get('/products/seller/quota/'),
   similar: (id) => api.get(`/products/${id}/similar/`),
   moreFromSeller: (id) => api.get(`/products/${id}/more-from-seller/`),
+  // Phase 16: the phone is never in the public payload. This authenticated,
+  // throttled call writes an audit row and returns ready-made deep links.
+  revealPhone: (id) => api.post(`/products/${id}/reveal-phone/`, {}),
+}
+
+// ==================== CONTACT & CHAT (Phase 16) ====================
+export const messagingAPI = {
+  // Inbox is capped server-side at 100; `role=buyer|seller` scopes it.
+  conversations: (params) => api.get('/messages/conversations/', { params }),
+  conversation: (id) => api.get(`/messages/conversations/${id}/`),
+  // Idempotent: the same buyer + listing always reuses one thread.
+  startConversation: (listingId) =>
+    api.post('/messages/conversations/', { listing_id: listingId }),
+  // Cursor endpoint: `after` for polling, `before` for older-page backfill.
+  messages: (id, params) =>
+    api.get(`/messages/conversations/${id}/messages/`, { params }),
+  sendMessage: (id, data) =>
+    api.post(`/messages/conversations/${id}/messages/`, data),
+  markRead: (id) => api.post(`/messages/conversations/${id}/read/`, {}),
+  archive: (id, isArchived) =>
+    api.patch(`/messages/conversations/${id}/`, { is_archived: isArchived }),
+  createOffer: (id, data) =>
+    api.post(`/messages/conversations/${id}/offers/`, data),
+  offerAction: (offerId, action, data = {}) =>
+    api.post(`/messages/offers/${offerId}/${action}/`, data),
+  blockUser: (userId) => api.post(`/messages/users/${userId}/block/`, {}),
+  unblockUser: (userId) => api.delete(`/messages/users/${userId}/block/`),
+  blockList: () => api.get('/messages/blocks/'),
+  report: (data) => api.post('/messages/reports/', data),
+  unreadCount: () => api.get('/messages/unread-count/'),
 }
 
 // ==================== SEARCH & DISCOVERY (Phase 15) ====================

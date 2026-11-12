@@ -12,15 +12,52 @@ import {
   Heart,
   Plus,
   Search,
+  MessageSquare,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { messagingAPI } from '../../lib/api'
 import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Header() {
   const { user, isAuthenticated, isSeller, logout } = useAuth()
   const t = useTranslations('common')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Phase 16: the header badge polls the cheap aggregate endpoint. Chat
+  // itself polls too; 30s here is enough to notice a new thread without
+  // turning every page into a request loop.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadCount(0)
+      return undefined
+    }
+    let cancelled = false
+    const refresh = async () => {
+      try {
+        const response = await messagingAPI.unreadCount()
+        if (!cancelled) setUnreadCount(response.data?.unread_count || 0)
+      } catch {
+        // A transient failure must not break the navigation.
+      }
+    }
+    refresh()
+    const timer = setInterval(refresh, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [isAuthenticated])
+
+  const unreadBadge = (extra = '') =>
+    unreadCount > 0 ? (
+      <span
+        className={`absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ${extra}`}
+      >
+        {unreadCount > 99 ? '99+' : unreadCount}
+      </span>
+    ) : null
 
   return (
     <motion.header
@@ -125,6 +162,20 @@ export default function Header() {
                     </motion.div>
                   </>
                 )}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link
+                    href="/messages"
+                    className="relative flex items-center text-gray-700 transition-colors hover:text-primary"
+                    title={t('nav.messages')}
+                    aria-label={t('nav.messages')}
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                    {unreadBadge()}
+                  </Link>
+                </motion.div>
                 <div className="relative group">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -151,6 +202,17 @@ export default function Header() {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       {t('nav.orders')}
+                    </Link>
+                    <Link
+                      href="/messages"
+                      className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <span>{t('nav.messages')}</span>
+                      {unreadCount > 0 && (
+                        <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
                     </Link>
                     <Link
                       href="/profile/saved-searches"
@@ -344,6 +406,22 @@ export default function Header() {
                         className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                       >
                         {t('nav.orders')}
+                      </Link>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/messages"
+                        className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors font-medium py-2"
+                      >
+                        {t('nav.messages')}
+                        {unreadCount > 0 && (
+                          <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
                       </Link>
                     </motion.div>
                     <motion.div

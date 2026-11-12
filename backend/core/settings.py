@@ -121,6 +121,9 @@ INSTALLED_APPS = [
     "apps.stores",
     "apps.media",
     "apps.products",
+    # Phase 16: contact, chat, offers and abuse reports. Depends on products,
+    # media and users; nothing points back at it from those apps.
+    "apps.messaging",
     # Phase 15: search service, saved searches and analytics. Depends on the
     # product catalogue (signals, facets) and geography, not the reverse.
     "apps.search",
@@ -422,6 +425,12 @@ REST_FRAMEWORK = {
         "forgot_password": env_str("THROTTLE_RATE_FORGOT_PASSWORD", "10/hour"),
         "resend_verification": env_str("THROTTLE_RATE_RESEND_VERIFICATION", "10/hour"),
         "social_login": env_str("THROTTLE_RATE_SOCIAL_LOGIN", "10/hour"),
+        # Phase 16: chat is abuse-sensitive, but a normal conversation is
+        # bursty. These sit on top of the first-message/duplicate checks.
+        "conversation_create": env_str("THROTTLE_RATE_CONVERSATION_CREATE", "20/hour"),
+        "message": env_str("THROTTLE_RATE_MESSAGE", "60/min"),
+        "offer": env_str("THROTTLE_RATE_OFFER", "30/hour"),
+        "report": env_str("THROTTLE_RATE_REPORT", "10/hour"),
     },
 }
 
@@ -558,6 +567,16 @@ WHATSAPP_API_URL = env_str("WHATSAPP_API_URL")
 WHATSAPP_API_KEY = env_str("WHATSAPP_API_KEY")
 WHATSAPP_FROM = env_str("WHATSAPP_FROM", "MarketHub")
 WHATSAPP_TIMEOUT = env_int("WHATSAPP_TIMEOUT", 10)
+
+# ---------------------------------------------------------------------------
+# Contact & chat (Phase 16)
+# ---------------------------------------------------------------------------
+# The first message blocks phone numbers/links; every later message can carry
+# a safety flag. Repeated identical messages inside the window are rejected as
+# a flood before the per-minute throttle even applies.
+CHAT_MAX_MESSAGE_LENGTH = env_int("CHAT_MAX_MESSAGE_LENGTH", 2000)
+CHAT_DUPLICATE_WINDOW_SECONDS = env_int("CHAT_DUPLICATE_WINDOW_SECONDS", 300)
+CHAT_DUPLICATE_LIMIT = env_int("CHAT_DUPLICATE_LIMIT", 3)
 
 # OTP hardening: short, single-use, attempt-capped, budgeted per number/IP.
 OTP_LENGTH = env_int("OTP_LENGTH", 6)

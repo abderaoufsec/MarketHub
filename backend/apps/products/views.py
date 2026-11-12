@@ -1,5 +1,6 @@
 from django.db.models import Count, F, IntegerField, OuterRef, Prefetch, Subquery, Value
 from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiTypes, extend_schema
@@ -8,7 +9,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from apps.messaging.services import reveal_phone
 from apps.search.facets import localized
 from apps.search.services import get_search_service
 from apps.stores.models import Store
@@ -20,6 +23,7 @@ from apps.users.plans import (
     get_product_quota,
     max_draft_listings,
 )
+from apps.users.throttles import RevealPhoneRateThrottle
 from core.exceptions import ApiError
 from core.idempotency import IdempotentPostMixin
 from core.pagination import FeedCursorPagination, WishlistCursorPagination
@@ -123,6 +127,46 @@ class ProductDetailView(generics.RetrieveAPIView):
             Product.objects.filter(pk=obj.pk).update(views_count=F("views_count") + 1)
             obj.views_count += 1
         return obj
+
+
+class RevealPhoneView(APIView):
+    """Authenticated, throttled, audited phone reveal (Phase 16).
+
+    The public detail payload only says whether a number *can* be revealed.
+    The number itself leaves the server here, once per click, with a
+    ``PhoneReveal`` audit row (who, which listing, which number, IP, UA). The
+    client gets ready-made ``tel:``/``sms:``/WhatsApp deep links so a phone
+    number never has to be parsed or concatenated in the browser.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [RevealPhoneRateThrottle]
+
+    def _deep_links(self, phone: str) -> dict:
+        digits = "".join(character for character in phone if character.isdigit())
+        if digits.startswith("00"):
+            digits = digits[2:]
+        international = f"213{digits[1:]}" if digits.startswith("0") else digits
+        return {
+            "call_url": f"tel:{phone}",
+            "sms_url": f"sms:{phone}",
+            "whatsapp_url": f"https://wa.me/{international}",
+        }
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request, pk):
+        listing = get_object_or_404(
+            Product.objects.public().select_related("seller"),
+            pk=pk,
+        )
+        phone = reveal_phone(listing, request.user, request)
+        return Response(
+            {
+                "listing_id": listing.pk,
+                "phone_number": phone,
+                **self._deep_links(phone),
+            }
+        )
 
 
 @extend_schema(responses={200: ProductListSerializer(many=True)})

@@ -272,18 +272,26 @@ class ListingActionSerializer(serializers.Serializer):
 
 
 class SellerMiniSerializer(serializers.Serializer):
-    """``{id, name}`` — the listing's owner on a public page.
+    """``{id, name, response_time_minutes}`` - the listing's owner.
 
-    Deliberately shapeless about contact data: the phone rides alongside the
-    listing (``seller_phone``) only when the seller's ``contact_mode`` says
-    so, never inside the seller object that pages cache and re-render.
+    Deliberately shapeless about contact data: the phone is never serialized
+    here, and Phase 16 removed it from the listing payload entirely. A buyer
+    must call the authenticated, throttled reveal endpoint. The response-time
+    badge is derived from first-reply samples in ``apps.messaging`` and is
+    cached, so a public detail page does not scan an inbox per request.
     """
 
     id = serializers.IntegerField(read_only=True)
     name = serializers.SerializerMethodField()
+    response_time_minutes = serializers.SerializerMethodField()
 
     def get_name(self, obj) -> str:
         return _display_name(obj)
+
+    def get_response_time_minutes(self, obj) -> int | None:
+        from apps.messaging.stats import seller_response_time_minutes
+
+        return seller_response_time_minutes(obj.pk)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -308,7 +316,9 @@ class ProductSerializer(serializers.ModelSerializer):
     user_review = serializers.SerializerMethodField()
     # Phase 13: the listing surface.
     seller = SellerMiniSerializer(read_only=True)
-    seller_phone = serializers.SerializerMethodField()
+    # Phase 16: consent, not data. The real number is only returned by the
+    # authenticated reveal endpoint so it is never scraped out of public HTML.
+    phone_available = serializers.SerializerMethodField()
     wilaya = WilayaSerializer(read_only=True)
     commune = CommuneSerializer(read_only=True)
     # No explicit ``source``: DRF *rejects* source == field name, and the
@@ -325,7 +335,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "id",
             "store",
             "seller",
-            "seller_phone",
+            "phone_available",
             "name",
             "description",
             "base_price",
@@ -399,21 +409,19 @@ class ProductSerializer(serializers.ModelSerializer):
             return ProductReviewSerializer(review, context=self.context).data
         return None
 
-    def get_seller_phone(self, obj) -> str | None:
-        """The seller's number when — and only when — they chose to show it.
+    def get_phone_available(self, obj) -> bool:
+        """Whether the reveal button should be offered.
 
-        ``contact_mode`` *is* the consent: PHONE/WHATSAPP means "display my
-        number on this listing", CHECKOUT/CHAT means don't. Only a verified
-        number qualifies (unproven numbers are not worth publishing), and the
-        phone never appears for inactive listings — this serializer runs on
-        public paths that all go through ``QuerySet.public()``.
+        ``contact_mode`` *is* the consent: PHONE/WHATSAPP means the seller is
+        willing to share their verified number; CHECKOUT/CHAT means chat only.
+        The value is a boolean, never the number - the number is only returned
+        by ``POST /products/<id>/reveal-phone/`` after auth, throttling and an
+        audit row.
         """
         if obj.contact_mode not in (ContactMode.PHONE, ContactMode.WHATSAPP):
-            return None
+            return False
         seller = obj.seller
-        if seller is None or not seller.phone_verified or not seller.phone_number:
-            return None
-        return seller.phone_number
+        return bool(seller and seller.phone_verified and seller.phone_number)
 
     def get_listing_type_label(self, obj) -> str:
         return choice_label(ListingType.choices, obj.listing_type)

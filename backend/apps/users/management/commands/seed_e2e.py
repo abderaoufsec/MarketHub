@@ -11,11 +11,16 @@ idempotent: re-running it updates the same rows instead of duplicating them.
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
+from django.db.models import Q
+from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.catalog.models import Category
+from apps.geography.models import Wilaya
 from apps.inventory.models import Inventory
-from apps.products.models import Product
+from apps.messaging.models import Conversation, PhoneReveal, Report, UserBlock
+from apps.messaging.stats import invalidate_seller_response_time
+from apps.products.models import ContactMode, ListingType, PriceMode, Product
 from apps.stores.models import Store
 
 User = get_user_model()
@@ -23,8 +28,12 @@ User = get_user_model()
 BUYER_EMAIL = "e2e-buyer@example.com"
 SELLER_EMAIL = "e2e-seller@example.com"
 PASSWORD = "E2e!SmokeTest123"
+SELLER_PHONE = "+213555123456"
 
 PRODUCT_NAME = "E2E Test Phone"
+# Phase 16: a classified, negotiable listing the contact/chat/offer journeys
+# start from. It belongs to the seller (the buyer is the contact side).
+NEGOTIABLE_NAME = "E2E Negotiable Phone"
 # Products created by the Playwright "post a listing" journey (timestamped).
 STALE_PRODUCT_PREFIX = "E2E Listing "
 # Classifieds the Playwright "post a classified" wizard journey creates.
@@ -67,14 +76,20 @@ class Command(BaseCommand):
         )
         seller.is_verified = True
         seller.is_seller = True
+        # Phase 16 phone reveal: the classified seller needs a *verified*
+        # number, otherwise the reveal endpoint answers `phone_not_available`.
+        seller.phone_number = SELLER_PHONE
+        seller.phone_verified_at = seller.phone_verified_at or timezone.now()
         seller.set_password(PASSWORD)
         seller.save()
 
         # Phase 12: the fixtures file the store under "electronics" and the
         # listing under "phones-tablets"; the launch tree must exist first.
         call_command("load_categories", verbosity=0)
+        call_command("load_geography", verbosity=0)
         electronics = Category.objects.get(slug="electronics")
         phones = Category.objects.get(slug="phones-tablets")
+        alger = Wilaya.objects.get(code="16")
 
         store, _ = Store.objects.get_or_create(
             owner=seller,
@@ -120,6 +135,48 @@ class Command(BaseCommand):
             defaults={"stock_quantity": 10},
         )
 
+        # Phase 16: a contact-first classified the buyer can chat about, reveal
+        # the seller's phone on, and negotiate. It is deliberately *not* a
+        # store product, so the UI offers chat/offers instead of checkout.
+        negotiable = (
+            Product.objects.filter(seller=seller, name=NEGOTIABLE_NAME)
+            .order_by("pk")
+            .first()
+        )
+        if negotiable is None:
+            negotiable = Product(seller=seller, name=NEGOTIABLE_NAME)
+        negotiable.store = None
+        negotiable.description = (
+            "A negotiable phone used by the Playwright contact/chat/offer journeys."
+        )
+        negotiable.base_price = 25000
+        negotiable.price_mode = PriceMode.NEGOTIABLE
+        negotiable.category = phones
+        negotiable.listing_type = ListingType.FOR_SALE
+        negotiable.contact_mode = ContactMode.PHONE
+        negotiable.wilaya = alger
+        negotiable.commune = None
+        negotiable.slug = slugify(NEGOTIABLE_NAME)[:230]
+        negotiable.is_available = True
+        negotiable.save()
+
+        # Deterministic reruns: the chat specs create conversations, messages,
+        # offers and reveals for these two accounts. Clear them in the global
+        # setup run so the inbox starts empty and read counts are predictable.
+        parties = Q(buyer__in=[buyer, seller]) | Q(seller__in=[buyer, seller])
+        Conversation.objects.filter(parties).delete()
+        PhoneReveal.objects.filter(
+            Q(viewer__in=[buyer, seller]) | Q(seller__in=[buyer, seller])
+        ).delete()
+        UserBlock.objects.filter(
+            Q(blocker__in=[buyer, seller]) | Q(blocked__in=[buyer, seller])
+        ).delete()
+        Report.objects.filter(
+            Q(reporter__in=[buyer, seller]) | Q(reported_user__in=[buyer, seller])
+        ).delete()
+        # The response-time badge is cached from those (now deleted) replies.
+        invalidate_seller_response_time(seller.pk)
+
         # The "post a listing" journey creates one new product per run and the
         # free plan caps listings (settings.MAX_PRODUCTS_PER_SELLER). Prune the
         # leftovers from earlier runs so the suite never trips the quota.
@@ -138,7 +195,8 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Seeded buyer {BUYER_EMAIL}, seller {SELLER_EMAIL} "
                 f"(password {PASSWORD}), store '{store.store_name}', "
-                f"product '{product.name}' (id={product.pk})"
+                f"product '{product.name}' (id={product.pk}), "
+                f"negotiable '{negotiable.name}' (id={negotiable.pk})"
                 + (
                     f", pruned {pruned} stale listing(s) and {pruned_ads} stale ad(s)."
                     if pruned or pruned_ads

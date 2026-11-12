@@ -11,6 +11,11 @@ urlpatterns = [
     path("feed/categories/", views.feed_categories, name="product-feed-categories"),
     path("search/", views.search_products, name="product-search"),
     path("<int:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
+    path(
+        "<int:pk>/reveal-phone/",
+        views.RevealPhoneView.as_view(),
+        name="listing-reveal-phone",
+    ),
     # Listing lifecycle (Phase 13)
     path("<int:pk>/lifecycle/", views.ListingLifecycleView.as_view(), name="listing-lifecycle"),
     path("<int:pk>/similar/", views.similar_listings, name="listing-similar"),

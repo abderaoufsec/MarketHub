@@ -14,8 +14,6 @@ import {
   Heart,
   Star,
   MessageSquare,
-  Phone,
-  MessageCircle,
   MapPin,
   User,
 } from 'lucide-react'
@@ -23,6 +21,7 @@ import Link from 'next/link'
 import ReviewModal from './ReviewModal'
 import ProductCard from './ProductCard'
 import SafeImage from '../common/SafeImage'
+import SellerContactPanel from '../messaging/SellerContactPanel'
 import toast from 'react-hot-toast'
 import { useLocale, useTranslations } from 'next-intl'
 import { intlLocale } from '../../i18n/config'
@@ -464,52 +463,8 @@ export default function ProductDetail({ productId }) {
           )}
 
           {isClassified ? (
-            /* ---- Contact-first (Phase 13): no inventory, no checkout. ---- */
-            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <h3 className="text-lg font-semibold mb-3">
-                {t('contactSeller')}
-              </h3>
-              <div className="space-y-2 text-sm text-gray-700">
-                {product.seller_name && (
-                  <p className="flex items-center">
-                    <User className="h-4 w-4 me-2 text-gray-500" />
-                    {product.seller_name}
-                  </p>
-                )}
-                {product.wilaya_name && (
-                  <p className="flex items-center">
-                    <MapPin className="h-4 w-4 me-2 text-gray-500" />
-                    {product.wilaya_name}
-                  </p>
-                )}
-                {product.seller_phone ? (
-                  product.contact_mode === 'WHATSAPP' ? (
-                    <a
-                      href={`https://wa.me/${product.seller_phone.replace(
-                        /[^\d]/g,
-                        ''
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      {t('whatsapp')}
-                    </a>
-                  ) : (
-                    <a
-                      href={`tel:${product.seller_phone}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary"
-                    >
-                      <Phone className="h-4 w-4" />
-                      {product.seller_phone}
-                    </a>
-                  )
-                ) : (
-                  <p className="text-gray-500">{t('contactThroughChat')}</p>
-                )}
-              </div>
-            </div>
+            /* ---- Contact-first (Phase 13), chat/offers/phone (Phase 16). ---- */
+            <SellerContactPanel product={product} />
           ) : (
             <>
               <div className="mb-6">
@@ -577,6 +532,9 @@ export default function ProductDetail({ productId }) {
               />
             </button>
           </div>
+
+          {/* Phase 16: store SKUs keep checkout, but can still chat/reveal. */}
+          {!isClassified && <SellerContactPanel product={product} />}
 
           {/* Write Review Button — purchases only, so store SKUs only. */}
           {!isClassified && isAuthenticated && !isSeller && (
