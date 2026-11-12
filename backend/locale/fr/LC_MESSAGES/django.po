@@ -421,6 +421,10 @@ msgstr "Autre"
 msgid "Attributes must be an object."
 msgstr "Les attributs doivent être un objet."
 
+# --- saved searches (apps/search/serializers.py) --------------------------
+msgid "Params must be an object."
+msgstr "Les paramètres doivent être un objet."
+
 msgid "Attributes require a category to validate against."
 msgstr "Les attributs nécessitent une catégorie pour être validés."
 

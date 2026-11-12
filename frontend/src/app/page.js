@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import {
   Store,
   ShoppingBag,
@@ -8,10 +9,16 @@ import {
   Shield,
   ArrowRight,
   Sparkles,
+  Clock,
+  Flame,
+  LayoutGrid,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
 import { useTranslations } from 'next-intl'
+import ProductCard from '../components/product/ProductCard'
+import SkeletonLoader from '../components/common/SkeletonLoader'
+import { feedAPI } from '../lib/api'
 
 export default function Home() {
   const t = useTranslations('home')
@@ -130,6 +137,10 @@ export default function Home() {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* Phase 15: real listings above the marketing copy - the home page is
+          a discovery surface, not just a sign-up funnel. */}
+      <FeedSections />
 
       {/* Features Section */}
       <section
@@ -268,6 +279,180 @@ export default function Home() {
           </motion.div>
         </motion.div>
       </section>
+    </div>
+  )
+}
+
+function FeedSections() {
+  const t = useTranslations('home.feed')
+  const [sections, setSections] = useState({
+    latest: { items: [], next: null, loading: true, error: false },
+    trending: { items: [], next: null, loading: true, error: false },
+  })
+  const [categories, setCategories] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async (section) => {
+      try {
+        const response = await feedAPI.products({
+          section,
+          page_size: 8,
+        })
+        if (cancelled) return
+        setSections((prev) => ({
+          ...prev,
+          [section]: {
+            items: response.data.results || [],
+            next: response.data.next || null,
+            loading: false,
+            error: false,
+          },
+        }))
+      } catch {
+        if (cancelled) return
+        setSections((prev) => ({
+          ...prev,
+          [section]: { ...prev[section], loading: false, error: true },
+        }))
+      }
+    }
+    load('latest')
+    load('trending')
+    feedAPI
+      .categories()
+      .then((response) => {
+        if (!cancelled) setCategories(response.data || [])
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const loadMore = async (section) => {
+    const current = sections[section]
+    if (!current.next || current.loadingMore) return
+    setSections((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], loadingMore: true },
+    }))
+    try {
+      // The section's own `next` is a full cursor URL; following it is the
+      // only way to paginate without rebuilding the ordering client-side.
+      const response = await feedAPI.page(current.next)
+      setSections((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          items: [...prev[section].items, ...(response.data.results || [])],
+          next: response.data.next || null,
+          loadingMore: false,
+        },
+      }))
+    } catch {
+      setSections((prev) => ({
+        ...prev,
+        [section]: { ...prev[section], loadingMore: false },
+      }))
+    }
+  }
+
+  return (
+    <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold gradient-text">
+              {t('title')}
+            </h2>
+            <p className="text-gray-600 mt-2">{t('subtitle')}</p>
+          </div>
+          <Link
+            href="/search"
+            className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+          >
+            {t('viewAll')}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {categories.length > 0 && (
+          <div className="mb-10">
+            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">
+              <LayoutGrid className="h-4 w-4" />
+              {t('categories')}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/search?category=${encodeURIComponent(category.slug)}`}
+                  className="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-primary text-gray-700 hover:text-primary rounded-full px-4 py-2 text-sm shadow-sm transition-colors"
+                >
+                  {category.name}
+                  <span className="text-xs text-gray-400">
+                    {category.count}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <FeedRow
+          icon={<Clock className="h-5 w-5 text-primary" />}
+          title={t('latest')}
+          state={sections.latest}
+          onLoadMore={() => loadMore('latest')}
+          t={t}
+        />
+        <FeedRow
+          icon={<Flame className="h-5 w-5 text-orange-500" />}
+          title={t('trending')}
+          state={sections.trending}
+          onLoadMore={() => loadMore('trending')}
+          t={t}
+        />
+      </div>
+    </section>
+  )
+}
+
+function FeedRow({ icon, title, state, onLoadMore, t }) {
+  return (
+    <div className="mb-12 last:mb-0">
+      <h3 className="flex items-center gap-2 text-xl font-bold text-gray-900 mb-4">
+        {icon}
+        {title}
+      </h3>
+      {state.loading ? (
+        <SkeletonLoader variant="product" count={4} />
+      ) : state.error ? (
+        <p className="text-sm text-gray-500">{t('error')}</p>
+      ) : state.items.length === 0 ? (
+        <p className="text-sm text-gray-500">{t('empty')}</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {state.items.map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} />
+            ))}
+          </div>
+          {state.next && (
+            <div className="text-center mt-5">
+              <button
+                type="button"
+                onClick={onLoadMore}
+                disabled={state.loadingMore}
+                className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                {state.loadingMore ? t('loadingMore') : t('loadMore')}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

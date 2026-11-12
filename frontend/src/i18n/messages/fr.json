@@ -13,7 +13,9 @@
       "logout": "Déconnexion",
       "openMenu": "Ouvrir le menu",
       "closeMenu": "Fermer le menu",
-      "postAd": "Déposer une annonce"
+      "postAd": "Déposer une annonce",
+      "search": "Recherche",
+      "savedSearches": "Recherches enregistrées"
     },
     "footer": {
       "tagline": "Votre place de marché en ligne de confiance, qui relie acheteurs et vendeurs.",
@@ -303,6 +305,18 @@
       "title": "Prêt à vous lancer ?",
       "subtitle": "Rejoignez des milliers d'acheteurs et de vendeurs sur MarketHub dès aujourd'hui.",
       "createAccount": "Créer votre compte"
+    },
+    "feed": {
+      "title": "Nouveau sur MarketHub",
+      "subtitle": "Les annonces les plus récentes et les plus consultées.",
+      "categories": "Catégories populaires",
+      "latest": "Dernières annonces",
+      "trending": "Tendances",
+      "viewAll": "Voir toutes les annonces",
+      "loadMore": "Afficher plus",
+      "loadingMore": "Chargement...",
+      "empty": "Aucune annonce pour le moment.",
+      "error": "Impossible de charger les annonces."
     }
   },
   "orders": {
@@ -442,7 +456,9 @@
     "moreFromSeller": "Autres annonces de ce vendeur",
     "similarListings": "Annonces similaires",
     "wilayaFilter": "Wilaya",
-    "allWilayas": "Toutes les wilayas"
+    "allWilayas": "Toutes les wilayas",
+    "loadMore": "Afficher plus",
+    "loadingMore": "Chargement..."
   },
   "profile": {
     "title": "Mon profil",
@@ -877,5 +893,132 @@
       "tooLarge": "Cette image est trop volumineuse.",
       "uploadFailed": "La photo n'a pas pu ?tre envoy?e. R?essayez."
     }
+  },
+  "search": {
+    "title": "Recherche",
+    "subtitle": "Trouvez ce qu'il vous faut partout en Algérie - par texte, catégorie, lieu ou prix.",
+    "placeholder": "Rechercher un produit, une marque ou une catégorie...",
+    "submit": "Rechercher",
+    "clearQuery": "Effacer la recherche",
+    "filters": "Filtres",
+    "clearFilters": "Effacer les filtres",
+    "loading": "Recherche...",
+    "resultsCount": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}",
+    "error": "La recherche a échoué. Réessayez.",
+    "sort": "Trier par",
+    "sorts": {
+      "default": "Meilleure correspondance",
+      "newest": "Plus récentes",
+      "price_asc": "Prix croissant",
+      "price_desc": "Prix décroissant",
+      "distance": "Plus proches"
+    },
+    "nearMe": "Autour de moi",
+    "geoUnsupported": "La géolocalisation n'est pas disponible dans ce navigateur.",
+    "geoDenied": "Nous n'avons pas pu accéder à votre position.",
+    "didYouMean": "Vouliez-vous dire {term} ?",
+    "category": "Catégorie",
+    "allCategories": "Toutes les catégories",
+    "wilaya": "Wilaya",
+    "allWilayas": "Toutes les wilayas",
+    "price": "Prix",
+    "minPrice": "Min",
+    "maxPrice": "Max",
+    "condition": "État",
+    "anyCondition": "Tous les états",
+    "sellerType": "Vendeur",
+    "anySeller": "Tous les vendeurs",
+    "sellerStore": "Boutique",
+    "sellerIndividual": "Particulier",
+    "posted": "Publié",
+    "anyTime": "Toute date",
+    "postedToday": "Aujourd'hui",
+    "posted7d": "7 derniers jours",
+    "posted30d": "30 derniers jours",
+    "verifiedOnly": "Vendeurs vérifiés uniquement",
+    "withPhotos": "Avec photos uniquement",
+    "inStockOnly": "En stock uniquement",
+    "anyValue": "Tous",
+    "priceBands": {
+      "under_5k": "Moins de 5 000 DA",
+      "5k_20k": "5 000 - 20 000 DA",
+      "20k_100k": "20 000 - 100 000 DA",
+      "over_100k": "Plus de 100 000 DA"
+    },
+    "loadingMore": "Chargement...",
+    "loadMore": "Afficher plus",
+    "recent": {
+      "title": "Recherches récentes",
+      "filtersOnly": "Filtres uniquement"
+    },
+    "empty": {
+      "title": "Aucune annonce trouvée",
+      "subtitle": "Retirez un filtre, utilisez moins de mots ou une autre orthographe.",
+      "relax": "Un seul filtre suffit pour débloquer des résultats :",
+      "removeFilter": "Retirer {filter} ({count})",
+      "nearby": "Wilayas proches avec des résultats",
+      "labels": {
+        "q": "mots-clés",
+        "category": "catégorie",
+        "wilaya": "wilaya",
+        "condition": "état"
+      }
+    },
+    "saved": {
+      "save": "Enregistrer cette recherche",
+      "signInToSave": "Connectez-vous pour enregistrer",
+      "title": "Enregistrer cette recherche",
+      "subtitle": "Nous vous préviendrons des nouvelles annonces correspondantes.",
+      "name": "Nom (facultatif)",
+      "namePlaceholder": "ex. iPhone à moins de 50 000 DA",
+      "frequency": "Fréquence",
+      "instant": "Instantané",
+      "daily": "Résumé quotidien",
+      "channels": "Me prévenir par",
+      "email": "E-mail",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp",
+      "addPhone": "Ajoutez un numéro de téléphone à votre profil pour utiliser le SMS ou WhatsApp.",
+      "chooseChannel": "Choisissez au moins un canal de livraison.",
+      "saveButton": "Enregistrer la recherche",
+      "saving": "Enregistrement...",
+      "saved": "Recherche enregistrée",
+      "saveError": "Impossible d'enregistrer la recherche.",
+      "close": "Fermer"
+    }
+  },
+  "savedSearches": {
+    "title": "Recherches enregistrées",
+    "subtitle": "Alertes pour les annonces que vous suivez.",
+    "newSearch": "Nouvelle recherche",
+    "empty": "Vous n'avez pas encore de recherche enregistrée.",
+    "startSearching": "Commencer une recherche",
+    "filtersOnly": "Filtres uniquement",
+    "active": "Active",
+    "paused": "En pause",
+    "frequencies": {
+      "INSTANT": "Instantané",
+      "DAILY": "Quotidien"
+    },
+    "channels": {
+      "email": "E-mail",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp"
+    },
+    "lastNotified": "Dernière alerte : {date}",
+    "neverNotified": "Aucune alerte",
+    "open": "Ouvrir",
+    "pause": "Mettre en pause",
+    "resume": "Réactiver",
+    "delete": "Supprimer",
+    "resumed": "Alertes réactivées",
+    "updateError": "Impossible de modifier la recherche.",
+    "confirmDelete": "Supprimer cette recherche enregistrée ?",
+    "deleted": "Recherche supprimée.",
+    "deleteError": "Impossible de supprimer la recherche.",
+    "loadError": "Impossible de charger vos recherches.",
+    "retry": "Réessayer",
+    "loginRequired": "Connectez-vous pour gérer vos recherches enregistrées.",
+    "signIn": "Se connecter"
   }
 }

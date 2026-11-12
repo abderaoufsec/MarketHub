@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import (
@@ -266,6 +267,14 @@ class Product(models.Model):
     # category's effective AttributeDefinitions by
     # apps.catalog.validation.validate_attributes.
     attributes_json = models.JSONField(default=dict, blank=True)
+    # Phase 15: a normalized, denormalized text field for Postgres FTS. It is
+    # rebuilt by save() from the title, description, category path, location,
+    # attributes and store name - see apps.search.documents. Indexed by a GIN
+    # tsvector index and a trigram index (products migration 0007).
+    search_document = models.TextField(blank=True, default="", editable=False)
+    # Phase 15: a detail-page hit is the cheapest honest trending signal; the
+    # feed orders by it and falls back to recency on a young catalogue.
+    views_count = models.PositiveIntegerField(default=0, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -303,10 +312,39 @@ class Product(models.Model):
             # value and cannot use it (Phase 15's search work owns that
             # scale), but exact enum/boolean/text filters can.
             GinIndex(fields=["attributes_json"], name="products_attributes_gin"),
+            # Phase 15: full-text and typo-tolerant search over the derived
+            # document. The trigram opclass requires the pg_trgm extension
+            # (products migration 0007 creates it before the index).
+            GinIndex(
+                SearchVector("search_document", config="french"),
+                name="products_search_fts",
+            ),
+            GinIndex(
+                fields=["search_document"],
+                opclasses=["gin_trgm_ops"],
+                name="products_search_trgm",
+            ),
+            models.Index(fields=["-views_count", "-created_at"], name="products_trending"),
         ]
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        """Keep the search document in step with the row.
+
+        Every write path in the app (admin, serializer, lifecycle, factories)
+        ends in ``save()``; a queryset ``update()`` bypasses it, which is fine
+        for fields that do not appear in the document (status, sold_at) and is
+        why ``rebuild_search_index`` exists for repairs.
+        """
+        from apps.search.documents import build_search_document
+
+        self.search_document = build_search_document(self)
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            kwargs["update_fields"] = {*update_fields, "search_document"}
+        super().save(*args, **kwargs)
 
     @property
     def canonical_path(self) -> str:

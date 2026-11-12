@@ -420,6 +420,10 @@ msgstr "أخرى"
 msgid "Attributes must be an object."
 msgstr "يجب أن تكون السمات كائنًا."
 
+# --- saved searches (apps/search/serializers.py) --------------------------
+msgid "Params must be an object."
+msgstr "يجب أن تكون المعاملات كائنًا."
+
 msgid "Attributes require a category to validate against."
 msgstr "تتطلب السمات وجود فئة للتحقق منها."
 

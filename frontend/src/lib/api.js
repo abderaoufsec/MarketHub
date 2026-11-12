@@ -158,6 +158,8 @@ export const productsAPI = {
   // Accepts `?status=ACTIVE|DRAFT|…` since Phase 13 (the dashboard's tabs).
   sellerList: (params) => api.get('/products/seller/list/', { params }),
   search: (params) => api.get('/products/search/', { params }),
+  // Follow a cursor `next` URL from list()/search() (Phase 15 load-more).
+  page: (url) => api.get(url),
 
   // ---- Phase 13: listings (individuals + stores, one catalogue) ----
   // The wizard's save: creates a DRAFT owned by the caller, store not needed.
@@ -171,6 +173,33 @@ export const productsAPI = {
   quota: () => api.get('/products/seller/quota/'),
   similar: (id) => api.get(`/products/${id}/similar/`),
   moreFromSeller: (id) => api.get(`/products/${id}/more-from-seller/`),
+}
+
+// ==================== SEARCH & DISCOVERY (Phase 15) ====================
+export const searchAPI = {
+  // The advanced endpoint: FTS + trigram, facets, sorts, cursor pagination,
+  // zero-result recovery. `params` is the *same* object a saved search stores.
+  search: (params) => api.get('/search/', { params }),
+  // Follow a cursor `next` URL exactly: it already carries every filter and
+  // the keyset cursor, so rebuilding params client-side would risk drift.
+  page: (url) => api.get(url),
+  // Autocomplete fan-in: recent/popular terms, matching products, categories,
+  // and a did-you-mean correction in one round trip.
+  suggestions: (q) => api.get('/search/suggestions/', { params: { q } }),
+  recent: () => api.get('/search/recent/'),
+  clearRecent: () => api.delete('/search/recent/'),
+  savedList: () => api.get('/search/saved/'),
+  saveSearch: (data) => api.post('/search/saved/', data),
+  updateSaved: (id, data) => api.patch(`/search/saved/${id}/`, data),
+  deleteSaved: (id) => api.delete(`/search/saved/${id}/`),
+}
+
+export const feedAPI = {
+  // `section=latest|trending`; both are cursor-paginated (`next`).
+  products: (params) => api.get('/products/feed/', { params }),
+  // Follow the cursor URL the server returned (ordering/filters included).
+  page: (url) => api.get(url),
+  categories: (params) => api.get('/products/feed/categories/', { params }),
 }
 
 // ==================== MEDIA API (Phase 14) ====================

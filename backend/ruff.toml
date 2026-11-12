@@ -50,3 +50,7 @@ ignore = [
 # common when building fixtures.
 "**/tests/*" = ["F401", "F841", "SIM117"]
 "conftest.py" = ["F401"]
+# The normalization tables are *made of* Arabic letters and typographic quotes;
+# RUF001's "did you mean the Latin lookalike" rule is exactly wrong here.
+"apps/search/normalization.py" = ["RUF001", "RUF003"]
+"apps/search/synonyms.py" = ["RUF001", "RUF003"]

@@ -20,6 +20,9 @@ API_V1_URLPATTERNS = [
     path("stores/", include("apps.stores.urls")),
     path("media/", include("apps.media.urls")),
     path("products/", include("apps.products.urls")),
+    # Phase 15: /search/ (facets + cursor), /search/suggestions/,
+    # /search/recent/ and /search/saved/.
+    path("search/", include("apps.search.urls")),
     path("inventory/", include("apps.inventory.urls")),
     path("orders/", include("apps.orders.urls")),
     path("payments/", include("apps.payments.urls")),

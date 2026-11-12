@@ -3,7 +3,16 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '../../context/AuthContext'
-import { ShoppingCart, User, Store, Menu, X, Heart, Plus } from 'lucide-react'
+import {
+  ShoppingCart,
+  User,
+  Store,
+  Menu,
+  X,
+  Heart,
+  Plus,
+  Search,
+} from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -37,6 +46,15 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/search"
+                className="text-gray-700 hover:text-primary transition-colors font-medium flex items-center gap-1"
+              >
+                <Search className="h-4 w-4" />
+                {t('nav.search')}
+              </Link>
+            </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
                 href="/products"
@@ -134,6 +152,12 @@ export default function Header() {
                     >
                       {t('nav.orders')}
                     </Link>
+                    <Link
+                      href="/profile/saved-searches"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {t('nav.savedSearches')}
+                    </Link>
                     <button
                       onClick={logout}
                       className="block w-full text-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -227,6 +251,14 @@ export default function Header() {
               >
                 <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
                   <Link
+                    href="/search"
+                    className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                  >
+                    {t('nav.search')}
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
+                  <Link
                     href="/products"
                     className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                   >
@@ -312,6 +344,17 @@ export default function Header() {
                         className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
                       >
                         {t('nav.orders')}
+                      </Link>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/profile/saved-searches"
+                        className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                      >
+                        {t('nav.savedSearches')}
                       </Link>
                     </motion.div>
                     <motion.button

@@ -13,7 +13,9 @@
       "logout": "Logout",
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
-      "postAd": "Post an ad"
+      "postAd": "Post an ad",
+      "search": "Search",
+      "savedSearches": "Saved searches"
     },
     "footer": {
       "tagline": "Your trusted online marketplace connecting buyers and sellers.",
@@ -303,6 +305,18 @@
       "title": "Ready to Get Started?",
       "subtitle": "Join thousands of buyers and sellers on MarketHub today.",
       "createAccount": "Create Your Account"
+    },
+    "feed": {
+      "title": "Fresh on MarketHub",
+      "subtitle": "The newest and most-viewed listings right now.",
+      "categories": "Popular categories",
+      "latest": "Latest listings",
+      "trending": "Trending now",
+      "viewAll": "Search all listings",
+      "loadMore": "Load more",
+      "loadingMore": "Loading...",
+      "empty": "No listings yet.",
+      "error": "Could not load listings."
     }
   },
   "orders": {
@@ -442,7 +456,9 @@
     "moreFromSeller": "More from this seller",
     "similarListings": "Similar listings",
     "wilayaFilter": "Wilaya",
-    "allWilayas": "All wilayas"
+    "allWilayas": "All wilayas",
+    "loadMore": "Load more",
+    "loadingMore": "Loading..."
   },
   "profile": {
     "title": "My Profile",
@@ -877,5 +893,132 @@
       "tooLarge": "That image is too large.",
       "uploadFailed": "The photo could not be uploaded. Try again."
     }
+  },
+  "search": {
+    "title": "Search",
+    "subtitle": "Find what you need across Algeria - by text, category, place or price.",
+    "placeholder": "Search products, brands or categories...",
+    "submit": "Search",
+    "clearQuery": "Clear search",
+    "filters": "Filters",
+    "clearFilters": "Clear filters",
+    "loading": "Searching...",
+    "resultsCount": "{count, plural, =0 {No results} one {# result} other {# results}}",
+    "error": "Search failed. Please try again.",
+    "sort": "Sort by",
+    "sorts": {
+      "default": "Best match",
+      "newest": "Newest",
+      "price_asc": "Price: low to high",
+      "price_desc": "Price: high to low",
+      "distance": "Nearest"
+    },
+    "nearMe": "Near me",
+    "geoUnsupported": "Geolocation is not available in this browser.",
+    "geoDenied": "We could not access your location.",
+    "didYouMean": "Did you mean {term}?",
+    "category": "Category",
+    "allCategories": "All categories",
+    "wilaya": "Wilaya",
+    "allWilayas": "All wilayas",
+    "price": "Price",
+    "minPrice": "Min",
+    "maxPrice": "Max",
+    "condition": "Condition",
+    "anyCondition": "Any condition",
+    "sellerType": "Seller",
+    "anySeller": "Any seller",
+    "sellerStore": "Store",
+    "sellerIndividual": "Individual",
+    "posted": "Posted",
+    "anyTime": "Any time",
+    "postedToday": "Today",
+    "posted7d": "Last 7 days",
+    "posted30d": "Last 30 days",
+    "verifiedOnly": "Verified sellers only",
+    "withPhotos": "With photos only",
+    "inStockOnly": "In stock only",
+    "anyValue": "Any",
+    "priceBands": {
+      "under_5k": "Under 5,000 DA",
+      "5k_20k": "5,000 - 20,000 DA",
+      "20k_100k": "20,000 - 100,000 DA",
+      "over_100k": "Over 100,000 DA"
+    },
+    "loadingMore": "Loading...",
+    "loadMore": "Load more",
+    "recent": {
+      "title": "Recent searches",
+      "filtersOnly": "Filters only"
+    },
+    "empty": {
+      "title": "No listings found",
+      "subtitle": "Try removing a filter, using fewer words or a different spelling.",
+      "relax": "One filter is enough to unlock results:",
+      "removeFilter": "Remove {filter} ({count})",
+      "nearby": "Nearby wilayas with results",
+      "labels": {
+        "q": "keywords",
+        "category": "category",
+        "wilaya": "wilaya",
+        "condition": "condition"
+      }
+    },
+    "saved": {
+      "save": "Save this search",
+      "signInToSave": "Sign in to save",
+      "title": "Save this search",
+      "subtitle": "We will tell you when new listings match.",
+      "name": "Name (optional)",
+      "namePlaceholder": "e.g. iPhone under 50,000 DA",
+      "frequency": "How often?",
+      "instant": "Instant",
+      "daily": "Daily digest",
+      "channels": "Send me",
+      "email": "Email",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp",
+      "addPhone": "Add a phone number in your profile to use SMS or WhatsApp.",
+      "chooseChannel": "Choose at least one delivery channel.",
+      "saveButton": "Save search",
+      "saving": "Saving...",
+      "saved": "Search saved",
+      "saveError": "Could not save the search.",
+      "close": "Close"
+    }
+  },
+  "savedSearches": {
+    "title": "Saved searches",
+    "subtitle": "Alerts for the listings you are watching.",
+    "newSearch": "New search",
+    "empty": "You have no saved searches yet.",
+    "startSearching": "Start searching",
+    "filtersOnly": "Filters only",
+    "active": "Active",
+    "paused": "Paused",
+    "frequencies": {
+      "INSTANT": "Instant",
+      "DAILY": "Daily"
+    },
+    "channels": {
+      "email": "Email",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp"
+    },
+    "lastNotified": "Last alert: {date}",
+    "neverNotified": "No alert yet",
+    "open": "Open",
+    "pause": "Pause alerts",
+    "resume": "Resume alerts",
+    "delete": "Delete",
+    "resumed": "Alerts resumed",
+    "updateError": "Could not update the saved search.",
+    "confirmDelete": "Delete this saved search?",
+    "deleted": "Saved search deleted.",
+    "deleteError": "Could not delete the saved search.",
+    "loadError": "Could not load your saved searches.",
+    "retry": "Retry",
+    "loginRequired": "Sign in to manage your saved searches.",
+    "signIn": "Sign in"
   }
 }

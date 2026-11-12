@@ -20,6 +20,10 @@ export default function ProductsPage() {
   const t = useTranslations('products')
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  // Phase 15: cursor pagination. The old page only ever showed page 1; `next`
+  // is the opaque keyset URL returned by FeedCursorPagination.
+  const [next, setNext] = useState(null)
   const [search, setSearch] = useState('')
   const [categoryTree, setCategoryTree] = useState([])
   // Phase 13: `?wilaya=<id>` narrows the feed to one wilaya — the classifieds
@@ -32,7 +36,9 @@ export default function ProductsPage() {
     category: '',
     min_price: '',
     max_price: '',
-    in_stock: true,
+    // Phase 15: default is *all* listings. `in_stock: true` used to hide every
+    // classified (they have no inventory rows) from the catalogue by default.
+    in_stock: '',
     wilaya: '',
     attributes: {},
   })
@@ -77,15 +83,19 @@ export default function ProductsPage() {
     [selectedNode?.id]
   )
 
-  const fetchProducts = async () => {
+  const fetchProducts = async ({ append = false } = {}) => {
     try {
-      setLoading(true)
+      if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoading(true)
+      }
       const params = {
         search: search || undefined,
         category: filters.category || undefined,
         min_price: filters.min_price || undefined,
         max_price: filters.max_price || undefined,
-        in_stock: filters.in_stock || undefined,
+        in_stock: filters.in_stock === 'true' ? 'true' : undefined,
         wilaya: filters.wilaya || undefined,
       }
       for (const [key, value] of Object.entries(filters.attributes)) {
@@ -101,17 +111,22 @@ export default function ProductsPage() {
           params[`attr_${key}`] = value
         }
       }
-      const response = await productsAPI.list(params)
-      setProducts(response.data.results || response.data)
-      if (response.data.results?.length === 0 || response.data?.length === 0) {
+      const response = append
+        ? await productsAPI.page(next)
+        : await productsAPI.list(params)
+      const page = response.data.results || response.data
+      setProducts((prev) => (append ? [...prev, ...page] : page))
+      setNext(response.data.next || null)
+      if (!append && page.length === 0) {
         toast(t('noResultsToast'), { icon: '🔍' })
       }
     } catch (error) {
       console.error('Error fetching products:', error)
-      setProducts([])
+      if (!append) setProducts([])
       toast.error(t('loadError'))
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
@@ -157,7 +172,7 @@ export default function ProductsPage() {
       category: '',
       min_price: '',
       max_price: '',
-      in_stock: true,
+      in_stock: '',
       wilaya: '',
       attributes: {},
     })
@@ -275,9 +290,12 @@ export default function ProductsPage() {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={filters.in_stock}
+                  checked={filters.in_stock === 'true'}
                   onChange={(e) =>
-                    handleFilterChange('in_stock', e.target.checked)
+                    handleFilterChange(
+                      'in_stock',
+                      e.target.checked ? 'true' : ''
+                    )
                   }
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                 />
@@ -328,22 +346,36 @@ export default function ProductsPage() {
       {loading ? (
         <SkeletonLoader variant="product" count={8} />
       ) : products.length > 0 ? (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{
-            visible: {
-              transition: {
-                staggerChildren: 0.1,
+        <>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.1,
+                },
               },
-            },
-          }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
-          {products.map((product, index) => (
-            <ProductCard key={product.id} product={product} index={index} />
-          ))}
-        </motion.div>
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {products.map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} />
+            ))}
+          </motion.div>
+          {next && (
+            <div className="text-center mt-8">
+              <button
+                type="button"
+                onClick={() => fetchProducts({ append: true })}
+                disabled={loadingMore}
+                className="btn-secondary disabled:opacity-60"
+              >
+                {loadingMore ? t('loadingMore') : t('loadMore')}
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}

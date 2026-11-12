@@ -1,8 +1,5 @@
-from decimal import Decimal, InvalidOperation
-
-from django.db.models import Count, DecimalField, Prefetch, Q
-from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Cast
+from django.db.models import Count, F, IntegerField, OuterRef, Prefetch, Subquery, Value
+from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiTypes, extend_schema
@@ -12,7 +9,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.catalog.models import AttributeDefinition, Category
+from apps.search.facets import localized
+from apps.search.services import get_search_service
 from apps.stores.models import Store
 from apps.users.permissions import IsListingOwner, IsStoreOwner
 from apps.users.plans import (
@@ -29,6 +27,7 @@ from core.pagination import FeedCursorPagination, WishlistCursorPagination
 from . import lifecycle
 from .duplicates import more_from_seller as _more_from_seller
 from .duplicates import similar_to
+from .filters import apply_location_filters, apply_search_filters
 from .lifecycle import ListingLifecycleError
 from .models import (
     ListingStatus,
@@ -49,18 +48,6 @@ from .serializers import (
     WishlistSerializer,
 )
 
-#: Numeric attribute comparisons (``?attr_km_min=…``) cast the stored jsonb
-#: to numeric; GIN cannot serve those, only the exact filters can (Phase 15
-#: owns search performance at catalogue scale).
-NUMERIC_ATTRIBUTE_TYPES = {AttributeDefinition.Type.NUMBER, AttributeDefinition.Type.YEAR}
-
-#: Casts of ``attributes_json`` values need an explicit precision: a bare
-#: ``DecimalField()`` renders ``CAST(… AS numeric(None, None))``, which
-#: PostgreSQL rejects outright ("invalid input syntax for type integer:
-#: none" — it reads the ``None`` modifiers as input). 20 digits is far beyond
-#: any attribute value; 6 decimals keeps fractional bounds exact.
-ATTRIBUTE_DECIMAL_FIELD = DecimalField(max_digits=20, decimal_places=6)
-
 
 def _images_prefetch(lookup: str = "images") -> Prefetch:
     """Images *and* their upload in one extra query.
@@ -73,173 +60,16 @@ def _images_prefetch(lookup: str = "images") -> Prefetch:
     return Prefetch(lookup, queryset=ProductImage.objects.select_related("upload"))
 
 
-def apply_catalog_filters(queryset, query_params):
-    """Phase 12 catalogue filters: ``?category=`` and ``?attr_<key>``.
-
-    - ``?category=<slug>`` matches the category **and every descendant**
-      (filtering the "Vehicles" sidebar must show the cars), via one
-      ``get_descendants()`` query on mptt's materialized path. An unknown or
-      deactivated slug yields an empty page, not a 404 — a stale bookmark
-      should not error.
-    - ``?attr_<key>=<value>`` filters on ``attributes_json`` for *filterable*
-      definitions inside the filtered subtree (any filterable definition when
-      no category filter is given). ``number``/``year`` attributes also accept
-      ``?attr_<key>_min=`` / ``?attr_<key>_max=``; ``range`` attributes accept
-      them as *overlap* bounds (a salary range matches any posting whose own
-      range intersects it).
-
-    Unknown or non-filterable keys raise a 400 instead of being ignored: a
-    typo'd filter that silently returns everything is a bug report weeks
-    later.
-    """
-    category_slug = query_params.get("category")
-    subtree_ids = None
-    if category_slug:
-        root = Category.objects.filter(slug=category_slug, is_active=True).first()
-        subtree_ids = (
-            list(root.get_descendants(include_self=True).values_list("id", flat=True))
-            if root is not None
-            else []
-        )
-        queryset = queryset.filter(category_id__in=subtree_ids)
-
-    definitions = AttributeDefinition.objects.filter(is_active=True, filterable=True)
-    if subtree_ids is not None:
-        definitions = definitions.filter(category_id__in=subtree_ids)
-    filterable = {definition.key: definition for definition in definitions}
-
-    for param, raw_value in query_params.items():
-        if not param.startswith("attr_"):
-            continue
-        body = param[len("attr_") :]
-        modifier = ""
-        for candidate in ("_min", "_max"):
-            if body.endswith(candidate):
-                body, modifier = body[: -len(candidate)], candidate
-
-        definition = filterable.get(body)
-        if definition is None:
-            raise ValidationError(
-                {param: _("Unknown or non-filterable attribute for this category.")}
-            )
-
-        if not modifier:
-            if definition.type in NUMERIC_ATTRIBUTE_TYPES:
-                # The query string is text; comparing it to the stored jsonb
-                # *number* would be string ≠ number forever. Compare through
-                # the same numeric cast the bounds use — an unparseable value
-                # falls through to the jsonb exact match, which never equals a
-                # number, so a bogus filter yields an empty page, not a 500.
-                try:
-                    number = Decimal(raw_value)
-                except InvalidOperation:
-                    number = None
-                if number is not None:
-                    exact_alias = f"attr_{body}_exact"
-                    queryset = queryset.annotate(
-                        **{
-                            exact_alias: Cast(
-                                KeyTextTransform(body, "attributes_json"),
-                                ATTRIBUTE_DECIMAL_FIELD,
-                            )
-                        }
-                    )
-                    queryset = queryset.filter(**{exact_alias: number})
-                    continue
-            value = raw_value
-            if definition.type == AttributeDefinition.Type.BOOLEAN:
-                if raw_value not in ("true", "false"):
-                    raise ValidationError({param: _("Must be true or false.")})
-                value = raw_value == "true"
-            queryset = queryset.filter(**{f"attributes_json__{body}": value})
-            continue
-
-        # Numeric / range bounds: cast the stored jsonb and compare. The cast
-        # must be *annotated* — `filter(low__lte=…)` names a field or an
-        # annotation, never a local variable — and each modifier gets its own
-        # alias so `?attr_x_min=` and `?attr_x_max=` in one request do not
-        # collide on a duplicate annotation name.
-        if definition.type == AttributeDefinition.Type.RANGE:
-            low_alias = f"attr_{body}{modifier}_low"
-            high_alias = f"attr_{body}{modifier}_high"
-            queryset = queryset.annotate(
-                **{
-                    low_alias: Cast(
-                        KeyTextTransform("min", KeyTextTransform(body, "attributes_json")),
-                        ATTRIBUTE_DECIMAL_FIELD,
-                    ),
-                    high_alias: Cast(
-                        KeyTextTransform("max", KeyTextTransform(body, "attributes_json")),
-                        ATTRIBUTE_DECIMAL_FIELD,
-                    ),
-                }
-            )
-            # Overlap: the posting's range intersects [min, max].
-            queryset = (
-                queryset.filter(**{f"{high_alias}__gte": raw_value})
-                if modifier == "_min"
-                else queryset.filter(**{f"{low_alias}__lte": raw_value})
-            )
-            continue
-
-        if definition.type not in NUMERIC_ATTRIBUTE_TYPES:
-            raise ValidationError(
-                {param: _("Only number, year and range attributes accept bounds.")}
-            )
-        numeric_alias = f"attr_{body}{modifier}_value"
-        queryset = queryset.annotate(
-            **{
-                numeric_alias: Cast(
-                    KeyTextTransform(body, "attributes_json"), ATTRIBUTE_DECIMAL_FIELD
-                ),
-            }
-        )
-        queryset = (
-            queryset.filter(**{f"{numeric_alias}__gte": raw_value})
-            if modifier == "_min"
-            else queryset.filter(**{f"{numeric_alias}__lte": raw_value})
-        )
-
-    return queryset
-
-
-def apply_location_filters(queryset, query_params):
-    """Phase 13 location filters: ``?wilaya=<id>`` and ``?commune=<id>``.
-
-    Same philosophy as ``?category=``: an unknown id yields an empty page,
-    and a non-numeric one (a stale bookmark, a hand-edited URL) yields an
-    empty page too rather than a 500 from the ORM's int cast — the filter
-    form is the thing that must be correct, not every link that ever carried
-    the parameter.
-    """
-    wilaya = query_params.get("wilaya")
-    commune = query_params.get("commune")
-    if wilaya is not None:
-        queryset = queryset.filter(wilaya_id=int(wilaya)) if wilaya.isdigit() else queryset.none()
-    if commune is not None:
-        queryset = (
-            queryset.filter(commune_id=int(commune)) if commune.isdigit() else queryset.none()
-        )
-    return queryset
-
-
 class ProductListView(generics.ListAPIView):
     """Public list of all available products with search and filter"""
 
     serializer_class = ProductListSerializer
     permission_classes = [AllowAny]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     # Phase 12: ``?category`` and ``?attr_<key>`` are handled by
-    # apply_catalog_filters (slug + subtree semantics the generic
-    # filterset cannot express); only the plain booleans stay here.
+    # apply_search_filters (slug + subtree semantics the generic filterset
+    # cannot express); only the plain booleans stay here.
     filterset_fields = ["is_available"]
-    search_fields = [
-        "name",
-        "description",
-        "category__name_fr",
-        "category__name_ar",
-        "category__name_en",
-    ]
     ordering_fields = ["created_at", "base_price", "name"]
     ordering = ["-created_at"]
     #: The catalogue is the feed people scroll, and it is the endpoint that
@@ -256,19 +86,13 @@ class ProductListView(generics.ListAPIView):
             .with_catalog_stats()
             .for_user(self.request.user)
         )
-        queryset = apply_catalog_filters(queryset, self.request.query_params)
-        queryset = apply_location_filters(queryset, self.request.query_params)
-
-        # Custom price range filter
-        min_price = self.request.query_params.get("min_price")
-        max_price = self.request.query_params.get("max_price")
-
-        if min_price:
-            queryset = queryset.filter(base_price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(base_price__lte=max_price)
-
-        return queryset
+        # Phase 15: the catalogue's ``?search=`` uses the same FTS + trigram
+        # matcher as /search/ (it used to be a set of icontains ORs, which
+        # ignored accents, Arabic spellings and typos).
+        search = self.request.query_params.get("search") or self.request.query_params.get("q")
+        if search:
+            queryset = get_search_service().matching(queryset, search)
+        return apply_search_filters(queryset, self.request.query_params)
 
 
 class ProductDetailView(generics.RetrieveAPIView):
@@ -292,7 +116,13 @@ class ProductDetailView(generics.RetrieveAPIView):
         obj = super().get_object()
         # Lazy expiry (Phase 13): without the beat (Phase 22) a listing must
         # not render ACTIVE the morning after its window closed.
-        return lifecycle.expire_if_due(obj)
+        obj = lifecycle.expire_if_due(obj)
+        # Phase 15 trending: one atomic increment per detail view. F() not
+        # read-modify-write, so two visitors cannot swallow each other's count.
+        if obj.status == ListingStatus.ACTIVE:
+            Product.objects.filter(pk=obj.pk).update(views_count=F("views_count") + 1)
+            obj.views_count += 1
+        return obj
 
 
 @extend_schema(responses={200: ProductListSerializer(many=True)})
@@ -311,6 +141,98 @@ def featured_products(request):
 
     serializer = ProductListSerializer(products, many=True, context={"request": request})
     return Response(serializer.data)
+
+
+@extend_schema(responses={200: ProductSearchPageSerializer})
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def feed_products(request):
+    """The home feed: ``?section=latest|trending``, cursor-paginated.
+
+    ``latest`` honours ``?wilaya=`` (the "in my wilaya" row) and is newest
+    first. ``trending`` ranks by detail views + wishlists + reviews, so a new
+    catalogue still produces a sensible order instead of an empty section.
+    The cursor contract is the same as the catalogue's: follow ``next``
+    forever without repeats.
+    """
+    section = request.query_params.get("section", "latest")
+    if section not in ("latest", "trending"):
+        raise ValidationError({"section": _("Must be latest or trending.")})
+
+    queryset = (
+        Product.objects.public()
+        .select_related("store", "category", "seller", "wilaya")
+        .prefetch_related(_images_prefetch())
+        .with_catalog_stats()
+        .for_user(request.user)
+    )
+    if section == "trending":
+        wishlists = (
+            Wishlist.objects.filter(product=OuterRef("pk"))
+            .order_by()
+            .values("product")
+            .annotate(n=Count("id"))
+            .values("n")
+        )
+        queryset = queryset.annotate(
+            wishlist_count=Coalesce(Subquery(wishlists, output_field=IntegerField()), Value(0))
+        ).annotate(
+            trend_score=F("views_count") * 3 + F("wishlist_count") * 6 + F("review_count") * 2
+        )
+        ordering = ["-trend_score", "-created_at", "-id"]
+    else:
+        queryset = apply_location_filters(queryset, request.query_params)
+        ordering = ["-created_at", "-id"]
+
+    paginator = FeedCursorPagination()
+    paginator.ordering = ordering
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = ProductListSerializer(page, many=True, context={"request": request})
+    payload = paginator.get_paginated_response(serializer.data).data
+    payload["section"] = section
+    return Response(payload)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def feed_categories(request):
+    """Recommended categories for the home page, by live listing count.
+
+    Optional ``?wilaya=`` makes the row local ("what is popular here"), which
+    is the first thing an Algerian classifieds visitor wants to see. Only the
+    top 10 are returned; the full tree is ``/catalog/categories/``.
+    """
+    queryset = Product.objects.public().filter(category__isnull=False)
+    queryset = apply_location_filters(queryset, request.query_params)
+    rows = (
+        queryset.values(
+            "category_id",
+            "category__slug",
+            "category__icon",
+            "category__name_fr",
+            "category__name_ar",
+            "category__name_en",
+        )
+        .annotate(count=Count("id"))
+        .order_by("-count", "category__name_fr")[:10]
+    )
+    return Response(
+        [
+            {
+                "id": row["category_id"],
+                "slug": row["category__slug"],
+                "icon": row["category__icon"] or "",
+                "name": localized(
+                    row["category__name_fr"],
+                    row["category__name_ar"],
+                    row["category__name_en"],
+                ),
+                "count": row["count"],
+            }
+            for row in rows
+        ]
+    )
 
 
 class SellerProductListView(generics.ListAPIView):
@@ -562,57 +484,34 @@ def seller_quota(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def search_products(request):
-    """Advanced product search
+    """Advanced product search (the Phase 15 service, cursor-paginated).
 
-    Paginated like the catalogue: without it this endpoint returned the whole
-    matching catalogue in one response, which is exactly the failure mode
-    Phase 10 exists to remove.
+    This endpoint used to be a set of ``icontains`` ORs; it now delegates to
+    ``PostgresSearchService``: FTS + trigram, facets, relevance/newest/price/
+    distance orderings and the zero-result recovery block. The page envelope
+    keeps its historical ``{next, previous, results}`` keys and adds
+    ``facets``/``meta`` - old clients ignore the new keys.
     """
-    query = request.query_params.get("q", "")
-    min_price = request.query_params.get("min_price")
-    max_price = request.query_params.get("max_price")
-    in_stock = request.query_params.get("in_stock") == "true"
-
-    products = (
-        Product.objects.public()
-        .select_related("store", "category", "seller", "wilaya")
-        .prefetch_related(_images_prefetch())
-        .with_catalog_stats()
-        .for_user(request.user)
+    result = get_search_service().search(
+        request.query_params, user=request.user, include_facets=False
     )
-
-    if query:
-        products = products.filter(
-            Q(name__icontains=query)
-            | Q(description__icontains=query)
-            | Q(category__name_fr__icontains=query)
-            | Q(category__name_ar__icontains=query)
-            | Q(category__name_en__icontains=query)
-        )
-
-    # Phase 12: ?category=<slug> (whole subtree) + ?attr_<key>=… — the same
-    # helper the catalogue list uses.
-    products = apply_catalog_filters(products, request.query_params)
-    # Phase 13: ?wilaya= / ?commune= — classifieds are location-first.
-    products = apply_location_filters(products, request.query_params)
-
-    if min_price:
-        products = products.filter(base_price__gte=min_price)
-
-    if max_price:
-        products = products.filter(base_price__lte=max_price)
-
-    if in_stock:
-        # Filter on the annotation rather than materialising the whole
-        # queryset to pick ids out of it in Python: the old list
-        # comprehension ran one SUM per candidate row — one query per product
-        # in the catalogue — and then re-queried to filter on the ids.
-        products = products.filter(total_stock__gt=0)
-
     paginator = FeedCursorPagination()
-    page = paginator.paginate_queryset(products, request)
+    paginator.ordering = result.ordering
+    page = paginator.paginate_queryset(result.queryset, request)
     serializer = ProductListSerializer(page, many=True, context={"request": request})
-    return paginator.get_paginated_response(serializer.data)
+    payload = paginator.get_paginated_response(serializer.data).data
+    payload["facets"] = result.facets
+    payload["meta"] = {
+        "total": result.total,
+        "sort": result.sort,
+        "q": result.params.get("q", ""),
+        "did_you_mean": result.did_you_mean,
+        "relaxations": result.relaxations,
+        "nearby_wilayas": result.nearby_wilayas,
+        "used_fuzzy": result.used_fuzzy,
+        "filters": result.params,
+    }
+    return Response(payload)
 
 
 # ==================== PRODUCT REVIEWS ====================

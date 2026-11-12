@@ -6,6 +6,9 @@ urlpatterns = [
     # Public endpoints
     path("", views.ProductListView.as_view(), name="product-list"),
     path("featured/", views.featured_products, name="product-featured"),
+    # Phase 15 home feed (cursor) + its category row.
+    path("feed/", views.feed_products, name="product-feed"),
+    path("feed/categories/", views.feed_categories, name="product-feed-categories"),
     path("search/", views.search_products, name="product-search"),
     path("<int:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
     # Listing lifecycle (Phase 13)

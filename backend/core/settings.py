@@ -121,6 +121,9 @@ INSTALLED_APPS = [
     "apps.stores",
     "apps.media",
     "apps.products",
+    # Phase 15: search service, saved searches and analytics. Depends on the
+    # product catalogue (signals, facets) and geography, not the reverse.
+    "apps.search",
     "apps.inventory",
     "apps.orders",
     "apps.payments",
@@ -533,6 +536,28 @@ SMS_API_URL = env_str("SMS_API_URL")
 SMS_API_KEY = env_str("SMS_API_KEY")
 SMS_FROM = env_str("SMS_FROM", "MarketHub")
 SMS_TIMEOUT = env_int("SMS_TIMEOUT", 10)
+
+# ---------------------------------------------------------------------------
+# Search & discovery (Phase 15)
+# ---------------------------------------------------------------------------
+# The API talks to apps.search.services.SearchService. Today the only
+# implementation is Postgres FTS + pg_trgm; an external engine later means a
+# new dotted class here, not changes in views/serializers.
+SEARCH_BACKEND = env_str("SEARCH_BACKEND", "apps.search.services.PostgresSearchService")
+#: Trigram word-similarity floor for the typo fallback branch. Higher is
+#: stricter: 0.45 matches "samsug"/"samsung" without matching unrelated words.
+SEARCH_FUZZY_THRESHOLD = float(env_str("SEARCH_FUZZY_THRESHOLD", "0.45"))
+#: Instant saved-search alerts on publish. Off is a valid operational choice
+#: (daily digests still work); tests flip it to prove the off switch.
+SEARCH_INSTANT_ALERTS = env_bool("SEARCH_INSTANT_ALERTS", default=True)
+
+# WhatsApp alert transport, mirroring SMS_BACKEND. The console default logs
+# and appends to apps.search.notifications.whatsapp_outbox.
+WHATSAPP_BACKEND = env_str("WHATSAPP_BACKEND", "apps.search.notifications.ConsoleWhatsAppBackend")
+WHATSAPP_API_URL = env_str("WHATSAPP_API_URL")
+WHATSAPP_API_KEY = env_str("WHATSAPP_API_KEY")
+WHATSAPP_FROM = env_str("WHATSAPP_FROM", "MarketHub")
+WHATSAPP_TIMEOUT = env_int("WHATSAPP_TIMEOUT", 10)
 
 # OTP hardening: short, single-use, attempt-capped, budgeted per number/IP.
 OTP_LENGTH = env_int("OTP_LENGTH", 6)
