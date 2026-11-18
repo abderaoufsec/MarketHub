@@ -16,7 +16,11 @@
       "postAd": "Déposer une annonce",
       "search": "Recherche",
       "savedSearches": "Recherches enregistrées",
-      "messages": "Messages"
+      "messages": "Messages",
+      "safety": "Sécurité",
+      "verification": "Vérification",
+      "appeals": "Recours",
+      "moderation": "Modération"
     },
     "footer": {
       "tagline": "Votre place de marché en ligne de confiance, qui relie acheteurs et vendeurs.",
@@ -1139,7 +1143,136 @@
       "SCAM": "Arnaque ou fraude",
       "HARASSMENT": "Harcèlement",
       "PROHIBITED_ITEM": "Produit interdit",
-      "OTHER": "Autre"
+      "OTHER": "Autre",
+      "COUNTERFEIT": "Contrefaçon",
+      "WRONG_CATEGORY": "Mauvaise catégorie",
+      "OFF_PLATFORM": "Incitation à sortir de la plateforme",
+      "IMPERSONATION": "Usurpation d’identité"
+    }
+  },
+  "trust": {
+    "badges": {
+      "PHONE": "Téléphone vérifié",
+      "ID": "Identité vérifiée",
+      "STORE": "Boutique vérifiée",
+      "UNVERIFIED": "Non vérifié",
+      "tooltip": "Vérifié par MarketHub. Un badge est un signal, pas une garantie absolue."
+    },
+    "reputationScore": "Confiance {score}/100",
+    "learnSafety": "Centre de sécurité",
+    "reportListing": "Signaler",
+    "reportSent": "Merci, notre équipe va examiner ce signalement.",
+    "reportError": "Impossible d'envoyer le signalement.",
+    "safety": {
+      "title": "Centre de sécurité",
+      "subtitle": "Les réflexes qui protègent vos achats et vos ventes sur MarketHub.",
+      "loading": "Chargement du centre de sécurité…",
+      "error": "Impossible de charger le centre de sécurité.",
+      "retry": "Réessayer",
+      "reportCta": "Signaler une annonce",
+      "verificationCta": "Faire vérifier mon profil",
+      "updated": "Mis à jour le {date}"
+    },
+    "verification": {
+      "title": "Vérification du vendeur",
+      "subtitle": "Un téléphone vérifié débloque les badges. Une pièce d’identité ou un registre de commerce renforce la confiance des acheteurs.",
+      "loginRequired": "Connectez-vous pour gérer votre vérification.",
+      "login": "Se connecter",
+      "statusTitle": "Mes vérifications",
+      "empty": "Vous n’avez encore soumis aucun document.",
+      "pending": "En attente de revue",
+      "approved": "Approuvée",
+      "rejected": "Refusée",
+      "rejectionReason": "Motif du refus",
+      "submitTitle": "Vérifier mon identité",
+      "submitHint": "Envoyez une photo nette de votre pièce d’identité. Elle n’est visible que par notre équipe de modération.",
+      "documentType": "Type de document",
+      "types": {
+        "ID_CARD": "Carte d’identité",
+        "PASSPORT": "Passeport",
+        "DRIVING_LICENSE": "Permis de conduire"
+      },
+      "documentNumber": "Numéro du document (optionnel)",
+      "photo": "Photo du document",
+      "photoHint": "JPEG ou PNG, lisible, sans reflet.",
+      "upload": "Choisir une photo",
+      "uploading": "Envoi…",
+      "submit": "Envoyer pour vérification",
+      "submitting": "Envoi…",
+      "submitted": "Document envoyé. Nous revenons vers vous rapidement.",
+      "submitError": "Impossible d'envoyer le document.",
+      "phoneRequired": "Vérifiez d’abord votre numéro de téléphone depuis votre profil.",
+      "storeTitle": "Vérifier ma boutique",
+      "storeHint": "Fournissez votre registre de commerce ou votre NIF pour obtenir le badge Boutique vérifiée.",
+      "commercialRegister": "Numéro de registre de commerce",
+      "nif": "Numéro NIF",
+      "storeSubmit": "Envoyer la vérification boutique",
+      "storeSubmitted": "Vérification boutique envoyée.",
+      "cancel": "Annuler"
+    },
+    "appeals": {
+      "title": "Recours",
+      "subtitle": "Une annonce refusée, un avis masqué ou un compte suspendu peut être contesté ici.",
+      "loginRequired": "Connectez-vous pour déposer un recours.",
+      "login": "Se connecter",
+      "empty": "Aucun recours pour le moment.",
+      "newTitle": "Déposer un recours",
+      "kind": "Objet du recours",
+      "kinds": {
+        "LISTING": "Annonce refusée",
+        "REVIEW": "Avis masqué",
+        "ACCOUNT": "Compte suspendu"
+      },
+      "listing": "Annonce",
+      "review": "Avis",
+      "chooseListing": "Choisir une annonce",
+      "chooseReview": "Choisir un avis",
+      "message": "Votre explication",
+      "messagePlaceholder": "Expliquez pourquoi cette décision devrait être revue.",
+      "submit": "Envoyer le recours",
+      "submitting": "Envoi…",
+      "submitted": "Recours envoyé.",
+      "submitError": "Impossible d'envoyer le recours.",
+      "status": "Statut",
+      "resolution": "Réponse de la modération",
+      "noResolution": "Pas encore de réponse."
+    },
+    "moderation": {
+      "title": "File de modération",
+      "subtitle": "Signalements, vérifications et recours, triés par échéance.",
+      "forbidden": "Cette page est réservée à l’équipe de modération.",
+      "overview": {
+        "openReports": "Signalements ouverts",
+        "overdueReports": "En retard",
+        "pendingVerifications": "Vérifications en attente",
+        "openAppeals": "Recours ouverts",
+        "activeBlocklist": "Entrées actives",
+        "flaggedListings": "Annonces signalées"
+      },
+      "tabs": {
+        "reports": "Signalements",
+        "verifications": "Vérifications",
+        "appeals": "Recours"
+      },
+      "empty": "Rien à traiter ici.",
+      "overdue": "En retard",
+      "dueBy": "Échéance : {date}",
+      "reporter": "Signalé par",
+      "target": "Cible",
+      "reason": "Motif",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "dismiss": "Classer",
+      "action": "Sanctionner",
+      "resolution": "Note de résolution",
+      "resolutionPlaceholder": "Ce qui a été décidé et pourquoi.",
+      "submit": "Valider",
+      "removeListing": "Retirer l’annonce",
+      "banUser": "Bannir le compte",
+      "suspendUser": "Suspendre le compte",
+      "noAction": "Aucune action supplémentaire",
+      "error": "Action impossible pour le moment.",
+      "updated": "File mise à jour."
     }
   }
 }

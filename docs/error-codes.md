@@ -184,7 +184,46 @@ participant guards.
 
 ---
 
-## 6. Cart, checkout & orders (`apps/orders`)
+## 6. Trust & safety (`apps/trust`, Phase 17)
+
+Seller verification, blocklists, appeals and the pre-publish scanner. A
+listing's automated findings are *not* a separate failure: `listing_blocked`
+carries them in `details.issues[]`, where each issue has one of the codes in
+the second table below.
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `phone_verification_required` | 400 | An ID verification was submitted before the phone number was verified. |
+| `store_required` | 400 | Store verification without a store. |
+| `business_document_required` | 400 | Store verification with neither a commercial register number nor a NIF. |
+| `listing_blocked` | 400 | The pre-publish checks found a blocking issue; `details.issues` lists them. |
+| `verified_purchase_required` | 400 | A store product review from someone with no delivered order line. |
+| `invalid_appeal_target` | 400 | The listing/review being appealed does not belong to the caller. |
+| `appeal_not_available` | 400 | The target is not in a state that can be appealed (live listing, visible review, unrestricted account). |
+| `appeal_already_open` | 400 | An open appeal already exists for this exact target. |
+| `appeal_message_required` | 400 | An appeal was sent with no explanation. |
+
+`details.issues[].code` values emitted by `apps.trust.checks`:
+
+| Code | HTTP | Severity | Meaning |
+|---|---|---|---|
+| `banned_keyword` | 400 | block | Prohibited item/weapon/drug keyword in the title or description. |
+| `contact_in_description` | 400 | block | Phone, e-mail or bank details in the free text. |
+| `blocklisted_contact` | 400 | block | A contact in the listing matches the shared blocklist. |
+| `blocklisted_seller` | 400 | block | The seller's own phone number is blocklisted. |
+| `prohibited_category` | 400 | block | The category tree names a prohibited category. |
+| `scam_template` | 400 | review | A known advance-payment / off-platform scam phrase. |
+| `price_anomaly` | 400 | review | Price below `TRUST_PRICE_ANOMALY_FACTOR` of the category median. |
+| `duplicate_image` | 400 | review | A photo matches another live listing's perceptual hash. |
+| `duplicate_text` | 400 | info | Another live listing has the same description (recorded only). |
+
+The staff queue additionally answers `permission_denied` (403) to
+non-staff callers, and `already_reviewed` (400) when a report, verification or
+appeal is actioned twice.
+
+---
+
+## 7. Cart, checkout & orders (`apps/orders`)
 
 | Code | HTTP | Meaning |
 |---|---|---|
@@ -201,7 +240,7 @@ participant guards.
 
 ---
 
-## 7. Payments (`apps/payments`)
+## 8. Payments (`apps/payments`)
 
 | Code | HTTP | Meaning |
 |---|---|---|
@@ -218,7 +257,7 @@ participant guards.
 
 ---
 
-## 8. Idempotency
+## 9. Idempotency
 
 Endpoints that move money or create a listing honour **`Idempotency-Key`**
 (header) and, for checkout and simulated payment, the body field of the same
@@ -239,7 +278,7 @@ Covered: `POST /api/v1/orders/checkout/`, `POST /api/v1/payments/simulate/`,
 
 ---
 
-## 9. Versioning
+## 10. Versioning
 
 The API is served under **`/api/v1/`** only. `X-API-Version: v1` is set on
 every API response. An unversioned path (`/api/products/`) or a version that
@@ -251,7 +290,7 @@ Adding `v2` means mounting a second URL prefix and adding `"v2"` to
 
 ---
 
-## 10. Stability
+## 11. Stability
 
 - **`code` is an API surface.** Renaming one is a breaking change; add a new
   code and keep the old one working for a release instead.

@@ -8,6 +8,7 @@ from tests.factories import (
     AttributeDefinitionFactory,
     CategoryFactory,
     InventoryFactory,
+    OrderItemFactory,
     ProductFactory,
     ProductImageFactory,
     UserFactory,
@@ -345,6 +346,9 @@ def test_review_list_shows_only_approved(buyer_client, product, buyer):
 
 
 def test_create_review_and_duplicate_guard(buyer_client, product, buyer):
+    # Phase 17: a store product may only be reviewed by someone with a
+    # delivered order line, so the buyer needs a real purchase first.
+    OrderItemFactory(order__user=buyer, order__order_status="DELIVERED", product=product)
     payload = {"product": product.id, "rating": 4, "comment": "Solid phone."}
 
     first = buyer_client.post(REVIEWS_CREATE_URL, payload, format="json")
@@ -398,12 +402,6 @@ def test_owner_can_delete_own_review(buyer_client, product, buyer):
     assert deleted.status_code == 204
 
 
-@pytest.mark.xfail(
-    reason="ProductReviewCreateSerializer.validate() rejects any review that "
-    "already exists for this user, so an author can never edit their own "
-    "review (found while writing the Phase 3 suite; fixed in Phase 17)",
-    strict=True,
-)
 def test_owner_can_update_own_review(buyer_client, product, buyer):
     from tests.factories import ProductReviewFactory
 

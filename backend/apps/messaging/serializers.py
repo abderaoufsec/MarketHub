@@ -255,6 +255,10 @@ class OfferResponseSerializer(serializers.Serializer):
 
 
 class ReportSerializer(serializers.ModelSerializer):
+    target_type = serializers.CharField(read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+    sla_due_at = serializers.DateTimeField(read_only=True)
+
     class Meta:
         model = Report
         fields = [
@@ -264,9 +268,15 @@ class ReportSerializer(serializers.ModelSerializer):
             "listing",
             "conversation",
             "message",
+            "target_type",
             "reason",
             "details",
             "status",
+            "sla_due_at",
+            "is_overdue",
             "created_at",
+            "reviewed_at",
+            "resolution",
+            "action_taken",
         ]
         read_only_fields = fields

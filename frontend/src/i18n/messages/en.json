@@ -16,7 +16,11 @@
       "postAd": "Post an ad",
       "search": "Search",
       "savedSearches": "Saved searches",
-      "messages": "Messages"
+      "messages": "Messages",
+      "safety": "Safety",
+      "verification": "Verification",
+      "appeals": "Appeals",
+      "moderation": "Moderation"
     },
     "footer": {
       "tagline": "Your trusted online marketplace connecting buyers and sellers.",
@@ -1139,7 +1143,136 @@
       "SCAM": "Scam or fraud",
       "HARASSMENT": "Harassment",
       "PROHIBITED_ITEM": "Prohibited item",
-      "OTHER": "Other"
+      "OTHER": "Other",
+      "COUNTERFEIT": "Counterfeit item",
+      "WRONG_CATEGORY": "Wrong category",
+      "OFF_PLATFORM": "Pushing off-platform",
+      "IMPERSONATION": "Impersonation"
+    }
+  },
+  "trust": {
+    "badges": {
+      "PHONE": "Phone verified",
+      "ID": "ID verified",
+      "STORE": "Store verified",
+      "UNVERIFIED": "Unverified",
+      "tooltip": "Checked by MarketHub. A badge is a signal, not an absolute guarantee."
+    },
+    "reputationScore": "Trust {score}/100",
+    "learnSafety": "Safety centre",
+    "reportListing": "Report",
+    "reportSent": "Thanks - our team will review this report.",
+    "reportError": "Could not send the report.",
+    "safety": {
+      "title": "Safety centre",
+      "subtitle": "Habits that protect your buying and selling on MarketHub.",
+      "loading": "Loading the safety centre…",
+      "error": "Could not load the safety centre.",
+      "retry": "Retry",
+      "reportCta": "Report a listing",
+      "verificationCta": "Get my profile verified",
+      "updated": "Updated {date}"
+    },
+    "verification": {
+      "title": "Seller verification",
+      "subtitle": "A verified phone unlocks badges. An ID or commercial register strengthens buyer trust.",
+      "loginRequired": "Log in to manage your verification.",
+      "login": "Log in",
+      "statusTitle": "My verifications",
+      "empty": "You have not submitted any document yet.",
+      "pending": "Awaiting review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "rejectionReason": "Rejection reason",
+      "submitTitle": "Verify my identity",
+      "submitHint": "Upload a clear photo of your ID. Only our moderation team can see it.",
+      "documentType": "Document type",
+      "types": {
+        "ID_CARD": "ID card",
+        "PASSPORT": "Passport",
+        "DRIVING_LICENSE": "Driving licence"
+      },
+      "documentNumber": "Document number (optional)",
+      "photo": "Document photo",
+      "photoHint": "JPEG or PNG, readable, without glare.",
+      "upload": "Choose a photo",
+      "uploading": "Uploading…",
+      "submit": "Submit for verification",
+      "submitting": "Submitting…",
+      "submitted": "Document sent. We will get back to you shortly.",
+      "submitError": "Could not send the document.",
+      "phoneRequired": "Verify your phone number in your profile first.",
+      "storeTitle": "Verify my store",
+      "storeHint": "Provide your commercial register or NIF to earn the verified store badge.",
+      "commercialRegister": "Commercial register number",
+      "nif": "NIF number",
+      "storeSubmit": "Submit store verification",
+      "storeSubmitted": "Store verification sent.",
+      "cancel": "Cancel"
+    },
+    "appeals": {
+      "title": "Appeals",
+      "subtitle": "A rejected listing, a hidden review or a suspended account can be contested here.",
+      "loginRequired": "Log in to file an appeal.",
+      "login": "Log in",
+      "empty": "No appeals yet.",
+      "newTitle": "File an appeal",
+      "kind": "What are you appealing?",
+      "kinds": {
+        "LISTING": "Rejected listing",
+        "REVIEW": "Hidden review",
+        "ACCOUNT": "Suspended account"
+      },
+      "listing": "Listing",
+      "review": "Review",
+      "chooseListing": "Choose a listing",
+      "chooseReview": "Choose a review",
+      "message": "Your explanation",
+      "messagePlaceholder": "Explain why this decision should be reviewed.",
+      "submit": "Send appeal",
+      "submitting": "Sending…",
+      "submitted": "Appeal sent.",
+      "submitError": "Could not send the appeal.",
+      "status": "Status",
+      "resolution": "Moderation reply",
+      "noResolution": "No reply yet."
+    },
+    "moderation": {
+      "title": "Moderation queue",
+      "subtitle": "Reports, verifications and appeals, ordered by deadline.",
+      "forbidden": "This page is for the moderation team only.",
+      "overview": {
+        "openReports": "Open reports",
+        "overdueReports": "Overdue",
+        "pendingVerifications": "Pending verifications",
+        "openAppeals": "Open appeals",
+        "activeBlocklist": "Active blocklist entries",
+        "flaggedListings": "Flagged listings"
+      },
+      "tabs": {
+        "reports": "Reports",
+        "verifications": "Verifications",
+        "appeals": "Appeals"
+      },
+      "empty": "Nothing to handle here.",
+      "overdue": "Overdue",
+      "dueBy": "Due {date}",
+      "reporter": "Reported by",
+      "target": "Target",
+      "reason": "Reason",
+      "approve": "Approve",
+      "reject": "Reject",
+      "dismiss": "Dismiss",
+      "action": "Take action",
+      "resolution": "Resolution note",
+      "resolutionPlaceholder": "What was decided and why.",
+      "submit": "Confirm",
+      "removeListing": "Remove listing",
+      "banUser": "Ban account",
+      "suspendUser": "Suspend account",
+      "noAction": "No further action",
+      "error": "That action could not be completed.",
+      "updated": "Queue refreshed."
     }
   }
 }

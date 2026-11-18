@@ -140,7 +140,11 @@ class ProductQuerySet(models.QuerySet):
         aggregate's). Two subqueries rather than joins for the same
         cross-multiplication reason as :meth:`with_stock`.
         """
-        reviews = ProductReview.objects.filter(product=OuterRef("pk")).order_by().values("product")
+        reviews = (
+            ProductReview.objects.filter(product=OuterRef("pk"), is_approved=True)
+            .order_by()
+            .values("product")
+        )
         return self.annotate(
             review_count=Coalesce(
                 Subquery(reviews.annotate(n=Count("id")).values("n"), output_field=IntegerField()),
@@ -254,6 +258,22 @@ class Product(models.Model):
     # every test factory — live; the wizard sets DRAFT explicitly.
     status = models.CharField(
         max_length=16, choices=ListingStatus.choices, default=ListingStatus.ACTIVE
+    )
+    #: Phase 17: the moderator's decision is visible to the seller, so a
+    #: rejection is actionable ("photo is blurry", "prohibited item") instead
+    #: of a status that silently flips.
+    rejection_reason = models.TextField(blank=True, default="")
+    #: Automated pre-publish findings (``apps.trust.checks``). ``review``
+    #: findings land here even when the listing is allowed live, giving the
+    #: queue a filter and the seller a transparent reason.
+    moderation_flags = models.JSONField(default=list, blank=True)
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="listings_moderated",
     )
     #: SEO/share slug. Canonical URL is ``/l/<slug>-<id>``; the id makes the
     #: slug's uniqueness irrelevant, so a rename only needs a redirect.
@@ -403,7 +423,7 @@ def nested_product_queryset(user=None):
         Product.objects.with_catalog_stats()
         .for_user(user)
         .select_related("store", "category", "seller", "wilaya")
-        .prefetch_related("images")
+        .prefetch_related("images", "seller__trust_verifications")
     )
 
 
@@ -523,7 +543,13 @@ class ProductReview(models.Model):
     )
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])  # 1-5 stars
     comment = models.TextField()
-    is_approved = models.BooleanField(default=True)
+    #: Phase 17: reviews are moderated. A verified purchase (a delivered order
+    #: line) is auto-approved; every other review starts pending unless the
+    #: author's trust score clears the configured threshold.
+    is_approved = models.BooleanField(default=False)
+    is_verified_purchase = models.BooleanField(default=False)
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderation_note = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

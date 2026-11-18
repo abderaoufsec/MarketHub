@@ -4,7 +4,7 @@ Products Admin Configuration - Safe Version
 
 from django.contrib import admin
 
-from .models import Product, ProductAttribute, ProductImage
+from .models import Product, ProductAttribute, ProductImage, ProductReview
 
 
 class ProductAttributeInline(admin.TabularInline):
@@ -63,6 +63,18 @@ class ProductAdmin(admin.ModelAdmin):
             "Lifecycle",
             {"fields": ("published_at", "expires_at", "sold_at"), "classes": ["collapse"]},
         ),
+        (
+            "Moderation (Phase 17)",
+            {
+                "fields": (
+                    "rejection_reason",
+                    "moderation_flags",
+                    "moderated_at",
+                    "moderated_by",
+                ),
+                "classes": ["collapse"],
+            },
+        ),
         ("Additional Attributes", {"fields": ("attributes_json",), "classes": ["collapse"]}),
         ("Dates", {"fields": ("created_at", "updated_at"), "classes": ["collapse"]}),
     )
@@ -102,3 +114,43 @@ class ProductImageAdmin(admin.ModelAdmin):
     list_display = ["id", "product", "is_primary", "sort_order", "created_at"]
     list_filter = ["is_primary"]
     search_fields = ["product__name"]
+
+
+@admin.register(ProductReview)
+class ProductReviewAdmin(admin.ModelAdmin):
+    """Phase 17: reviews are moderated, so they need a queue of their own."""
+
+    list_display = (
+        "id",
+        "product",
+        "user",
+        "rating",
+        "is_approved",
+        "is_verified_purchase",
+        "created_at",
+    )
+    list_filter = ("is_approved", "is_verified_purchase", "rating")
+    search_fields = ("product__name", "user__email", "comment")
+    raw_id_fields = ("product", "user")
+    actions = ["approve_reviews", "reject_reviews"]
+
+    def approve_reviews(self, request, queryset):
+        from django.utils import timezone
+
+        updated = queryset.update(
+            is_approved=True,
+            moderated_at=timezone.now(),
+            moderation_note="approved in admin",
+        )
+        self.message_user(request, f"{updated} review(s) approved.")
+
+    approve_reviews.short_description = "Approve selected reviews"
+
+    def reject_reviews(self, request, queryset):
+        updated = queryset.update(
+            is_approved=False,
+            moderation_note="rejected in admin",
+        )
+        self.message_user(request, f"{updated} review(s) hidden.")
+
+    reject_reviews.short_description = "Hide selected reviews"

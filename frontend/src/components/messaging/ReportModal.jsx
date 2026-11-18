@@ -4,7 +4,19 @@ import { useEffect, useState } from 'react'
 import { Flag, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-const REASONS = ['SPAM', 'SCAM', 'HARASSMENT', 'PROHIBITED_ITEM', 'OTHER']
+// Phase 17 extends the Phase 16 set with the listing-specific reasons the
+// moderation queue routes on (a counterfeit is handled differently from spam).
+const REASONS = [
+  'SPAM',
+  'SCAM',
+  'HARASSMENT',
+  'PROHIBITED_ITEM',
+  'COUNTERFEIT',
+  'WRONG_CATEGORY',
+  'OFF_PLATFORM',
+  'IMPERSONATION',
+  'OTHER',
+]
 
 /**
  * Abuse report dialog (Phase 16).

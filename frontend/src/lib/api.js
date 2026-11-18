@@ -261,6 +261,44 @@ export const mediaAPI = {
   remove: (id) => api.delete(`/media/images/${id}/`),
 }
 
+// ==================== TRUST & SAFETY (Phase 17) ====================
+export const trustAPI = {
+  // Public safety-centre copy, localised by the same Accept-Language the
+  // interceptor already sends.
+  safetyCenter: () => api.get('/trust/safety-center/'),
+  // Derived from approved verification rows, never a mutable user flag.
+  reputation: (userId) => api.get(`/trust/sellers/${userId}/reputation/`),
+  // Seller-facing verification: submit an ID / commercial register and read
+  // the current status (PENDING / APPROVED / REJECTED + reason).
+  myVerifications: () => api.get('/trust/verification/'),
+  submitIdentity: (data) => api.post('/trust/verification/', data),
+  submitStore: (data) => api.post('/trust/store-verification/', data),
+  // Appeals: a rejected listing, a hidden review or a suspended account.
+  appeals: () => api.get('/trust/appeals/'),
+  createAppeal: (data) => api.post('/trust/appeals/', data),
+
+  // ---- Staff moderation queue (403 for everyone else) ----
+  admin: {
+    overview: () => api.get('/trust/admin/overview/'),
+    verifications: (params) =>
+      api.get('/trust/admin/verifications/', { params }),
+    verificationAction: (id, data) =>
+      api.post(`/trust/admin/verifications/${id}/action/`, data),
+    reports: (params) => api.get('/trust/admin/reports/', { params }),
+    reportAction: (id, data) =>
+      api.post(`/trust/admin/reports/${id}/action/`, data),
+    appeals: (params) => api.get('/trust/admin/appeals/', { params }),
+    appealAction: (id, data) =>
+      api.post(`/trust/admin/appeals/${id}/action/`, data),
+    blocklist: (params) => api.get('/trust/admin/blocklist/', { params }),
+    addBlocklist: (data) => api.post('/trust/admin/blocklist/', data),
+    removeBlocklist: (id) => api.delete(`/trust/admin/blocklist/${id}/`),
+    massAction: (data) => api.post('/trust/admin/mass-action/', data),
+    audit: () => api.get('/trust/admin/audit/'),
+    banEvasion: (params) => api.get('/trust/admin/ban-evasion/', { params }),
+  },
+}
+
 export const ordersAPI = {
   list: () => api.get('/orders/'),
   get: (id) => api.get(`/orders/${id}/`),

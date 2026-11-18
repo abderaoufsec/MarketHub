@@ -157,6 +157,9 @@ def similar_to(product, limit: int = 8):
         .filter(roots)
         .exclude(pk=product.pk)
         .exclude(seller_id=product.seller_id)
+        .select_related("store", "category", "seller", "wilaya")
+        .prefetch_related("images", "images__upload", "seller__trust_verifications")
+        .with_catalog_stats()
         .order_by("-created_at")[:limit]
     )
 
@@ -169,5 +172,8 @@ def more_from_seller(product, limit: int = 8):
         Product.objects.public()
         .filter(seller_id=product.seller_id)
         .exclude(pk=product.pk)
+        .select_related("store", "category", "seller", "wilaya")
+        .prefetch_related("images", "images__upload", "seller__trust_verifications")
+        .with_catalog_stats()
         .order_by("-created_at")[:limit]
     )

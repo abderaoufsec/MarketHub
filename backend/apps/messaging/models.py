@@ -319,14 +319,19 @@ class UserBlock(models.Model):
 class ReportReason(models.TextChoices):
     SPAM = "SPAM", "Spam"
     SCAM = "SCAM", "Scam or fraud"
+    COUNTERFEIT = "COUNTERFEIT", "Counterfeit or fake"
     HARASSMENT = "HARASSMENT", "Harassment"
     PROHIBITED_ITEM = "PROHIBITED_ITEM", "Prohibited item"
+    WRONG_CATEGORY = "WRONG_CATEGORY", "Wrong category"
+    OFF_PLATFORM = "OFF_PLATFORM", "Off-platform payment request"
+    IMPERSONATION = "IMPERSONATION", "Impersonation"
     OTHER = "OTHER", "Other"
 
 
 class ReportStatus(models.TextChoices):
     OPEN = "OPEN", "Open"
     REVIEWED = "REVIEWED", "Reviewed"
+    ACTIONED = "ACTIONED", "Actioned"
     DISMISSED = "DISMISSED", "Dismissed"
 
 
@@ -372,7 +377,22 @@ class Report(models.Model):
         default=ReportStatus.OPEN,
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    #: Phase 17: the moderation queue's deadline. High-risk reasons get a
+    #: shorter SLA; the queue sorts by this and flags overdue rows.
+    sla_due_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reports_reviewed",
+    )
+    resolution = models.TextField(blank=True, default="")
+    #: Machine-readable consequence: ``listing_removed``, ``user_banned``,
+    #: ``user_suspended`` or empty. The admin queue renders it as a badge.
+    action_taken = models.CharField(max_length=32, blank=True, default="")
+    resolved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "messaging_reports"
@@ -386,7 +406,26 @@ class Report(models.Model):
         indexes = [
             models.Index(fields=["status", "-created_at"], name="report_status_recent"),
             models.Index(fields=["reported_user", "-created_at"], name="report_user_recent"),
+            models.Index(fields=["status", "sla_due_at"], name="report_status_sla"),
         ]
 
     def __str__(self):
         return f"Report {self.pk}: {self.reason} on user {self.reported_user_id}"
+
+    @property
+    def target_type(self) -> str:
+        if self.message_id:
+            return "message"
+        if self.conversation_id:
+            return "conversation"
+        if self.listing_id:
+            return "listing"
+        return "user"
+
+    @property
+    def is_overdue(self) -> bool:
+        return bool(
+            self.status == ReportStatus.OPEN
+            and self.sla_due_at
+            and self.sla_due_at <= timezone.now()
+        )

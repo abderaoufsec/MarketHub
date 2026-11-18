@@ -117,7 +117,11 @@ class PostgresSearchService(SearchService):
                 # Cards walk image -> upload for the URL/LQIP; without the
                 # select_related that is another query per image, which turns
                 # a 20-row page into 40+ queries (tests/test_query_performance).
-                Prefetch("images", queryset=ProductImage.objects.select_related("upload"))
+                Prefetch("images", queryset=ProductImage.objects.select_related("upload")),
+                # Phase 17: cards render the seller tier/badge. Prefetching the
+                # rows keeps that one query for the page instead of two per
+                # card (``tier_for_user`` + ``badges_for_user``).
+                "seller__trust_verifications",
             )
             .with_catalog_stats()
             .for_user(user)

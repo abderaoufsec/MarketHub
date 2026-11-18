@@ -665,3 +665,75 @@ msgstr "تم إرسال عرض سعر"
 
 msgid "{sender} sent you a message about {listing}:\n\n{preview}\n\nReply here: {link}\n\nStay safe: never pay in advance or share verification codes."
 msgstr "{sender} أرسل لك رسالة بخصوص {listing}:\n\n{preview}\n\nرد هنا: {link}\n\nابق آمناً: لا تدفع مسبقاً ولا تشارك رموز التحقق."
+
+msgid "Create your store before requesting store verification."
+msgstr "أنشئ متجرك قبل طلب توثيق المتجر."
+
+msgid "Explain why this decision should be reviewed."
+msgstr "اشرح لماذا ينبغي مراجعة هذا القرار."
+
+msgid "Only a rejected or archived listing can be appealed."
+msgstr "لا يمكن الاستئناف إلا على إعلان مرفوض أو مؤرشف."
+
+msgid "Only buyers with a delivered order can review this product."
+msgstr "لا يمكن إلا للمشترين الذين لديهم طلب مُسلَّم تقييم هذا المنتج."
+
+msgid "Pass a user_id or a phone."
+msgstr "مرر user_id أو رقم هاتف."
+
+msgid "Provide a commercial register number or a NIF."
+msgstr "قدم رقم السجل التجاري أو رقم التعريف الجبائي."
+
+msgid "That listing is not yours."
+msgstr "هذا الإعلان ليس لك."
+
+msgid "That review is already visible."
+msgstr "هذا التقييم ظاهر بالفعل."
+
+msgid "That review is not yours."
+msgstr "هذا التقييم ليس لك."
+
+msgid "This account is not restricted."
+msgstr "هذا الحساب غير مقيد."
+
+msgid "This appeal was already reviewed."
+msgstr "تمت مراجعة هذا الاستئناف بالفعل."
+
+msgid "This listing violates the marketplace rules and cannot be published."
+msgstr "هذا الإعلان يخالف قواعد السوق ولا يمكن نشره."
+
+msgid "This report was already handled."
+msgstr "تمت معالجة هذا البلاغ بالفعل."
+
+msgid "This verification was already reviewed."
+msgstr "تمت مراجعة هذا التوثيق بالفعل."
+
+msgid "Unknown appeal status."
+msgstr "حالة استئناف غير معروفة."
+
+msgid "Unknown appeal type."
+msgstr "نوع استئناف غير معروف."
+
+msgid "Unknown blocklist kind."
+msgstr "نوع قائمة حظر غير معروف."
+
+msgid "Unknown mass action."
+msgstr "إجراء جماعي غير معروف."
+
+msgid "Unknown moderation action."
+msgstr "إجراء إشراف غير معروف."
+
+msgid "Unknown report status."
+msgstr "حالة بلاغ غير معروفة."
+
+msgid "Unknown sanction."
+msgstr "عقوبة غير معروفة."
+
+msgid "Unknown verification status."
+msgstr "حالة توثيق غير معروفة."
+
+msgid "Verify your phone number before submitting an ID."
+msgstr "وثق رقم هاتفك قبل إرسال بطاقة الهوية."
+
+msgid "You already have an open appeal for this."
+msgstr "لديك استئناف مفتوح لهذا بالفعل."

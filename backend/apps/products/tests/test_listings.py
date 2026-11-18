@@ -984,9 +984,10 @@ def test_ten_listings_on_the_sellers_page_stay_constant(
             )
 
     # 1 page + count + one query per prefetch (images, attributes, inventory,
-    # reviews). An un-joined FK or a per-row review lookup puts this well
-    # above the ceiling, which is the point.
-    with django_assert_max_num_queries(8):
+    # reviews, the store and the seller's Phase 17 verification rows). An
+    # un-joined FK or a per-row review/reputation lookup puts this well above
+    # the ceiling, which is the point: the count must not grow with the page.
+    with django_assert_max_num_queries(9):
         response = seller_client.get(SELLER_LIST_URL)
 
     assert response.status_code == 200

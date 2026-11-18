@@ -121,6 +121,11 @@ INSTALLED_APPS = [
     "apps.stores",
     "apps.media",
     "apps.products",
+    # Phase 17: seller verification, blocklists, moderation queue, appeals.
+    # Depends on products/media/stores; messaging's Report gains SLA fields
+    # from the same phase but the two apps do not import each other's models
+    # at module load beyond the report service.
+    "apps.trust",
     # Phase 16: contact, chat, offers and abuse reports. Depends on products,
     # media and users; nothing points back at it from those apps.
     "apps.messaging",
@@ -609,6 +614,23 @@ LISTINGS_REQUIRE_MODERATION = env_bool("LISTINGS_REQUIRE_MODERATION", False)
 MAX_ACTIVE_LISTINGS_PER_USER = env_int("MAX_ACTIVE_LISTINGS_PER_USER", 10)
 MAX_DRAFT_LISTINGS = env_int("MAX_DRAFT_LISTINGS", 20)
 MAX_IMAGES_PER_LISTING = env_int("MAX_IMAGES_PER_LISTING", 15)
+
+# ---------------------------------------------------------------------------
+# Phase 17 - trust & safety
+# ---------------------------------------------------------------------------
+#: Report deadlines, in hours, by risk band (apps.trust.sla).
+TRUST_REPORT_SLA_HIGH_RISK_HOURS = env_int("TRUST_REPORT_SLA_HIGH_RISK_HOURS", 4)
+TRUST_REPORT_SLA_MEDIUM_RISK_HOURS = env_int("TRUST_REPORT_SLA_MEDIUM_RISK_HOURS", 12)
+TRUST_REPORT_SLA_DEFAULT_HOURS = env_int("TRUST_REPORT_SLA_DEFAULT_HOURS", 24)
+#: A review is auto-approved when the author's reputation reaches this score
+#: *and* the account is old enough; a verified purchase bypasses both.
+TRUST_REVIEW_AUTO_APPROVE_SCORE = env_int("TRUST_REVIEW_AUTO_APPROVE_SCORE", 60)
+TRUST_REVIEW_MIN_ACCOUNT_AGE_DAYS = env_int("TRUST_REVIEW_MIN_ACCOUNT_AGE_DAYS", 3)
+#: Reputation is read on every listing detail; cache it instead of scanning
+#: orders/chats/reports per request.
+TRUST_REPUTATION_CACHE_SECONDS = env_int("TRUST_REPUTATION_CACHE_SECONDS", 900)
+#: A price below this fraction of the category median is reviewed.
+TRUST_PRICE_ANOMALY_FACTOR = float(env_str("TRUST_PRICE_ANOMALY_FACTOR", "0.25"))
 
 PLATFORM_COMMISSION_RATE = float(env_str("PLATFORM_COMMISSION_RATE", "0.15"))
 SITE_URL = env_str("SITE_URL", "http://localhost:8000")

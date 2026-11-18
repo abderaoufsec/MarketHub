@@ -105,7 +105,8 @@ def test_search_in_stock_is_constant(buyer_client, django_assert_max_num_queries
     store = StoreFactory()
     build_catalogue(store)  # every product has stock, so all of them match
 
-    with django_assert_max_num_queries(5):
+    # count + page + images + the Phase 17 seller verification rows.
+    with django_assert_max_num_queries(6):
         response = buyer_client.get(SEARCH_URL, {"in_stock": "true", "page_size": PAGE_SIZE})
 
     assert response.status_code == 200

@@ -27,6 +27,15 @@ from apps.orders.models import Cart, CartItem, Order, OrderItem
 from apps.payments.models import Transaction
 from apps.products.models import ListingType, Product, ProductImage, ProductReview, Wishlist
 from apps.stores.models import Store
+from apps.trust.models import (
+    AccountSanction,
+    Appeal,
+    BlocklistEntry,
+    ModerationAuditLog,
+    SellerVerification,
+    VerificationKind,
+    VerificationStatus,
+)
 from apps.users import otp
 from apps.users.models import Address
 
@@ -204,6 +213,63 @@ class WishlistFactory(factory.django.DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     product = factory.SubFactory(ProductFactory)
+
+
+class SellerVerificationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SellerVerification
+
+    user = factory.SubFactory(UserFactory, phone_verified_at=factory.LazyFunction(timezone.now))
+    kind = VerificationKind.IDENTITY
+    status = VerificationStatus.PENDING
+
+
+class StoreVerificationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SellerVerification
+
+    user = factory.SubFactory(SellerFactory)
+    kind = VerificationKind.STORE
+    status = VerificationStatus.PENDING
+    store = factory.LazyAttribute(lambda o: getattr(o.user, "store", None))
+
+
+class BlocklistEntryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = BlocklistEntry
+
+    kind = "PHONE"
+    value = factory.Sequence(lambda n: f"+2135550{n:04d}")
+    reason = "Test blocklist entry"
+
+
+class AccountSanctionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AccountSanction
+
+    user = factory.SubFactory(UserFactory)
+    kind = "WARNING"
+    reason = "Test sanction"
+
+
+class AppealFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Appeal
+
+    user = factory.SubFactory(UserFactory)
+    kind = "ACCOUNT"
+    message = "Please review this decision."
+
+
+class ModerationAuditLogFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ModerationAuditLog
+
+    actor = factory.SubFactory(UserFactory)
+    action = "REPORT_REVIEWED"
+    target_type = "report"
+    target_id = 1
+    reason = "Test audit entry"
 
 
 class ImageFactory(factory.django.DjangoModelFactory):

@@ -57,7 +57,48 @@ class UserBlockAdmin(admin.ModelAdmin):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ("id", "reporter", "reported_user", "reason", "status", "created_at")
-    list_filter = ("reason", "status")
-    search_fields = ("reporter__email", "reported_user__email", "details")
-    raw_id_fields = ("reporter", "reported_user", "listing", "conversation", "message")
+    list_display = (
+        "id",
+        "reporter",
+        "reported_user",
+        "reason",
+        "status",
+        "sla_due_at",
+        "action_taken",
+        "created_at",
+    )
+    list_filter = ("reason", "status", "action_taken")
+    search_fields = ("reporter__email", "reported_user__email", "details", "resolution")
+    raw_id_fields = (
+        "reporter",
+        "reported_user",
+        "listing",
+        "conversation",
+        "message",
+        "reviewed_by",
+    )
+    readonly_fields = ("reviewed_at", "resolved_at")
+
+    actions = ["mark_reviewed", "mark_dismissed"]
+
+    def mark_reviewed(self, request, queryset):
+        from apps.trust.services import review_report
+
+        handled = 0
+        for report in queryset.filter(status="OPEN"):
+            review_report(report, actor=request.user, action="review")
+            handled += 1
+        self.message_user(request, f"{handled} report(s) marked reviewed.")
+
+    mark_reviewed.short_description = "Mark selected reports reviewed"
+
+    def mark_dismissed(self, request, queryset):
+        from apps.trust.services import review_report
+
+        handled = 0
+        for report in queryset.filter(status="OPEN"):
+            review_report(report, actor=request.user, action="dismiss")
+            handled += 1
+        self.message_user(request, f"{handled} report(s) dismissed.")
+
+    mark_dismissed.short_description = "Dismiss selected reports"

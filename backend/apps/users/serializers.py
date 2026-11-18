@@ -46,6 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone_verified",
             "preferred_language",
             "is_seller",
+            "is_staff",
             "is_verified",
             "date_joined",
         ]
@@ -56,6 +57,7 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "phone_verified",
             "is_seller",
+            "is_staff",
             "is_verified",
             "date_joined",
         ]

@@ -72,6 +72,7 @@ export default function Footer() {
               {[
                 { href: '/products', label: t('nav.products') },
                 { href: '/stores', label: t('nav.stores') },
+                { href: '/safety', label: t('nav.safety') },
                 { href: '/about', label: t('footer.aboutUs') },
               ].map((link, index) => (
                 <motion.li

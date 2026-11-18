@@ -220,6 +220,26 @@ export default function Header() {
                     >
                       {t('nav.savedSearches')}
                     </Link>
+                    <Link
+                      href="/profile/verification"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {t('nav.verification')}
+                    </Link>
+                    <Link
+                      href="/profile/appeals"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {t('nav.appeals')}
+                    </Link>
+                    {user?.is_staff && (
+                      <Link
+                        href="/moderation"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        {t('nav.moderation')}
+                      </Link>
+                    )}
                     <button
                       onClick={logout}
                       className="block w-full text-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -337,6 +357,14 @@ export default function Header() {
                 </motion.div>
                 <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
                   <Link
+                    href="/safety"
+                    className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                  >
+                    {t('nav.safety')}
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }}>
+                  <Link
                     href="/post"
                     className="text-primary hover:text-secondary transition-colors font-medium block py-2"
                     onClick={() => setMobileMenuOpen(false)}
@@ -435,6 +463,41 @@ export default function Header() {
                         {t('nav.savedSearches')}
                       </Link>
                     </motion.div>
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/profile/verification"
+                        className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                      >
+                        {t('nav.verification')}
+                      </Link>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/profile/appeals"
+                        className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                      >
+                        {t('nav.appeals')}
+                      </Link>
+                    </motion.div>
+                    {user?.is_staff && (
+                      <motion.div
+                        whileHover={{ x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Link
+                          href="/moderation"
+                          className="text-gray-700 hover:text-primary transition-colors font-medium block py-2"
+                        >
+                          {t('nav.moderation')}
+                        </Link>
+                      </motion.div>
+                    )}
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       onClick={logout}

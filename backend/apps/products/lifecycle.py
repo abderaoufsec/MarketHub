@@ -66,6 +66,9 @@ ACTIONS = {
     "approve": (ListingStatus.PENDING_REVIEW, ListingStatus.ACTIVE, None),
     "reject": (ListingStatus.PENDING_REVIEW, ListingStatus.REJECTED, None),
     "withdraw": (ListingStatus.PENDING_REVIEW, ListingStatus.DRAFT, None),
+    # Phase 17 appeals: a moderator can return a rejected ad to the seller for
+    # edits without republishing it behind their back.
+    "restore": (ListingStatus.REJECTED, ListingStatus.DRAFT, None),
     "mark_sold": (ListingStatus.ACTIVE, ListingStatus.SOLD, "_apply_sold"),
     "relist": (ListingStatus.SOLD, ListingStatus.ACTIVE, "_apply_activate"),
     "renew": (ListingStatus.EXPIRED, ListingStatus.ACTIVE, "_apply_activate"),
@@ -191,6 +194,23 @@ def _apply_publish(product, *, allow_duplicate: bool = False):
             },
         )
 
+    # Phase 17: prohibited content, contact leakage, blocklists, price
+    # outliers, copied text and copied photos. A blocking finding never
+    # reaches a moderator; a review finding parks the ad in the queue even
+    # when moderation is otherwise off.
+    from apps.trust.checks import run_pre_publish_checks
+
+    trust_result = run_pre_publish_checks(product)
+    if trust_result.blocking:
+        raise ApiError(
+            "This listing violates the marketplace rules and cannot be published.",
+            code="listing_blocked",
+            status_code=400,
+            details={"issues": [issue.as_dict() for issue in trust_result.blocking]},
+        )
+    product.moderation_flags = trust_result.as_dicts()
+    product._trust_requires_review = trust_result.should_review
+
     product.published_at = product.published_at or timezone.now()
     product.expires_at = _valid_until()
     _set_slug(product)
@@ -207,7 +227,7 @@ def _apply_activate(product):
     _set_slug(product)
 
 
-def transition(product, action: str, *, allow_duplicate: bool = False):
+def transition(product, action: str, *, allow_duplicate: bool = False, reason: str = ""):
     """Run ``action`` on ``product``; return the saved instance.
 
     The single entry point for every status change. Validates the edge,
@@ -218,6 +238,9 @@ def transition(product, action: str, *, allow_duplicate: bool = False):
     seller's "yes, I know it looks like my other ad" confirmation past the
     similarity gate. It is ignored by every other action rather than rejected,
     so a client retrying a stale payload cannot get a confusing error.
+
+    ``reason`` is the moderator's note for ``reject``; it is stored on the
+    listing so the seller can see what to fix and appeal against.
     """
     spec = ACTIONS.get(action)
     if spec is None:
@@ -238,8 +261,25 @@ def transition(product, action: str, *, allow_duplicate: bool = False):
         # and the row must be untouched when they do.
         _apply(product, effect, allow_duplicate=allow_duplicate)
         product.status = target
+        if action == "reject":
+            product.rejection_reason = reason or ""
+            product.moderated_at = timezone.now()
+        elif action in ("approve", "restore"):
+            product.rejection_reason = ""
+            product.moderated_at = timezone.now()
         product.save(
-            update_fields=["status", "updated_at", "published_at", "expires_at", "sold_at", "slug"]
+            update_fields=[
+                "status",
+                "updated_at",
+                "published_at",
+                "expires_at",
+                "sold_at",
+                "slug",
+                "moderation_flags",
+                "rejection_reason",
+                "moderated_at",
+                "moderated_by",
+            ]
         )
 
     return product
@@ -263,7 +303,9 @@ def publish(product, *, allow_duplicate: bool = False):
     rather than a code path.
     """
     product = transition(product, "publish", allow_duplicate=allow_duplicate)
-    if not settings.LISTINGS_REQUIRE_MODERATION:
+    if not settings.LISTINGS_REQUIRE_MODERATION and not getattr(
+        product, "_trust_requires_review", False
+    ):
         product = transition(product, "approve")
     return product
 

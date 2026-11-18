@@ -666,3 +666,75 @@ msgstr "Offre de prix envoyée"
 
 msgid "{sender} sent you a message about {listing}:\n\n{preview}\n\nReply here: {link}\n\nStay safe: never pay in advance or share verification codes."
 msgstr "{sender} vous a envoyé un message à propos de {listing} :\n\n{preview}\n\nRépondez ici : {link}\n\nRestez prudent : ne payez jamais d'avance et ne partagez pas vos codes de vérification."
+
+msgid "Create your store before requesting store verification."
+msgstr "Créez votre boutique avant de demander la vérification."
+
+msgid "Explain why this decision should be reviewed."
+msgstr "Expliquez pourquoi cette décision devrait être revue."
+
+msgid "Only a rejected or archived listing can be appealed."
+msgstr "Seule une annonce refusée ou archivée peut faire l’objet d’un recours."
+
+msgid "Only buyers with a delivered order can review this product."
+msgstr "Seuls les acheteurs ayant une commande livrée peuvent évaluer ce produit."
+
+msgid "Pass a user_id or a phone."
+msgstr "Indiquez un user_id ou un numéro de téléphone."
+
+msgid "Provide a commercial register number or a NIF."
+msgstr "Fournissez un numéro de registre de commerce ou un NIF."
+
+msgid "That listing is not yours."
+msgstr "Cette annonce ne vous appartient pas."
+
+msgid "That review is already visible."
+msgstr "Cet avis est déjà visible."
+
+msgid "That review is not yours."
+msgstr "Cet avis ne vous appartient pas."
+
+msgid "This account is not restricted."
+msgstr "Ce compte n’est pas restreint."
+
+msgid "This appeal was already reviewed."
+msgstr "Ce recours a déjà été examiné."
+
+msgid "This listing violates the marketplace rules and cannot be published."
+msgstr "Cette annonce enfreint les règles du marketplace et ne peut pas être publiée."
+
+msgid "This report was already handled."
+msgstr "Ce signalement a déjà été traité."
+
+msgid "This verification was already reviewed."
+msgstr "Cette vérification a déjà été examinée."
+
+msgid "Unknown appeal status."
+msgstr "Statut de recours inconnu."
+
+msgid "Unknown appeal type."
+msgstr "Type de recours inconnu."
+
+msgid "Unknown blocklist kind."
+msgstr "Type de liste noire inconnu."
+
+msgid "Unknown mass action."
+msgstr "Action de masse inconnue."
+
+msgid "Unknown moderation action."
+msgstr "Action de modération inconnue."
+
+msgid "Unknown report status."
+msgstr "Statut de signalement inconnu."
+
+msgid "Unknown sanction."
+msgstr "Sanction inconnue."
+
+msgid "Unknown verification status."
+msgstr "Statut de vérification inconnu."
+
+msgid "Verify your phone number before submitting an ID."
+msgstr "Vérifiez votre numéro de téléphone avant d’envoyer une pièce d’identité."
+
+msgid "You already have an open appeal for this."
+msgstr "Vous avez déjà un recours ouvert pour cela."

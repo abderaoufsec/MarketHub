@@ -16,7 +16,11 @@
       "postAd": "أضف إعلانًا",
       "search": "البحث",
       "savedSearches": "عمليات البحث المحفوظة",
-      "messages": "الرسائل"
+      "messages": "الرسائل",
+      "safety": "الأمان",
+      "verification": "التوثيق",
+      "appeals": "الاستئنافات",
+      "moderation": "الإشراف"
     },
     "footer": {
       "tagline": "سوقك الإلكتروني الموثوق الذي يربط بين المشترين والبائعين.",
@@ -1139,7 +1143,136 @@
       "SCAM": "احتيال",
       "HARASSMENT": "تحرش",
       "PROHIBITED_ITEM": "منتج محظور",
-      "OTHER": "أخرى"
+      "OTHER": "أخرى",
+      "COUNTERFEIT": "منتج مقلد",
+      "WRONG_CATEGORY": "فئة خاطئة",
+      "OFF_PLATFORM": "الدفع خارج المنصة",
+      "IMPERSONATION": "انتحال هوية"
+    }
+  },
+  "trust": {
+    "badges": {
+      "PHONE": "هاتف موثق",
+      "ID": "هوية موثقة",
+      "STORE": "متجر موثق",
+      "UNVERIFIED": "غير موثق",
+      "tooltip": "تحقق MarketHub من ذلك. الشارة إشارة وليست ضمانا مطلقا."
+    },
+    "reputationScore": "الثقة {score}/100",
+    "learnSafety": "مركز الأمان",
+    "reportListing": "إبلاغ",
+    "reportSent": "شكرا، سيراجع فريقنا هذا الإبلاغ.",
+    "reportError": "تعذر إرسال الإبلاغ.",
+    "safety": {
+      "title": "مركز الأمان",
+      "subtitle": "عادات تحمي عمليات الشراء والبيع على MarketHub.",
+      "loading": "جار تحميل مركز الأمان…",
+      "error": "تعذر تحميل مركز الأمان.",
+      "retry": "إعادة المحاولة",
+      "reportCta": "الإبلاغ عن إعلان",
+      "verificationCta": "توثيق ملفي",
+      "updated": "آخر تحديث {date}"
+    },
+    "verification": {
+      "title": "توثيق البائع",
+      "subtitle": "الهاتف الموثق يفتح الشارات. الهوية أو السجل التجاري يعزز ثقة المشترين.",
+      "loginRequired": "سجل الدخول لإدارة التوثيق.",
+      "login": "تسجيل الدخول",
+      "statusTitle": "عمليات التوثيق",
+      "empty": "لم ترسل أي وثيقة بعد.",
+      "pending": "قيد المراجعة",
+      "approved": "مقبولة",
+      "rejected": "مرفوضة",
+      "rejectionReason": "سبب الرفض",
+      "submitTitle": "توثيق هويتي",
+      "submitHint": "ارفع صورة واضحة لوثيقة الهوية. يراها فريق الإشراف فقط.",
+      "documentType": "نوع الوثيقة",
+      "types": {
+        "ID_CARD": "بطاقة الهوية",
+        "PASSPORT": "جواز السفر",
+        "DRIVING_LICENSE": "رخصة القيادة"
+      },
+      "documentNumber": "رقم الوثيقة (اختياري)",
+      "photo": "صورة الوثيقة",
+      "photoHint": "JPEG أو PNG، واضحة وبدون انعكاسات.",
+      "upload": "اختيار صورة",
+      "uploading": "جار الإرسال…",
+      "submit": "إرسال للتوثيق",
+      "submitting": "جار الإرسال…",
+      "submitted": "أرسلت الوثيقة. سنعود إليك قريبا.",
+      "submitError": "تعذر إرسال الوثيقة.",
+      "phoneRequired": "وثق رقم هاتفك من الملف الشخصي أولا.",
+      "storeTitle": "توثيق متجري",
+      "storeHint": "قدم السجل التجاري أو رقم التعريف الجبائي للحصول على شارة متجر موثق.",
+      "commercialRegister": "رقم السجل التجاري",
+      "nif": "رقم التعريف الجبائي",
+      "storeSubmit": "إرسال توثيق المتجر",
+      "storeSubmitted": "أرسل توثيق المتجر.",
+      "cancel": "إلغاء"
+    },
+    "appeals": {
+      "title": "الاستئنافات",
+      "subtitle": "يمكن الطعن هنا في إعلان مرفوض أو تقييم مخفي أو حساب موقوف.",
+      "loginRequired": "سجل الدخول لتقديم استئناف.",
+      "login": "تسجيل الدخول",
+      "empty": "لا توجد استئنافات بعد.",
+      "newTitle": "تقديم استئناف",
+      "kind": "موضوع الاستئناف",
+      "kinds": {
+        "LISTING": "إعلان مرفوض",
+        "REVIEW": "تقييم مخفي",
+        "ACCOUNT": "حساب موقوف"
+      },
+      "listing": "الإعلان",
+      "review": "التقييم",
+      "chooseListing": "اختر إعلانا",
+      "chooseReview": "اختر تقييما",
+      "message": "توضيحك",
+      "messagePlaceholder": "اشرح لماذا ينبغي مراجعة هذا القرار.",
+      "submit": "إرسال الاستئناف",
+      "submitting": "جار الإرسال…",
+      "submitted": "أرسل الاستئناف.",
+      "submitError": "تعذر إرسال الاستئناف.",
+      "status": "الحالة",
+      "resolution": "رد الإشراف",
+      "noResolution": "لا يوجد رد بعد."
+    },
+    "moderation": {
+      "title": "قائمة الإشراف",
+      "subtitle": "البلاغات والتوثيقات والاستئنافات مرتبة حسب الموعد.",
+      "forbidden": "هذه الصفحة لفريق الإشراف فقط.",
+      "overview": {
+        "openReports": "بلاغات مفتوحة",
+        "overdueReports": "متأخرة",
+        "pendingVerifications": "توثيقات معلقة",
+        "openAppeals": "استئنافات مفتوحة",
+        "activeBlocklist": "مدخلات نشطة",
+        "flaggedListings": "إعلانات موسومة"
+      },
+      "tabs": {
+        "reports": "البلاغات",
+        "verifications": "التوثيقات",
+        "appeals": "الاستئنافات"
+      },
+      "empty": "لا شيء للمعالجة هنا.",
+      "overdue": "متأخر",
+      "dueBy": "الموعد {date}",
+      "reporter": "أبلغ عنه",
+      "target": "الهدف",
+      "reason": "السبب",
+      "approve": "قبول",
+      "reject": "رفض",
+      "dismiss": "حفظ",
+      "action": "اتخاذ إجراء",
+      "resolution": "ملاحظة الحل",
+      "resolutionPlaceholder": "ما تم تقريره ولماذا.",
+      "submit": "تأكيد",
+      "removeListing": "إزالة الإعلان",
+      "banUser": "حظر الحساب",
+      "suspendUser": "إيقاف الحساب",
+      "noAction": "لا إجراء إضافي",
+      "error": "تعذر تنفيذ الإجراء حاليا.",
+      "updated": "تم تحديث القائمة."
     }
   }
 }

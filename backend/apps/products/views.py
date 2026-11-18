@@ -86,7 +86,7 @@ class ProductListView(generics.ListAPIView):
             # behind a dead store) — see ProductQuerySet.public.
             Product.objects.public()
             .select_related("store", "category", "seller", "wilaya")
-            .prefetch_related(_images_prefetch())
+            .prefetch_related(_images_prefetch(), "seller__trust_verifications")
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -106,12 +106,24 @@ class ProductDetailView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Only the detail page pays for the full reputation scan (see
+        # ``SellerMiniSerializer.get_reputation``).
+        context["include_seller_reputation"] = True
+        return context
+
     def get_queryset(self):
         return (
             super()
             .get_queryset()
             .select_related("store", "category", "seller", "wilaya", "commune")
-            .prefetch_related(_images_prefetch(), "attributes", "reviews__user")
+            .prefetch_related(
+                _images_prefetch(),
+                "attributes",
+                "reviews__user",
+                "seller__trust_verifications",
+            )
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -177,7 +189,7 @@ def featured_products(request):
     products = (
         Product.objects.public()
         .select_related("store", "category", "seller", "wilaya")
-        .prefetch_related(_images_prefetch())
+        .prefetch_related(_images_prefetch(), "seller__trust_verifications")
         .with_catalog_stats()
         .for_user(request.user)
         .order_by("-created_at")[:12]
@@ -206,7 +218,7 @@ def feed_products(request):
     queryset = (
         Product.objects.public()
         .select_related("store", "category", "seller", "wilaya")
-        .prefetch_related(_images_prefetch())
+        .prefetch_related(_images_prefetch(), "seller__trust_verifications")
         .with_catalog_stats()
         .for_user(request.user)
     )
@@ -312,6 +324,7 @@ class SellerProductListView(generics.ListAPIView):
                 "attributes",
                 "inventory",
                 "reviews__user",
+                "seller__trust_verifications",
             )
             .with_catalog_stats()
             .for_user(self.request.user)
@@ -414,7 +427,12 @@ class SellerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         return (
             Product.objects.filter(seller=self.request.user)
             .select_related("store", "category", "seller", "wilaya", "commune")
-            .prefetch_related(_images_prefetch(), "attributes", "inventory")
+            .prefetch_related(
+                _images_prefetch(),
+                "attributes",
+                "inventory",
+                "seller__trust_verifications",
+            )
             .with_catalog_stats()
             .for_user(self.request.user)
         )
@@ -445,7 +463,12 @@ class ListingLifecycleView(generics.GenericAPIView):
         return (
             Product.objects.filter(seller=self.request.user)
             .select_related("store", "category", "seller", "wilaya", "commune")
-            .prefetch_related(_images_prefetch(), "attributes", "reviews__user")
+            .prefetch_related(
+                _images_prefetch(),
+                "attributes",
+                "reviews__user",
+                "seller__trust_verifications",
+            )
             .with_catalog_stats()
             .for_user(self.request.user)
         )

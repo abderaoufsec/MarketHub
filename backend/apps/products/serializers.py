@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.catalog.models import Category
@@ -147,7 +148,7 @@ class ProductAttributeSerializer(serializers.ModelSerializer):
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
-    """Serializer for ProductReview model"""
+    """A review; pending rows are only ever returned to their author/admin."""
 
     user_email = serializers.CharField(source="user.email", read_only=True)
     user_name = serializers.SerializerMethodField()
@@ -163,10 +164,24 @@ class ProductReviewSerializer(serializers.ModelSerializer):
             "rating",
             "comment",
             "is_approved",
+            "is_verified_purchase",
+            "moderated_at",
+            "moderation_note",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "user_email", "user_name", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "user",
+            "user_email",
+            "user_name",
+            "is_approved",
+            "is_verified_purchase",
+            "moderated_at",
+            "moderation_note",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_user_name(self, obj) -> str:
         """Get user's display name"""
@@ -176,7 +191,13 @@ class ProductReviewSerializer(serializers.ModelSerializer):
 
 
 class ProductReviewCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating product reviews"""
+    """Create/update a review with Phase 17 moderation.
+
+    A store product requires a delivered order line before the first review is
+    accepted ("reviews tied to completed orders"). Classifieds have no order,
+    so their reviews are accepted but start pending unless the author's trust
+    score clears the threshold. A verified purchase is auto-approved.
+    """
 
     class Meta:
         model = ProductReview
@@ -188,23 +209,63 @@ class ProductReviewCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        # Check if user already reviewed this product
         request = self.context.get("request")
-        if request and request.user:
-            existing = ProductReview.objects.filter(
-                product=data["product"], user=request.user
-            ).exists()
+        user = getattr(request, "user", None)
+        product = data.get("product") or getattr(self.instance, "product", None)
+
+        # Check if user already reviewed this product. Only on *create*: the
+        # old unconditional check made editing your own review impossible
+        # (found in Phase 3, fixed in Phase 17).
+        if self.instance is None and request and user:
+            existing = ProductReview.objects.filter(product=product, user=user).first()
             if existing:
-                raise serializers.ValidationError(
-                    "You have already reviewed this product. Please update your existing review."
+                raise ApiError(
+                    "You have already reviewed this product",
+                    code="already_reviewed",
+                    details={"review_id": existing.pk},
+                )
+
+        if self.instance is None and product is not None:
+            from apps.products.models import ListingType
+            from apps.trust.reputation import is_verified_purchase
+
+            if product.listing_type == ListingType.STORE_PRODUCT and not is_verified_purchase(
+                user, product
+            ):
+                raise ApiError(
+                    "Only buyers with a delivered order can review this product.",
+                    code="verified_purchase_required",
+                    details={"product_id": product.pk},
                 )
         return data
 
     def create(self, validated_data):
-        # Automatically set the user from request
+        from apps.trust.reputation import is_verified_purchase, review_should_auto_approve
+
         request = self.context.get("request")
-        validated_data["user"] = request.user
+        user = request.user
+        product = validated_data["product"]
+        validated_data["user"] = user
+        validated_data["is_verified_purchase"] = is_verified_purchase(user, product)
+        approved = review_should_auto_approve(user, product)
+        validated_data["is_approved"] = approved
+        if approved:
+            validated_data["moderated_at"] = timezone.now()
+            validated_data["moderation_note"] = "auto-approved"
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        from apps.trust.reputation import is_verified_purchase, review_should_auto_approve
+
+        instance.product = validated_data.get("product", instance.product)
+        instance.rating = validated_data.get("rating", instance.rating)
+        instance.comment = validated_data.get("comment", instance.comment)
+        instance.is_verified_purchase = is_verified_purchase(instance.user, instance.product)
+        instance.is_approved = review_should_auto_approve(instance.user, instance.product)
+        instance.moderated_at = timezone.now() if instance.is_approved else None
+        instance.moderation_note = "auto-approved" if instance.is_approved else "pending review"
+        instance.save()
+        return instance
 
 
 class WishlistSerializer(serializers.ModelSerializer):
@@ -272,18 +333,26 @@ class ListingActionSerializer(serializers.Serializer):
 
 
 class SellerMiniSerializer(serializers.Serializer):
-    """``{id, name, response_time_minutes}`` - the listing's owner.
+    """``{id, name, tier, badges, reputation, response_time_minutes}``.
 
     Deliberately shapeless about contact data: the phone is never serialized
     here, and Phase 16 removed it from the listing payload entirely. A buyer
     must call the authenticated, throttled reveal endpoint. The response-time
     badge is derived from first-reply samples in ``apps.messaging`` and is
     cached, so a public detail page does not scan an inbox per request.
+
+    Phase 17: ``tier``/``badges`` come from approved verification rows and the
+    reputation score is cached (``apps.trust.reputation``). The badge is a
+    signal, never a guarantee - the safety centre says so in plain language.
     """
 
     id = serializers.IntegerField(read_only=True)
     name = serializers.SerializerMethodField()
     response_time_minutes = serializers.SerializerMethodField()
+    tier = serializers.SerializerMethodField()
+    tier_label = serializers.SerializerMethodField()
+    badges = serializers.SerializerMethodField()
+    reputation = serializers.SerializerMethodField()
 
     def get_name(self, obj) -> str:
         return _display_name(obj)
@@ -292,6 +361,33 @@ class SellerMiniSerializer(serializers.Serializer):
         from apps.messaging.stats import seller_response_time_minutes
 
         return seller_response_time_minutes(obj.pk)
+
+    def get_tier(self, obj) -> str:
+        from apps.trust.reputation import tier_for_user
+
+        return tier_for_user(obj)
+
+    def get_tier_label(self, obj) -> str:
+        from apps.trust.reputation import tier_for_user, tier_label
+
+        return tier_label(tier_for_user(obj))
+
+    def get_badges(self, obj) -> list[dict]:
+        from apps.trust.reputation import badges_for_user
+
+        return badges_for_user(obj)
+
+    def get_reputation(self, obj) -> dict | None:
+        # The full breakdown costs several aggregate queries. It is returned
+        # on the listing detail page, where the seller panel shows it, but a
+        # search/list page with ten cards should not run ten reputation scans
+        # (Phase 17 N+1 finding). ``tier``/``badges`` above stay cheap: they
+        # ride on the prefetched verification rows.
+        if not self.context.get("include_seller_reputation"):
+            return None
+        from apps.trust.reputation import compute_reputation
+
+        return compute_reputation(obj)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -328,6 +424,10 @@ class ProductSerializer(serializers.ModelSerializer):
     price_mode_label = serializers.SerializerMethodField()
     contact_mode_label = serializers.SerializerMethodField()
     status_label = serializers.SerializerMethodField()
+    # Phase 17: the badge rides on the card as well as the nested seller
+    # object, so a client can render it without reaching into a sub-object.
+    seller_tier = serializers.SerializerMethodField()
+    seller_badges = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -335,6 +435,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "id",
             "store",
             "seller",
+            "seller_tier",
+            "seller_badges",
             "phone_available",
             "name",
             "description",
@@ -349,6 +451,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "contact_mode_label",
             "status",
             "status_label",
+            "rejection_reason",
+            "moderation_flags",
             "slug",
             "canonical_path",
             "category",
@@ -409,6 +513,16 @@ class ProductSerializer(serializers.ModelSerializer):
             return ProductReviewSerializer(review, context=self.context).data
         return None
 
+    def get_seller_tier(self, obj) -> str:
+        from apps.trust.reputation import tier_for_user
+
+        return tier_for_user(obj.seller)
+
+    def get_seller_badges(self, obj) -> list[dict]:
+        from apps.trust.reputation import badges_for_user
+
+        return badges_for_user(obj.seller)
+
     def get_phone_available(self, obj) -> bool:
         """Whether the reveal button should be offered.
 
@@ -457,6 +571,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     wilaya_name = serializers.SerializerMethodField()
     listing_type_label = serializers.SerializerMethodField()
     price_mode_label = serializers.SerializerMethodField()
+    seller_tier = serializers.SerializerMethodField()
+    seller_badges = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -477,6 +593,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "store_name",
             "store_slug",
             "seller_name",
+            "seller_tier",
+            "seller_badges",
             "wilaya_name",
             "primary_image",
             "primary_image_lqip",
@@ -536,6 +654,16 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_price_mode_label(self, obj) -> str:
         return choice_label(PriceMode.choices, obj.price_mode)
+
+    def get_seller_tier(self, obj) -> str:
+        from apps.trust.reputation import tier_for_user
+
+        return tier_for_user(obj.seller)
+
+    def get_seller_badges(self, obj) -> list[dict]:
+        from apps.trust.reputation import badges_for_user
+
+        return badges_for_user(obj.seller)
 
 
 class ProductSearchPageSerializer(serializers.Serializer):

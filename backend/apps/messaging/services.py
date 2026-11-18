@@ -24,6 +24,7 @@ from django.utils import timezone
 
 from apps.media.models import Image
 from apps.products.models import ContactMode, PriceMode, Product
+from apps.trust.sla import sla_due_at
 from core.exceptions import ApiError
 
 from .models import (
@@ -442,4 +443,5 @@ def create_report(
         message=message,
         reason=reason,
         details=(details or "").strip(),
+        sla_due_at=sla_due_at(reason),
     )

@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { productsAPI, cartAPI, reviewsAPI, wishlistAPI } from '../../lib/api'
+import {
+  productsAPI,
+  cartAPI,
+  reviewsAPI,
+  wishlistAPI,
+  messagingAPI,
+} from '../../lib/api'
 import { apiErrorMessage } from '../../lib/errors'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -16,11 +22,14 @@ import {
   MessageSquare,
   MapPin,
   User,
+  Flag,
 } from 'lucide-react'
 import Link from 'next/link'
 import ReviewModal from './ReviewModal'
 import ProductCard from './ProductCard'
 import SafeImage from '../common/SafeImage'
+import SellerBadge from '../trust/SellerBadge'
+import ReportModal from '../messaging/ReportModal'
 import SellerContactPanel from '../messaging/SellerContactPanel'
 import toast from 'react-hot-toast'
 import { useLocale, useTranslations } from 'next-intl'
@@ -43,6 +52,7 @@ import { usePrice } from '../../lib/currency'
  */
 export default function ProductDetail({ productId }) {
   const t = useTranslations('products')
+  const tTrust = useTranslations('trust')
   const locale = useLocale()
   const price = usePrice()
   const router = useRouter()
@@ -61,6 +71,8 @@ export default function ProductDetail({ productId }) {
   const [userReview, setUserReview] = useState(null)
   const [similar, setSimilar] = useState([])
   const [alsoFromSeller, setAlsoFromSeller] = useState([])
+  const [showReport, setShowReport] = useState(false)
+  const [reportBusy, setReportBusy] = useState(false)
 
   useEffect(() => {
     if (productId) {
@@ -218,6 +230,21 @@ export default function ProductDetail({ productId }) {
     checkUserReview()
   }
 
+  // Phase 17: report the listing itself. The server derives the seller and
+  // assigns the SLA from the reason; the dialog only collects the text.
+  const submitReport = async ({ reason, details }) => {
+    setReportBusy(true)
+    try {
+      await messagingAPI.report({ listing_id: product.id, reason, details })
+      setShowReport(false)
+      toast.success(tTrust('reportSent'))
+    } catch (error) {
+      toast.error(apiErrorMessage(error, tTrust('reportError')))
+    } finally {
+      setReportBusy(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -368,6 +395,39 @@ export default function ProductDetail({ productId }) {
               </p>
             )
           )}
+
+          {/* Phase 17: verification tier + badges, derived from approved
+              documents server-side. The full reputation panel only appears on
+              this detail page (the API omits it from card payloads). */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <SellerBadge
+              badges={product.seller_badges || product.seller?.badges}
+              tier={product.seller_tier || product.seller?.tier}
+            />
+            {product.seller?.reputation && (
+              <span className="text-xs text-gray-500">
+                {tTrust('reputationScore', {
+                  score: product.seller.reputation.score,
+                })}
+              </span>
+            )}
+            <Link
+              href="/safety"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {tTrust('learnSafety')}
+            </Link>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => setShowReport(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600"
+              >
+                <Flag className="h-3 w-3" />
+                {tTrust('reportListing')}
+              </button>
+            )}
+          </div>
 
           {/* Rating & Reviews */}
           <div className="flex items-center gap-4 mb-4">
@@ -723,6 +783,14 @@ export default function ProductDetail({ productId }) {
         product={product}
         existingReview={userReview}
         onReviewSubmitted={handleReviewSubmitted}
+      />
+
+      {/* Phase 17: listing report dialog */}
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        onSubmit={submitReport}
+        busy={reportBusy}
       />
     </div>
   )

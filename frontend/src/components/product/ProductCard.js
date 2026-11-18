@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { usePrice } from '../../lib/currency'
 import SafeImage from '../common/SafeImage'
+import SellerBadge from '../trust/SellerBadge'
 
 export default function ProductCard({ product, index = 0 }) {
   const t = useTranslations('products')
@@ -89,6 +90,11 @@ export default function ProductCard({ product, index = 0 }) {
                 product.seller_name ||
                 t('defaultStoreName')}
             </p>
+            <SellerBadge
+              badges={product.seller_badges || product.seller?.badges}
+              tier={product.seller_tier || product.seller?.tier}
+              className="mb-2"
+            />
             <div className="flex items-center justify-between mt-auto">
               <motion.span
                 whileHover={{ scale: 1.05 }}
